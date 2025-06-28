@@ -24,6 +24,9 @@ export const useChat = (user: User | null) => {
     if (!user || !isSupabaseConfigured) return;
 
     try {
+      console.log('=== FETCHING CHAT HISTORY ===');
+      console.log('User ID:', user.id);
+
       const { data, error } = await supabase
         .from('chat_logs')
         .select('*')
@@ -35,6 +38,7 @@ export const useChat = (user: User | null) => {
         return;
       }
 
+      console.log('Chat history fetched:', data?.length || 0, 'messages');
       setMessages(data || []);
     } catch (error) {
       console.error('Error fetching chat history:', error);
@@ -44,10 +48,15 @@ export const useChat = (user: User | null) => {
   const sendMessage = async (message: string, onXPUpdate?: (points: number) => void) => {
     if (!user || !message.trim()) return;
 
+    console.log('=== SENDING MESSAGE ===');
+    console.log('Message:', message);
+    console.log('User ID:', user.id);
+
     setLoading(true);
 
     try {
       if (!isSupabaseConfigured) {
+        console.log('Supabase not configured, using mock responses');
         // Handle offline mode with mock responses
         const mockUserMessage: ChatMessage = {
           id: Date.now().toString(),
@@ -74,6 +83,7 @@ export const useChat = (user: User | null) => {
       }
 
       // Add user message to database
+      console.log('Adding user message to database...');
       const { data: userMessage, error: userError } = await supabase
         .from('chat_logs')
         .insert({
@@ -84,17 +94,29 @@ export const useChat = (user: User | null) => {
         .select()
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error saving user message:', userError);
+        throw userError;
+      }
+
+      console.log('User message saved:', userMessage.id);
 
       // Update local state immediately
       setMessages(prev => [...prev, userMessage]);
 
-      // Call OpenAI API through Supabase Edge Function
+      // Call AI API through Supabase Edge Function
+      console.log('Calling AI Edge Function...');
       const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
         body: {
           message: message.trim(),
           userId: user.id,
         },
+      });
+
+      console.log('AI Response received:', {
+        hasData: !!aiResponseData,
+        hasError: !!aiError,
+        response: aiResponseData?.response?.substring(0, 100) + '...'
       });
 
       if (aiError) {
@@ -105,6 +127,7 @@ export const useChat = (user: User | null) => {
       const aiResponse = aiResponseData?.response || generateContextualResponse(message);
 
       // Add AI response to database
+      console.log('Saving AI response to database...');
       const { data: aiMessage, error: aiMessageError } = await supabase
         .from('chat_logs')
         .insert({
@@ -115,7 +138,12 @@ export const useChat = (user: User | null) => {
         .select()
         .single();
 
-      if (aiMessageError) throw aiMessageError;
+      if (aiMessageError) {
+        console.error('Error saving AI message:', aiMessageError);
+        throw aiMessageError;
+      }
+
+      console.log('AI message saved:', aiMessage.id);
 
       // Update local state with AI response
       setMessages(prev => [...prev, aiMessage]);

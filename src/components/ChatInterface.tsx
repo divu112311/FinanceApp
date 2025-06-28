@@ -56,7 +56,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
     "Plan my path to financial independence"
   ];
 
-  // Calculate financial insights
+  // Calculate dynamic financial insights from real data
   const totalGoalAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
   const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || 0), 0);
   const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0;
@@ -64,6 +64,77 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
     const progress = goal.target_amount ? ((goal.saved_amount || 0) / goal.target_amount) * 100 : 0;
     return progress >= 100;
   });
+
+  // Dynamic insights based on user's actual data
+  const generateDynamicInsights = () => {
+    const insights = [];
+    
+    // Emergency fund insight
+    const emergencyGoal = goals.find(g => g.name?.toLowerCase().includes('emergency'));
+    if (emergencyGoal) {
+      const progress = emergencyGoal.target_amount ? 
+        ((emergencyGoal.saved_amount || 0) / emergencyGoal.target_amount) * 100 : 0;
+      if (progress >= 80) {
+        insights.push({
+          type: 'success',
+          title: 'Emergency Fund Progress',
+          message: `Excellent! You're ${progress.toFixed(1)}% towards your emergency fund goal. Just $${((emergencyGoal.target_amount || 0) - (emergencyGoal.saved_amount || 0)).toLocaleString()} more to go!`,
+          icon: TrendingUp,
+          color: 'border-[#2A6F68]'
+        });
+      } else if (progress >= 50) {
+        insights.push({
+          type: 'progress',
+          title: 'Emergency Fund Building',
+          message: `Good progress on your emergency fund! You're ${progress.toFixed(1)}% there. Consider automating $${Math.ceil(((emergencyGoal.target_amount || 0) - (emergencyGoal.saved_amount || 0)) / 12)} monthly to reach your goal in a year.`,
+          icon: PiggyBank,
+          color: 'border-[#2A6F68]'
+        });
+      }
+    }
+
+    // Savings rate insight
+    if (totalBalance > 0 && totalSavedAmount > 0) {
+      const savingsRate = (totalSavedAmount / totalBalance) * 100;
+      if (savingsRate >= 20) {
+        insights.push({
+          type: 'success',
+          title: 'Excellent Savings Rate',
+          message: `Your savings rate of ${savingsRate.toFixed(1)}% is above the recommended 20%. You're building wealth effectively!`,
+          icon: CheckCircle,
+          color: 'border-[#2A6F68]'
+        });
+      }
+    }
+
+    // Goal completion insight
+    if (completedGoals.length > 0) {
+      insights.push({
+        type: 'achievement',
+        title: 'Goal Achievement',
+        message: `Congratulations! You've completed ${completedGoals.length} financial goal${completedGoals.length > 1 ? 's' : ''}. This shows great financial discipline!`,
+        icon: Award,
+        color: 'border-[#B76E79]'
+      });
+    }
+
+    // Investment opportunity
+    const checkingAccounts = bankAccounts.filter(acc => acc.subtype === 'checking');
+    const totalChecking = checkingAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    if (totalChecking > 5000) {
+      insights.push({
+        type: 'opportunity',
+        title: 'Investment Opportunity',
+        message: `You have $${totalChecking.toLocaleString()} in checking accounts. Consider moving excess funds to high-yield savings or investments for better returns.`,
+        icon: DollarSign,
+        color: 'border-[#2A6F68]'
+      });
+    }
+
+    return insights.slice(0, 3); // Show max 3 insights
+  };
+
+  const dynamicInsights = generateDynamicInsights();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -73,6 +144,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
       maximumFractionDigits: 0
     }).format(amount);
   };
+
+  // Get last 6 messages to show more conversation history
+  const recentMessages = messages.slice(-6);
 
   return (
     <div className="flex h-[calc(100vh-140px)] max-w-7xl mx-auto gap-6">
@@ -97,24 +171,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         animate={{ opacity: 1, x: 0 }}
         className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
-        {/* Easy Wins Section */}
+        {/* Easy Wins Section - Dynamic Content */}
         <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-4 text-[#2A6F68] flex-shrink-0">
           <div className="flex items-center space-x-2 mb-3">
             <Lightbulb className="h-5 w-5 text-[#2A6F68]" />
             <h3 className="text-lg font-bold text-[#2A6F68]">Easy Wins This Week</h3>
           </div>
           <div className="space-y-2">
+            {/* Dynamic easy wins based on user data */}
+            {totalBalance > 10000 && (
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-[#2A6F68]/90">
+                  With ${totalBalance.toLocaleString()} in accounts, consider moving excess checking funds to high-yield savings for better returns.
+                </p>
+              </div>
+            )}
+            
+            {goalProgress < 50 && goals.length > 0 && (
+              <div className="flex items-start space-x-2">
+                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-[#2A6F68]/90">
+                  Automate ${Math.ceil((totalGoalAmount - totalSavedAmount) / 24)} monthly to reach your goals faster.
+                </p>
+              </div>
+            )}
+            
             <div className="flex items-start space-x-2">
               <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-[#2A6F68]/90">Those unused subscriptions? Canceling them could free up $47/month for your dreams.</p>
+              <p className="text-sm text-[#2A6F68]/90">Review and cancel unused subscriptions - most people save $40-80/month this way.</p>
             </div>
+            
             <div className="flex items-start space-x-2">
               <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-[#2A6F68]/90">A high-yield savings account could grow your money while you sleep.</p>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-[#2A6F68]/90">Automatic bill pay means one less thing to worry about (and no late fees).</p>
+              <p className="text-sm text-[#2A6F68]/90">Set up automatic bill pay to avoid late fees and improve your credit score.</p>
             </div>
           </div>
         </div>
@@ -130,7 +220,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me create a budget")}
+              onClick={() => setInputMessage("Help me create a budget based on my current accounts")}
               className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
@@ -142,7 +232,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Analyze my investment options")}
+              onClick={() => setInputMessage("Analyze my investment options based on my current savings")}
               className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
@@ -154,7 +244,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me optimize my savings")}
+              onClick={() => setInputMessage("Help me optimize my savings strategy for my goals")}
               className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
@@ -175,12 +265,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           >
             <div className="flex items-center space-x-3">
               <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
+              {messages.length > 0 && (
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  {messages.length} messages
+                </span>
+              )}
             </div>
           </motion.div>
 
-          {/* Messages Container */}
+          {/* Messages Container - Shows last 6 messages for better conversation visibility */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
-            {messages.length === 0 && (
+            {recentMessages.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -191,7 +286,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     Let's Build Your Financial Success Plan
                   </h3>
                   <p className="text-gray-600 text-sm max-w-md mx-auto">
-                    Choose an area where you'd like immediate guidance, or tell me about your specific financial goals and challenges.
+                    I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
+                    {goals.length > 0 && ` and ${goals.length} financial goal${goals.length !== 1 ? 's' : ''}`}. 
+                    Let's optimize your financial strategy!
                   </p>
                 </div>
                 
@@ -217,8 +314,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               </motion.div>
             )}
 
-            {/* Show last 4 messages for better visibility */}
-            {messages.slice(-4).map((message, index) => (
+            {/* Show last 6 messages for better conversation visibility */}
+            {recentMessages.map((message, index) => (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -301,7 +398,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Describe your financial goals or ask for specific advice..."
+                  placeholder="Ask about your finances, goals, or get personalized advice..."
                   rows={1}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent resize-none transition-all"
                   style={{ minHeight: '44px', maxHeight: '120px' }}
@@ -317,7 +414,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 <Send className="h-5 w-5" />
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </motion.div>
 
@@ -328,7 +425,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         transition={{ delay: 0.2 }}
         className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
-        {/* AI Learning Insights */}
+        {/* AI Learning Insights - Dynamic Content */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-6">
             <div className="w-8 h-8 bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-lg flex items-center justify-center">
@@ -338,60 +435,59 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </div>
 
           <div className="space-y-4">
-            {/* Coffee Spending Alert */}
-            <div className="border-l-4 border-[#B76E79] pl-4">
-              <div className="flex items-start space-x-3">
-                <TrendingDown className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1">Coffee Spending Alert</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    You've spent $156 on coffee this month - 23% more than last month. Consider brewing at home to save $80/month.
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">spending</span>
-                    <button className="px-3 py-1 bg-[#2A6F68] text-white rounded text-xs font-medium hover:bg-[#235A54] transition-colors">
-                      Learn More
-                    </button>
+            {dynamicInsights.length > 0 ? (
+              dynamicInsights.map((insight, index) => (
+                <div key={index} className={`border-l-4 ${insight.color} pl-4`}>
+                  <div className="flex items-start space-x-3">
+                    <insight.icon className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">{insight.title}</h4>
+                      <p className="text-sm text-gray-600 mb-3">{insight.message}</p>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{insight.type}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              ))
+            ) : (
+              // Default insights when no dynamic data available
+              <>
+                <div className="border-l-4 border-[#2A6F68] pl-4">
+                  <div className="flex items-start space-x-3">
+                    <TrendingUp className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Connect Your Accounts</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Link your bank accounts to get personalized insights about your spending patterns and savings opportunities.
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">setup</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Emergency Fund Progress */}
-            <div className="border-l-4 border-[#2A6F68] pl-4">
-              <div className="flex items-start space-x-3">
-                <TrendingUp className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1">Emergency Fund Progress</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Great job! You're 87.5% towards your emergency fund goal. Just $1,250 more to go!
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">saving</span>
+                <div className="border-l-4 border-[#B76E79] pl-4">
+                  <div className="flex items-start space-x-3">
+                    <Target className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Set Financial Goals</h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Create specific financial goals to track your progress and stay motivated on your wealth-building journey.
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">planning</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Investment Opportunity */}
-            <div className="border-l-4 border-[#2A6F68] pl-4">
-              <div className="flex items-start space-x-3">
-                <DollarSign className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1">Investment Opportunity</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    You have $2,000+ sitting in checking. Consider moving some to your high-yield savings or investment account.
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">investing</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Sensei Wisdom - Renamed and Updated */}
+        {/* Sensei Wisdom - Dynamic Content */}
         <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68] flex-shrink-0">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-[#2A6F68]/20 border border-[#2A6F68]/30 rounded-lg flex items-center justify-center">
@@ -403,27 +499,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           <div className="space-y-4">
             <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
               <p className="text-sm text-[#2A6F68]/90 mb-2">
-                Good morning, Alex! I've been analyzing your financial situation overnight. I found some significant opportunities that could save you $3,720 annually. Let me walk you through what I discovered:
+                {totalBalance > 0 ? (
+                  `Great progress! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
+                ) : (
+                  `Welcome to your financial journey! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
+                )}
               </p>
-              <div className="grid grid-cols-3 gap-3 mt-3">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-[#2A6F68]">$1,680</div>
-                  <div className="text-xs text-[#2A6F68]/80">Debt Consolidation savings</div>
+              
+              {goals.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-[#2A6F68]">{formatCurrency(totalSavedAmount)}</div>
+                    <div className="text-xs text-[#2A6F68]/80">Total Saved</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-[#2A6F68]">{goalProgress.toFixed(1)}%</div>
+                    <div className="text-xs text-[#2A6F68]/80">Goal Progress</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-[#2A6F68]">$2,040</div>
-                  <div className="text-xs text-[#2A6F68]/80">Tax Optimization savings</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-[#2A6F68]">Risk</div>
-                  <div className="text-xs text-[#2A6F68]/80">Investment Rebalancing Reduction</div>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
               <p className="text-sm text-[#2A6F68]/90">
-                Here's what I recommend we tackle first: consolidate that $28k debt at 18.4% into a 7.2% personal loan. This alone saves you $1,680 annually and frees up $140/month for your emergency fund. Should I run the numbers on specific lenders?
+                {totalBalance > 5000 ? (
+                  `Here's what I recommend: consider automating your savings to reach your goals faster. With your current balance, you could potentially save an additional $${Math.ceil(totalBalance * 0.02)} monthly.`
+                ) : (
+                  `Here's what I recommend we tackle first: start with the basics - create a budget, build a small emergency fund, and set up automatic savings. Small steps lead to big results!`
+                )}
               </p>
             </div>
           </div>
