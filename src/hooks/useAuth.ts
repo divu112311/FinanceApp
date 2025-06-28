@@ -92,32 +92,52 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      // Check if there's an active session before attempting to sign out
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get current session to check if it exists
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
-        // No active session, just clear local state
-        console.info('No active session found, skipping remote sign out');
+      // If there's an error getting the session or no session exists, just clear local state
+      if (sessionError || !session) {
+        setUser(null);
         return;
       }
 
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        // Check if this is the common 'session_not_found' error
-        if (error.message?.includes('session_not_found') || error.message?.includes('Session from session_id claim in JWT does not exist')) {
-          // This is expected when the session was already invalid - log as info instead of warning
-          console.info('Session was already invalid on server (this is normal):', error.message);
-        } else {
-          // Log other errors as warnings for debugging
-          console.warn('Sign out error (non-critical):', error.message);
+      // Check if the token is expired by examining the exp claim
+      if (session.access_token) {
+        try {
+          // Decode JWT payload (base64 decode the middle part)
+          const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+          
+          // If token is expired, just clear local state without calling server
+          if (payload.exp && payload.exp < currentTime) {
+            setUser(null);
+            return;
+          }
+        } catch (decodeError) {
+          // If we can't decode the token, it's likely invalid, so just clear local state
+          setUser(null);
+          return;
         }
       }
+
+      // Attempt to sign out from server
+      const { error } = await supabase.auth.signOut();
+      
+      // Clear local state regardless of server response
+      setUser(null);
+      
+      // Only log actual unexpected errors
+      if (error && !error.message?.includes('session_not_found') && !error.message?.includes('Session from session_id claim in JWT does not exist')) {
+        console.warn('Unexpected sign out error:', error.message);
+      }
+      
     } catch (error: any) {
-      // Catch any promise rejections to prevent unhandled promise rejection errors
-      if (error?.message?.includes('session_not_found') || error?.message?.includes('Session from session_id claim in JWT does not exist')) {
-        console.info('Session was already invalid on server (this is normal):', error.message);
-      } else {
-        console.warn('Sign out error (non-critical):', error);
+      // Always clear local state even if there's an error
+      setUser(null);
+      
+      // Only log unexpected errors
+      if (!error?.message?.includes('session_not_found') && !error?.message?.includes('Session from session_id claim in JWT does not exist')) {
+        console.warn('Sign out error:', error);
       }
     }
   };
