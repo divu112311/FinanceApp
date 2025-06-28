@@ -91,44 +91,108 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         )}
       </AnimatePresence>
 
-      {/* Main Chat Area - Balanced Width */}
-      <div className="flex-1 flex flex-col space-y-4 min-w-0 max-w-[60%]">
+      {/* Left Sidebar - Balanced Width */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="w-[35%] flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
+      >
         {/* Easy Wins Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-xl p-4 text-white flex-shrink-0"
-        >
+        <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-4 text-[#2A6F68] flex-shrink-0">
           <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5 text-white" />
-            <h3 className="text-lg font-bold text-white">Easy Wins This Week</h3>
+            <Lightbulb className="h-5 w-5 text-[#2A6F68]" />
+            <h3 className="text-lg font-bold text-[#2A6F68]">Easy Wins This Week</h3>
           </div>
           <div className="space-y-2">
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-white/90">Those unused subscriptions? Canceling them could free up $47/month for your dreams.</p>
+              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-[#2A6F68]/90">Those unused subscriptions? Canceling them could free up $47/month for your dreams.</p>
             </div>
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-white/90">A high-yield savings account could grow your money while you sleep.</p>
+              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-[#2A6F68]/90">A high-yield savings account could grow your money while you sleep.</p>
             </div>
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-white/90">Automatic bill pay means one less thing to worry about (and no late fees).</p>
+              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-[#2A6F68]/90">Automatic bill pay means one less thing to worry about (and no late fees).</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
+        {/* Quick Actions - Moved to Left */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
+          <div className="flex items-center space-x-2 mb-4">
+            <Zap className="h-5 w-5 text-[#2A6F68]" />
+            <h3 className="text-lg font-semibold text-[#333333]">Quick Actions</h3>
+          </div>
+
+          <div className="space-y-2">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setInputMessage("Help me create a budget")}
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
+            >
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-[#2A6F68]" />
+                <span className="text-sm font-medium text-[#333333]">Create Budget</span>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setInputMessage("Analyze my investment options")}
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
+            >
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-4 w-4 text-[#2A6F68]" />
+                <span className="text-sm font-medium text-[#333333]">Investment Analysis</span>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setInputMessage("Help me optimize my savings")}
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
+            >
+              <div className="flex items-center space-x-2">
+                <PiggyBank className="h-4 w-4 text-[#2A6F68]" />
+                <span className="text-sm font-medium text-[#333333]">Optimize Savings</span>
+              </div>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Financial Tip of the Day */}
+        <div className="bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-xl p-6 text-[#B76E79] flex-shrink-0">
+          <div className="flex items-center space-x-2 mb-3">
+            <Lightbulb className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Daily Wisdom</h3>
+          </div>
+          <p className="text-sm text-[#B76E79]/90 leading-relaxed">
+            "The best time to plant a tree was 20 years ago. The second best time is now." 
+            Start investing today, even if it's just $25 per month.
+          </p>
+          <div className="mt-3 text-xs text-[#B76E79]/70">
+            - Sensei DoughJo
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Main Chat Area - Balanced Width */}
+      <div className="flex-1 flex flex-col space-y-4 min-w-0 max-w-[65%]">
         {/* Chat Container - Balanced Height */}
         <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col min-h-0">
-          {/* Simplified Chat Header */}
+          {/* Updated Chat Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="p-4 border-b border-gray-200 rounded-t-2xl flex-shrink-0"
           >
             <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-[#333333]">Chat with DoughJo</h2>
+              <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
             </div>
           </motion.div>
 
@@ -280,13 +344,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
-        className="w-[40%] flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
+        className="w-[35%] flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
         {/* AI Learning Insights */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-lg flex items-center justify-center">
-              <Brain className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-lg flex items-center justify-center">
+              <Brain className="h-5 w-5 text-[#B76E79]" />
             </div>
             <h3 className="text-lg font-semibold text-[#333333]">AI Learning Insights</h3>
           </div>
@@ -345,102 +409,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </div>
         </div>
 
-        {/* DoughJo Wisdom Section */}
-        <div className="bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-xl p-6 text-white flex-shrink-0">
+        {/* Sensei's Financial Insights - Renamed from DoughJo Wisdom */}
+        <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68] flex-shrink-0">
           <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 bg-[#2A6F68]/20 border border-[#2A6F68]/30 rounded-lg flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-[#2A6F68]" />
             </div>
-            <h3 className="text-lg font-semibold">DoughJo Wisdom</h3>
+            <h3 className="text-lg font-semibold">Sensei's Financial Insights</h3>
           </div>
 
           <div className="space-y-4">
-            <div className="bg-white/10 rounded-lg p-4 border border-white/20">
-              <p className="text-sm text-white/90 mb-2">
+            <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
+              <p className="text-sm text-[#2A6F68]/90 mb-2">
                 Good morning, Alex! I've been analyzing your financial situation overnight. I found some significant opportunities that could save you $3,720 annually. Let me walk you through what I discovered:
               </p>
               <div className="grid grid-cols-3 gap-3 mt-3">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-white">$1,680</div>
-                  <div className="text-xs text-white/80">Debt Consolidation savings</div>
+                  <div className="text-lg font-bold text-[#2A6F68]">$1,680</div>
+                  <div className="text-xs text-[#2A6F68]/80">Debt Consolidation savings</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-white">$2,040</div>
-                  <div className="text-xs text-white/80">Tax Optimization savings</div>
+                  <div className="text-lg font-bold text-[#2A6F68]">$2,040</div>
+                  <div className="text-xs text-[#2A6F68]/80">Tax Optimization savings</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-white">Risk</div>
-                  <div className="text-xs text-white/80">Investment Rebalancing Reduction</div>
+                  <div className="text-lg font-bold text-[#2A6F68]">Risk</div>
+                  <div className="text-xs text-[#2A6F68]/80">Investment Rebalancing Reduction</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/10 rounded-lg p-4 border border-white/20">
-              <p className="text-sm text-white/90">
+            <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
+              <p className="text-sm text-[#2A6F68]/90">
                 Here's what I recommend we tackle first: consolidate that $28k debt at 18.4% into a 7.2% personal loan. This alone saves you $1,680 annually and frees up $140/month for your emergency fund. Should I run the numbers on specific lenders?
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-4">
-            <Zap className="h-5 w-5 text-[#2A6F68]" />
-            <h3 className="text-lg font-semibold text-[#333333]">Quick Actions</h3>
-          </div>
-
-          <div className="space-y-2">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me create a budget")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Create Budget</span>
-              </div>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Analyze my investment options")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Investment Analysis</span>
-              </div>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me optimize my savings")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <PiggyBank className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Optimize Savings</span>
-              </div>
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Financial Tip of the Day */}
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-xl p-6 text-white flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Daily Wisdom</h3>
-          </div>
-          <p className="text-sm text-white/90 leading-relaxed">
-            "The best time to plant a tree was 20 years ago. The second best time is now." 
-            Start investing today, even if it's just $25 per month.
-          </p>
-          <div className="mt-3 text-xs text-white/70">
-            - Sensei DoughJo
           </div>
         </div>
       </motion.div>
