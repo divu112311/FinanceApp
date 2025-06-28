@@ -91,11 +91,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         )}
       </AnimatePresence>
 
-      {/* Left Sidebar - Balanced Width */}
+      {/* Left Column - Easy Wins, Quick Actions, and Chat */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="w-[35%] flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
+        className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
         {/* Easy Wins Section */}
         <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-4 text-[#2A6F68] flex-shrink-0">
@@ -119,7 +119,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </div>
         </div>
 
-        {/* Quick Actions - Moved to Left */}
+        {/* Quick Actions */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-4">
             <Zap className="h-5 w-5 text-[#2A6F68]" />
@@ -165,27 +165,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </div>
         </div>
 
-        {/* Financial Tip of the Day */}
-        <div className="bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-xl p-6 text-[#B76E79] flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Daily Wisdom</h3>
-          </div>
-          <p className="text-sm text-[#B76E79]/90 leading-relaxed">
-            "The best time to plant a tree was 20 years ago. The second best time is now." 
-            Start investing today, even if it's just $25 per month.
-          </p>
-          <div className="mt-3 text-xs text-[#B76E79]/70">
-            - Sensei DoughJo
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Main Chat Area - Balanced Width */}
-      <div className="flex-1 flex flex-col space-y-4 min-w-0 max-w-[65%]">
-        {/* Chat Container - Balanced Height */}
+        {/* Chat Container - Flexible Height */}
         <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col min-h-0">
-          {/* Updated Chat Header */}
+          {/* Chat Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -196,8 +178,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </div>
           </motion.div>
 
-          {/* Messages Container - Optimized Height */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0" style={{ maxHeight: 'calc(100vh - 350px)' }}>
+          {/* Messages Container */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {messages.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -337,14 +319,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </div>
           </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Right Sidebar - Balanced Width and Height */}
+      {/* Right Column - AI Learning Insights and Sensei Wisdom */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
-        className="w-[35%] flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
+        className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
         {/* AI Learning Insights */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
@@ -409,13 +391,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </div>
         </div>
 
-        {/* Sensei's Financial Insights - Renamed from DoughJo Wisdom */}
+        {/* Sensei Wisdom - Renamed and Updated */}
         <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68] flex-shrink-0">
           <div className="flex items-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-[#2A6F68]/20 border border-[#2A6F68]/30 rounded-lg flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-[#2A6F68]" />
             </div>
-            <h3 className="text-lg font-semibold">Sensei's Financial Insights</h3>
+            <h3 className="text-lg font-semibold">Sensei Wisdom</h3>
           </div>
 
           <div className="space-y-4">
@@ -444,6 +426,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 Here's what I recommend we tackle first: consolidate that $28k debt at 18.4% into a 7.2% personal loan. This alone saves you $1,680 annually and frees up $140/month for your emergency fund. Should I run the numbers on specific lenders?
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Daily Wisdom */}
+        <div className="bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-xl p-6 text-[#B76E79] flex-shrink-0">
+          <div className="flex items-center space-x-2 mb-3">
+            <Lightbulb className="h-5 w-5" />
+            <h3 className="text-lg font-semibold">Daily Wisdom</h3>
+          </div>
+          <p className="text-sm text-[#B76E79]/90 leading-relaxed">
+            "The best time to plant a tree was 20 years ago. The second best time is now." 
+            Start investing today, even if it's just $25 per month.
+          </p>
+          <div className="mt-3 text-xs text-[#B76E79]/70">
+            - Sensei DoughJo
           </div>
         </div>
       </motion.div>
