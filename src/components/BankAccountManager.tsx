@@ -18,6 +18,7 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
+import PlaidCredentialsModal from './PlaidCredentialsModal';
 
 interface BankAccountManagerProps {
   user: User;
@@ -28,8 +29,11 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
   const { bankAccounts, loading, refreshAccounts, totalBalance, deleteBankAccount } = useBankAccounts(user);
   const { 
     openPlaidLink, 
+    connectWithCredentials,
+    closeCredentialsModal,
     isLoading: plaidLoading, 
-    error: plaidError
+    error: plaidError,
+    showCredentialsModal
   } = usePlaidLink(user);
 
   const getAccountIcon = (type: string, subtype: string) => {
@@ -85,6 +89,14 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* Plaid Credentials Modal */}
+      <PlaidCredentialsModal
+        isOpen={showCredentialsModal}
+        onClose={closeCredentialsModal}
+        onSubmit={connectWithCredentials}
+        isLoading={plaidLoading}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -198,7 +210,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
             <span>Read-only access</span>
             <span>•</span>
             <CheckCircle className="h-3 w-3" />
-            <span>Demo mode enabled</span>
+            <span>Powered by Plaid</span>
           </div>
         </div>
       </motion.div>
@@ -303,9 +315,9 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-left">
-                <h4 className="font-medium text-blue-900 mb-1">Demo Mode Active</h4>
+                <h4 className="font-medium text-blue-900 mb-1">Why Connect Your Accounts?</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Click "Connect Account" to add demo accounts</li>
+                  <li>• Automatic transaction categorization</li>
                   <li>• Real-time balance updates</li>
                   <li>• Personalized financial insights</li>
                   <li>• Goal progress tracking</li>
@@ -316,12 +328,12 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
         </motion.div>
       )}
 
-      {/* Demo Attribution */}
+      {/* Plaid Attribution */}
       <div className="text-center">
         <div className="inline-flex items-center space-x-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-          <span>Demo mode - Real Plaid integration available</span>
+          <span>Powered by</span>
           <ExternalLink className="h-3 w-3" />
-          <span className="font-medium">in production</span>
+          <span className="font-medium">Plaid</span>
         </div>
       </div>
     </div>
