@@ -76,7 +76,11 @@ export const useAuth = () => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      // Log the error for debugging but don't throw it
+      // This prevents crashes when the session is already invalid
+      console.warn('Sign out error (non-critical):', error.message);
+    }
   };
 
   return {
