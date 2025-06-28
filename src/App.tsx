@@ -5,15 +5,14 @@ import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
 import LearningCenter from './components/LearningCenter';
 import LandingPage from './components/LandingPage';
-import UserProfileSettings from './components/UserProfileSettings';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, xp, loading: profileLoading, updateXP, getDisplayName } = useUserProfile(user);
-  const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning' | 'settings'>('advisor');
+  const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
+  const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
   const [showAuth, setShowAuth] = useState(false);
 
   const handleXPUpdate = async (points: number) => {
@@ -117,29 +116,14 @@ function App() {
                 >
                   Finance Kata
                 </button>
-                <button
-                  onClick={() => setActiveView('settings')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'settings'
-                      ? 'bg-[#2A6F68] text-white'
-                      : 'text-[#333333] hover:bg-gray-100'
-                  }`}
-                >
-                  Settings
-                </button>
               </nav>
               
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">
-                  Welcome, {getDisplayName()}
-                </span>
-                <button
-                  onClick={signOut}
-                  className="text-[#333333] hover:text-[#B76E79] transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
+              <button
+                onClick={signOut}
+                className="text-[#333333] hover:text-[#B76E79] transition-colors"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>
@@ -168,7 +152,7 @@ function App() {
             >
               <Dashboard user={user} xp={xp} />
             </motion.div>
-          ) : activeView === 'learning' ? (
+          ) : (
             <motion.div
               key="learning"
               initial={{ opacity: 0, x: 20 }}
@@ -177,16 +161,6 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <LearningCenter user={user} xp={xp} onXPUpdate={handleXPUpdate} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <UserProfileSettings user={user} />
             </motion.div>
           )}
         </AnimatePresence>
