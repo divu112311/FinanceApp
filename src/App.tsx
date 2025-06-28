@@ -98,7 +98,7 @@ function App() {
                       : 'text-[#333333] hover:bg-gray-100'
                   }`}
                 >
-                  Learning
+                  Finance Kata
                 </button>
               </nav>
               

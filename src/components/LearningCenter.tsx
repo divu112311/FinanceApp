@@ -194,9 +194,9 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Financial DoughJo Training</h1>
+              <h1 className="text-2xl font-bold mb-2">Finance Kata</h1>
               <p className="text-white/90 mb-4">
-                Test your knowledge and earn XP with personalized financial quizzes
+                Sharpen your money moves through daily financial practice
               </p>
               <div className="flex items-center gap-3">
                 <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
@@ -474,12 +474,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             <div className="flex items-start space-x-3">
               <Activity className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-bold text-[#333333] mb-2">Master Your Financial Training</h4>
+                <h4 className="font-bold text-[#333333] mb-2">Master Your Financial Kata</h4>
                 <ul className="text-sm text-gray-700 space-y-1">
-                  <li>• Start with your recommended difficulty level and work your way up</li>
-                  <li>• Read explanations carefully to deepen your understanding</li>
-                  <li>• Retake quizzes to reinforce learning and earn more XP</li>
-                  <li>• Apply what you learn to your real financial decisions</li>
+                  <li>• Practice daily financial exercises to build muscle memory</li>
+                  <li>• Start with your recommended difficulty level and advance gradually</li>
+                  <li>• Focus on form over speed - understanding beats rushing</li>
+                  <li>• Apply each kata to your real financial decisions</li>
                 </ul>
               </div>
             </div>
