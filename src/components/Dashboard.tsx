@@ -338,111 +338,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
         </div>
       </motion.div>
 
-      {/* Side-by-side Financial Health Score and Account Summary */}
+      {/* Side-by-side Account Summary (Left) and Financial Health Score (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Financial Health Score - Left Side */}
+        {/* Account Summary - Left Side */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#333333]">Financial Health Score</h2>
-            <div className="text-right">
-              <div className="text-4xl font-bold text-[#2A6F68]">{healthScore}</div>
-            </div>
-          </div>
-
-          {/* Main Health Score Progress */}
-          <div className="relative mb-6">
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${healthScore}%` }}
-                transition={{ duration: 2, ease: "easeOut" }}
-                className="h-3 rounded-full bg-[#2A6F68]"
-              />
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              Good progress! You're in the 75th percentile for your age group.
-            </p>
-          </div>
-
-          {/* Compact Health Metrics Grid - 2x2 Layout */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* Financial Health */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Financial Health</span>
-                <div className="flex items-center space-x-1">
-                  <ArrowUp className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">+5</span>
-                </div>
-              </div>
-              <div className="text-xl font-bold text-[#2A6F68]">{healthScore}/100</div>
-            </div>
-
-            {/* Monthly Cash Flow */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Monthly Cash Flow</span>
-                <div className="flex items-center space-x-1">
-                  <ArrowUp className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">+12%</span>
-                </div>
-              </div>
-              <div className="text-xl font-bold text-[#2A6F68]">+{formatCurrency(monthlyCashFlow)}</div>
-            </div>
-
-            {/* Debt-to-Income */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Debt-to-Income</span>
-                <div className="flex items-center space-x-1">
-                  <ArrowDown className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">-3%</span>
-                </div>
-              </div>
-              <div className={`text-xl font-bold ${getMetricColor(debtToIncome, 'debt')}`}>
-                {debtToIncome}%
-              </div>
-            </div>
-
-            {/* Savings Rate */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Savings Rate</span>
-                <div className="flex items-center space-x-1">
-                  <ArrowUp className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">+2%</span>
-                </div>
-              </div>
-              <div className={`text-xl font-bold ${getMetricColor(savingsRate, 'savings')}`}>
-                {savingsRate.toFixed(0)}%
-              </div>
-            </div>
-          </div>
-
-          {/* AI Insights */}
-          <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-xl border-l-4 border-[#2A6F68]">
-            <div className="flex items-start space-x-3">
-              <Info className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-[#333333] mb-1">AI Financial Insight</h4>
-                <p className="text-sm text-gray-700">
-                  Hello! I'm your AI financial companion. I've been analyzing your finances, and I have some insights to share. You're not behind — you're just getting started.
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Account Summary - Right Side */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
         >
           <div className="flex items-center justify-between mb-6">
@@ -565,47 +467,127 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                 </div>
               </div>
 
-              {/* Account List */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-[#333333] text-sm">Connected Accounts</h4>
-                <div className="space-y-2">
-                  {bankAccounts.slice(0, 3).map((account, index) => (
-                    <div
-                      key={account.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-[#2A6F68]/10 rounded-lg flex items-center justify-center">
-                          {account.subtype === 'checking' ? (
-                            <CreditCard className="h-4 w-4 text-[#2A6F68]" />
-                          ) : (
-                            <PiggyBank className="h-4 w-4 text-[#2A6F68]" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-[#333333] text-sm">{account.name}</div>
-                          <div className="text-xs text-gray-500">{account.institution_name}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-[#333333] text-sm">
-                          {showBalances ? formatCurrency(account.balance || 0) : '••••••'}
-                        </div>
-                        <div className="text-xs text-gray-500">••••{account.mask}</div>
-                      </div>
-                    </div>
-                  ))}
-                  {bankAccounts.length > 3 && (
-                    <div className="text-center pt-2">
-                      <p className="text-xs text-gray-500">
-                        +{bankAccounts.length - 3} more accounts
-                      </p>
-                    </div>
+              {/* Add Account Button */}
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-[#2A6F68] transition-colors">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={openPlaidLink}
+                  disabled={plaidLoading}
+                  className="inline-flex items-center space-x-2 text-[#2A6F68] hover:text-[#235A54] transition-colors"
+                >
+                  {plaidLoading ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-4 h-4 border-2 border-[#2A6F68] border-t-transparent rounded-full"
+                    />
+                  ) : (
+                    <Plus className="h-4 w-4" />
                   )}
-                </div>
+                  <span className="font-medium">Connect Another Account</span>
+                </motion.button>
               </div>
             </div>
           )}
+        </motion.div>
+
+        {/* Financial Health Score - Right Side */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[#333333]">Financial Health Score</h2>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-[#2A6F68]">{healthScore}</div>
+            </div>
+          </div>
+
+          {/* Main Health Score Progress */}
+          <div className="relative mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${healthScore}%` }}
+                transition={{ duration: 2, ease: "easeOut" }}
+                className="h-3 rounded-full bg-[#2A6F68]"
+              />
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Good progress! You're in the 75th percentile for your age group.
+            </p>
+          </div>
+
+          {/* Compact Health Metrics Grid - 2x2 Layout */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {/* Financial Health */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Financial Health</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">+5</span>
+                </div>
+              </div>
+              <div className="text-xl font-bold text-[#2A6F68]">{healthScore}/100</div>
+            </div>
+
+            {/* Monthly Cash Flow */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Monthly Cash Flow</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">+12%</span>
+                </div>
+              </div>
+              <div className="text-xl font-bold text-[#2A6F68]">+{formatCurrency(monthlyCashFlow)}</div>
+            </div>
+
+            {/* Debt-to-Income */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Debt-to-Income</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowDown className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">-3%</span>
+                </div>
+              </div>
+              <div className={`text-xl font-bold ${getMetricColor(debtToIncome, 'debt')}`}>
+                {debtToIncome}%
+              </div>
+            </div>
+
+            {/* Savings Rate */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Savings Rate</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">+2%</span>
+                </div>
+              </div>
+              <div className={`text-xl font-bold ${getMetricColor(savingsRate, 'savings')}`}>
+                {savingsRate.toFixed(0)}%
+              </div>
+            </div>
+          </div>
+
+          {/* AI Insights */}
+          <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-xl border-l-4 border-[#2A6F68]">
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-[#333333] mb-1">AI Financial Insight</h4>
+                <p className="text-sm text-gray-700">
+                  Hello! I'm your AI financial companion. I've been analyzing your finances, and I have some insights to share. You're not behind — you're just getting started.
+                </p>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
 
