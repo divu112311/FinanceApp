@@ -50,6 +50,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
       if (subtype === 'checking') return 'Checking';
       if (subtype === 'savings') return 'Savings';
       if (subtype === 'cd') return 'Certificate of Deposit';
+      if (subtype === 'money market') return 'Money Market';
     }
     if (type === 'investment') {
       if (subtype === '401k') return '401(k)';
