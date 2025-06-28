@@ -40,6 +40,7 @@ import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
 import GoalsManager from './GoalsManager';
+import PlaidCredentialsModal from './PlaidCredentialsModal';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
@@ -50,9 +51,14 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   const { goals, loading: goalsLoading, updateGoal } = useGoals(user);
   const { bankAccounts, loading: accountsLoading, refreshAccounts, totalBalance } = useBankAccounts(user);
-  const { openPlaidLink, isLoading: plaidLoading } = usePlaidLink(user);
+  const { 
+    connectWithCredentials,
+    isLoading: plaidLoading, 
+    error: plaidError
+  } = usePlaidLink(user);
   const [showBalances, setShowBalances] = useState(true);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -100,6 +106,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
 
   const handleUpdateProgress = async (goalId: string, newAmount: number) => {
     await updateGoal(goalId, { saved_amount: newAmount });
+  };
+
+  const handleConnectAccount = () => {
+    setShowConnectModal(true);
+  };
+
+  const handleConnectWithCredentials = async (username: string, password: string) => {
+    await connectWithCredentials(username, password);
+    setShowConnectModal(false);
+  };
+
+  const handleCloseConnectModal = () => {
+    setShowConnectModal(false);
   };
 
   // Enhanced Financial Health Calculations
@@ -386,7 +405,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={openPlaidLink}
+                onClick={handleConnectAccount}
                 disabled={plaidLoading}
                 className="inline-flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] disabled:opacity-50 transition-colors"
               >
@@ -472,7 +491,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={openPlaidLink}
+                  onClick={handleConnectAccount}
                   disabled={plaidLoading}
                   className="inline-flex items-center space-x-2 text-[#2A6F68] hover:text-[#235A54] transition-colors"
                 >
@@ -738,6 +757,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Connect Account Modal */}
+      <PlaidCredentialsModal
+        isOpen={showConnectModal}
+        onClose={handleCloseConnectModal}
+        onSubmit={handleConnectWithCredentials}
+        isLoading={plaidLoading}
+      />
     </div>
   );
 };
