@@ -171,16 +171,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden"
       >
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#2A6F68] via-[#2A6F68] to-[#B76E79] p-8 text-white relative overflow-hidden">
+        {/* Compact Header Section - Same height as other pages */}
+        <div className="bg-gradient-to-r from-[#2A6F68] via-[#2A6F68] to-[#B76E79] p-6 text-white relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full transform translate-x-32 -translate-y-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full transform -translate-x-24 translate-y-24"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full transform translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full transform -translate-x-12 translate-y-12"></div>
           </div>
           
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <motion.div
                   animate={{ 
@@ -192,33 +192,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     repeat: Infinity,
                     ease: "easeInOut"
                   }}
-                  className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center p-2"
+                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center p-1"
                 >
                   <img 
                     src={doughjoMascot} 
                     alt="Sensei DoughJo" 
-                    className="w-full h-full object-contain rounded-xl"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                 </motion.div>
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">Your Financial Command Center</h1>
-                  <p className="text-white/90 text-lg">Personalized insights, smart actions, and expert guidance</p>
+                  <h1 className="text-2xl font-bold mb-1">Financial Command Center</h1>
+                  <p className="text-white/90">Personalized insights, smart actions, and expert guidance</p>
                 </div>
               </div>
               
-              {/* Quick Stats */}
-              <div className="flex items-center space-x-6">
+              {/* Compact Quick Stats */}
+              <div className="flex items-center space-x-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-                  <div className="text-white/80 text-sm">Total Balance</div>
+                  <div className="text-lg font-bold">{formatCurrency(totalBalance)}</div>
+                  <div className="text-white/80 text-xs">Total Balance</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{goalProgress.toFixed(0)}%</div>
-                  <div className="text-white/80 text-sm">Goal Progress</div>
+                  <div className="text-lg font-bold">{goalProgress.toFixed(0)}%</div>
+                  <div className="text-white/80 text-xs">Goal Progress</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">{goals.length}</div>
-                  <div className="text-white/80 text-sm">Active Goals</div>
+                  <div className="text-lg font-bold">{goals.length}</div>
+                  <div className="text-white/80 text-xs">Active Goals</div>
                 </div>
               </div>
             </div>
