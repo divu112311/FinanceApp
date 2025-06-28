@@ -127,7 +127,7 @@ serve(async (req) => {
       webhook: `${supabaseUrl}/functions/v1/plaid-webhook`,
       account_filters: {
         depository: {
-          account_subtypes: ['checking', 'savings', 'money_market', 'cd']
+          account_subtypes: ['checking', 'savings', 'money market', 'cd']
         },
         investment: {
           account_subtypes: ['401k', 'ira', 'roth', 'investment']
