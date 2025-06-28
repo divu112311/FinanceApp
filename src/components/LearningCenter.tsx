@@ -67,42 +67,60 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   const overallProgress = getOverallProgress();
 
   const handleStartModule = async (moduleId: string) => {
+    console.log('=== HANDLE START MODULE ===');
+    console.log('Module ID:', moduleId);
+    
     const module = modules.find(m => m.id === moduleId);
     if (!module) {
       console.error('Module not found:', moduleId);
       return;
     }
 
-    console.log('=== MODULE CLICK DEBUG ===');
-    console.log('Module:', module.title);
-    console.log('Content Type:', module.content_type);
-    console.log('Current Status:', module.progress?.status);
-    console.log('Is Quiz?', module.content_type === 'quiz');
+    console.log('Module found:', {
+      title: module.title,
+      contentType: module.content_type,
+      status: module.progress?.status
+    });
 
+    // Don't do anything if already completed
     if (module.progress?.status === 'completed') {
       console.log('Module already completed, skipping');
       return;
     }
 
-    // If it's a quiz module, show the quiz interface
-    if (module.content_type === 'quiz') {
-      console.log('Opening quiz interface for:', module.title);
-      setSelectedModule(module);
-      setShowQuiz(true);
-      return;
-    }
-
-    // For non-quiz modules, start and simulate completion
     try {
+      // If it's a quiz module, show the quiz interface
+      if (module.content_type === 'quiz') {
+        console.log('Opening quiz interface for:', module.title);
+        
+        // Start the module first if not started
+        if (module.progress?.status === 'not_started' || !module.progress) {
+          console.log('Starting quiz module...');
+          await startModule(moduleId);
+        }
+        
+        setSelectedModule(module);
+        setShowQuiz(true);
+        return;
+      }
+
+      // For non-quiz modules, start and complete immediately
+      console.log('Processing non-quiz module:', module.title);
+      
+      // Start the module if not started
       if (module.progress?.status === 'not_started' || !module.progress) {
-        console.log('Starting module:', module.title);
+        console.log('Starting module...');
         await startModule(moduleId);
       }
 
-      // Simulate completion for non-quiz modules
-      console.log('Completing module:', module.title);
+      // Complete the module immediately for non-quiz types
+      console.log('Completing module...');
       await updateProgress(moduleId, 100, module.duration_minutes);
+      
+      // Award XP
+      console.log('Awarding XP:', module.xp_reward);
       onXPUpdate(module.xp_reward);
+      
     } catch (error) {
       console.error('Error handling module:', error);
     }
@@ -302,9 +320,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         </div>
                       </div>
                       
-                      <button
-                        onClick={() => {
-                          console.log('=== BUTTON CLICKED ===');
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('=== PERSONALIZED MODULE BUTTON CLICKED ===');
                           console.log('Module:', module.title);
                           console.log('Type:', module.content_type);
                           handleStartModule(module.id);
@@ -326,7 +348,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         {module.progress?.status !== 'completed' && (
                           <ArrowRight className="h-4 w-4" />
                         )}
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                 );
@@ -409,9 +431,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         Level {module.required_level}+
                       </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          console.log('=== EXPLORE MODULE CLICKED ===');
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('=== EXPLORE MODULE BUTTON CLICKED ===');
                           console.log('Module:', module.title);
                           console.log('Type:', module.content_type);
                           handleStartModule(module.id);
@@ -428,7 +454,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         {module.progress?.status === 'completed' ? 'Done' : 
                          module.progress?.status === 'in_progress' ? 'Continue' : 
                          module.content_type === 'quiz' ? 'Quiz' : 'Start'}
-                      </button>
+                      </motion.button>
                     )}
                   </div>
                 </div>

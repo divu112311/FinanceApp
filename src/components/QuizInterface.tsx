@@ -131,7 +131,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('=== ANSWER SELECTED ===');
     console.log('Selected answer:', answer);
     console.log('Show explanation:', showExplanation);
-    console.log('Current question index:', currentQuestionIndex);
     
     if (showExplanation) {
       console.log('Explanation already shown, ignoring click');
@@ -179,19 +178,30 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('=== NEXT QUESTION CLICKED ===');
     console.log('Current index:', currentQuestionIndex);
     console.log('Total questions:', questions.length);
-    console.log('Show explanation:', showExplanation);
     
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       console.log('Moving to question:', nextIndex);
       
-      // Reset state for next question
+      // Move to next question and reset state
       setCurrentQuestionIndex(nextIndex);
-      setSelectedAnswer(''); // Always reset to empty for new question
-      setShowExplanation(false); // Always hide explanation for new question
-      setIsCorrect(false); // Reset correct state
       
-      console.log('State reset for next question');
+      // Check if next question was already answered
+      const nextAnswer = userAnswers[nextIndex];
+      if (nextAnswer) {
+        // Question was already answered, show the answer and explanation
+        setSelectedAnswer(nextAnswer);
+        setShowExplanation(true);
+        const nextQuestion = questions[nextIndex];
+        setIsCorrect(nextAnswer === nextQuestion.correct_answer);
+      } else {
+        // Fresh question, reset everything
+        setSelectedAnswer('');
+        setShowExplanation(false);
+        setIsCorrect(false);
+      }
+      
+      console.log('State updated for question:', nextIndex);
     } else {
       console.log('Quiz completed - all questions answered');
       completeQuiz();
@@ -388,10 +398,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                     {currentQuestion.options.map((option, index) => (
                       <button
                         key={index}
-                        onClick={() => {
-                          console.log('Option clicked:', option);
-                          handleAnswerSelect(option);
-                        }}
+                        onClick={() => handleAnswerSelect(option)}
                         disabled={showExplanation}
                         className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-300 ${
                           selectedAnswer === option
@@ -481,18 +488,13 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                       Submit Answer
                     </button>
                   ) : (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        console.log('Next/Finish button clicked');
-                        handleNextQuestion();
-                      }}
+                    <button
+                      onClick={handleNextQuestion}
                       className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
                     >
                       <span>{currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}</span>
                       <ArrowRight className="h-4 w-4" />
-                    </motion.button>
+                    </button>
                   )}
                 </div>
               </motion.div>
