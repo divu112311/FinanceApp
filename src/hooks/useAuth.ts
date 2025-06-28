@@ -49,6 +49,22 @@ export const useAuth = () => {
 
       if (profileError) throw profileError;
 
+      // Create user profile entry
+      const { error: userProfileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: data.user.id,
+          age_range: null,
+          income_range: null,
+          financial_experience: 'Beginner',
+          primary_goals: [],
+          learning_style: 'Visual',
+          time_availability: '30min',
+          interests: [],
+        });
+
+      if (userProfileError) throw userProfileError;
+
       // Create initial XP record
       const { error: xpError } = await supabase
         .from('xp')
