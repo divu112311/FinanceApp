@@ -19,9 +19,8 @@ serve(async (req) => {
     
     console.log('📥 REQUEST INPUTS:', {
       userId: userId || 'MISSING',
-      username: username || 'MISSING', 
-      password: password ? '***PROVIDED***' : 'MISSING',
-      fullRequestBody: requestBody
+      hasUsername: !!username,
+      hasPassword: !!password
     })
     
     if (!userId) {
@@ -37,9 +36,7 @@ serve(async (req) => {
     console.log('🔧 PLAID CONFIG:', {
       environment: plaidEnv,
       hasClientId: !!plaidClientId,
-      hasSecret: !!plaidSecret,
-      clientIdLength: plaidClientId?.length || 0,
-      secretLength: plaidSecret?.length || 0
+      hasSecret: !!plaidSecret
     })
     
     if (!plaidClientId || !plaidSecret) {
@@ -53,9 +50,7 @@ serve(async (req) => {
     
     console.log('🔧 SUPABASE CONFIG:', {
       hasUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey,
-      urlLength: supabaseUrl?.length || 0,
-      serviceKeyLength: supabaseServiceKey?.length || 0
+      hasServiceKey: !!supabaseServiceKey
     })
     
     if (!supabaseUrl || !supabaseServiceKey) {
@@ -81,13 +76,7 @@ serve(async (req) => {
 
     console.log('👤 USER DATA RESULT:', {
       hasData: !!userData,
-      error: userError?.message || 'none',
-      errorCode: userError?.code || 'none',
-      userData: userData ? {
-        id: userData.id,
-        email: userData.email,
-        hasFullName: !!userData.full_name
-      } : 'NO DATA'
+      error: userError?.message || 'none'
     })
 
     if (userError) {
@@ -109,18 +98,18 @@ serve(async (req) => {
 
     console.log('🌐 PLAID BASE URL:', plaidBaseUrl)
 
-    // Use provided credentials or fallback to defaults
+    // Use provided credentials or fallback to defaults for sandbox
     const testUsername = username || 'user_good'
     const testPassword = password || 'pass_good'
-    const testEmail = `${testUsername}@example.com`
+    const testEmail = `${userData.email || 'user@example.com'}`
 
     console.log('🧪 TEST CREDENTIALS:', {
       username: testUsername,
-      password: '***' + testPassword.slice(-4),
+      hasPassword: !!testPassword,
       email: testEmail
     })
 
-    // Create link token request - FIXED: Move investments to required products
+    // Create link token request
     const linkTokenRequest = {
       client_id: plaidClientId,
       secret: plaidSecret,
@@ -129,13 +118,11 @@ serve(async (req) => {
       language: 'en',
       user: {
         client_user_id: userId,
-        email_address: testEmail,
-        phone_number: null,
-        legal_name: testUsername
+        email_address: testEmail
       },
-      products: ['transactions', 'investments'], // ✅ FIXED: Added investments as required product
+      products: ['transactions', 'investments'],
       required_if_supported_products: ['identity'],
-      optional_products: ['auth', 'liabilities', 'assets'], // ✅ FIXED: Removed investments from optional
+      optional_products: ['auth', 'liabilities', 'assets'],
       redirect_uri: null,
       webhook: `${supabaseUrl}/functions/v1/plaid-webhook`,
       account_filters: {
@@ -150,11 +137,8 @@ serve(async (req) => {
 
     console.log('📤 PLAID API REQUEST:', {
       url: `${plaidBaseUrl}/link/token/create`,
-      client_id: plaidClientId,
       products: linkTokenRequest.products,
-      optional_products: linkTokenRequest.optional_products,
-      user: linkTokenRequest.user,
-      webhook: linkTokenRequest.webhook
+      optional_products: linkTokenRequest.optional_products
     })
 
     // Call Plaid API

@@ -149,6 +149,9 @@ export const usePlaidLink = (user: User | null) => {
       console.error('Plaid Link initialization error:', err);
       setError(err.message || 'Failed to initialize Plaid Link');
       setIsLoading(false);
+      
+      // If there's an error with the real Plaid integration, show the credentials modal as fallback
+      setShowCredentialsModal(true);
     }
   }, [user, refetchAccounts, loadPlaidScript]);
 
