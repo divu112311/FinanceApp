@@ -49,8 +49,6 @@ interface LearningModule {
 }
 
 const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [completedModules, setCompletedModules] = useState<Set<string>>(new Set());
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
@@ -202,17 +200,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   ];
 
-  const categories = ['all', ...Array.from(new Set(learningModules.map(m => m.category)))];
-  const difficulties = ['all', 'Beginner', 'Intermediate', 'Advanced'];
-
-  const filteredModules = learningModules.filter(module => {
-    const categoryMatch = selectedCategory === 'all' || module.category === selectedCategory;
-    const difficultyMatch = selectedDifficulty === 'all' || module.difficulty === selectedDifficulty;
-    return categoryMatch && difficultyMatch;
-  });
-
-  const personalizedModules = filteredModules.filter(m => m.personalizedFor);
-  const otherModules = filteredModules.filter(m => !m.personalizedFor);
+  const personalizedModules = learningModules.filter(m => m.personalizedFor);
+  const otherModules = learningModules.filter(m => !m.personalizedFor);
 
   const handleStartModule = async (moduleId: string) => {
     const module = learningModules.find(m => m.id === moduleId);
@@ -344,51 +333,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         </div>
       </motion.div>
 
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-      >
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="block text-sm font-medium text-[#333333] mb-2">Category</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : category}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#333333] mb-2">Difficulty</label>
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
-            >
-              {difficulties.map(difficulty => (
-                <option key={difficulty} value={difficulty}>
-                  {difficulty === 'all' ? 'All Levels' : difficulty}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Perfect for You Right Now */}
       {personalizedModules.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
           className="space-y-4"
         >
           <div className="flex items-center space-x-2">
@@ -406,7 +356,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   key={module.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
                   className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -469,7 +419,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.4 }}
         className="space-y-4"
       >
         <h2 className="text-xl font-bold text-[#333333]">Explore More</h2>
@@ -484,7 +434,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                 key={module.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + index * 0.05 }}
+                transition={{ delay: 0.5 + index * 0.05 }}
                 className={`bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all ${
                   module.isLocked ? 'opacity-60' : ''
                 }`}
