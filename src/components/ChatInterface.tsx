@@ -83,11 +83,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   };
 
   const suggestedQuestions = [
-    "Sensei, how's my spending this month?",
-    "What's the path to financial freedom?",
-    "Help me create a warrior's budget",
-    "Show me my financial strength",
-    "Teach me the way of smart investing"
+    "Analyze my current financial position",
+    "Create a personalized investment strategy",
+    "Build an emergency fund plan",
+    "Optimize my monthly budget",
+    "Plan my path to financial independence"
   ];
 
   return (
@@ -174,7 +174,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </motion.div>
             <div>
               <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
-              <p className="text-sm text-gray-600">Your AI Financial Sensei</p>
+              <p className="text-sm text-gray-600">Your Personal Financial Advisor</p>
             </div>
           </div>
           
@@ -198,10 +198,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <span>Test AI</span>
           </motion.button>
         </div>
-        <p className="text-[#666666] text-sm">
-          Welcome to the dojo, young grasshopper! Ask me anything about your financial journey. 
-          Together, we'll master the ancient art of money management! 🥋💰
-        </p>
+        <div className="bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg p-4 border-l-4 border-[#2A6F68]">
+          <p className="text-[#333333] text-sm font-medium mb-2">
+            🎯 Ready to transform your financial future?
+          </p>
+          <p className="text-[#666666] text-sm leading-relaxed">
+            I'm here to provide personalized financial guidance, create actionable strategies, and help you build lasting wealth. 
+            Let's start by analyzing your current situation and identifying opportunities for growth.
+          </p>
+        </div>
       </motion.div>
 
       {/* Messages Container */}
@@ -222,7 +227,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 repeat: Infinity,
                 repeatType: "reverse"
               }}
-              className="w-20 h-20 mx-auto mb-4"
+              className="w-20 h-20 mx-auto mb-6"
             >
               <img 
                 src={doughjoMascot} 
@@ -230,7 +235,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 className="w-full h-full object-contain opacity-70 rounded-full"
               />
             </motion.div>
-            <p className="text-gray-500 mb-6">Begin your training with Sensei DoughJo!</p>
+            
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-[#333333] mb-2">
+                Let's Build Your Financial Success Plan
+              </h3>
+              <p className="text-gray-600 text-sm max-w-md mx-auto">
+                Choose an area where you'd like immediate guidance, or tell me about your specific financial goals and challenges.
+              </p>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
               {suggestedQuestions.map((question, index) => (
@@ -239,15 +252,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: '#f8fafc' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setInputMessage(question)}
-                  className="p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-[#333333] transition-colors border border-gray-200"
+                  className="p-4 text-left bg-white hover:bg-gray-50 rounded-lg text-sm text-[#333333] transition-all border-2 border-gray-100 hover:border-[#2A6F68]/20 shadow-sm hover:shadow-md"
                 >
-                  {question}
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-[#2A6F68] rounded-full"></div>
+                    <span className="font-medium">{question}</span>
+                  </div>
                 </motion.button>
               ))}
             </div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="mt-8 p-4 bg-gradient-to-r from-[#2A6F68]/10 to-[#B76E79]/10 rounded-lg max-w-md mx-auto"
+            >
+              <p className="text-xs text-gray-600 text-center">
+                💡 <strong>Pro Tip:</strong> The more specific you are about your financial situation and goals, 
+                the more personalized and actionable my advice will be.
+              </p>
+            </motion.div>
           </motion.div>
         )}
 
@@ -334,7 +362,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Sensei DoughJo for financial wisdom..."
+              placeholder="Describe your financial goals or ask for specific advice..."
               rows={1}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent resize-none transition-all"
               style={{ minHeight: '44px', maxHeight: '120px' }}
@@ -350,7 +378,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <Send className="h-5 w-5" />
           </motion.button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
