@@ -329,10 +329,10 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden"
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-6 text-white">
+        {/* Header - Fixed Height */}
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-6 text-white flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -340,7 +340,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
               </div>
               <div>
                 <h2 className="text-xl font-bold">{moduleTitle}</h2>
-                <p className="text-white/80">Interactive Quiz</p>
+                <p className="text-white/80 text-sm">Interactive Quiz</p>
               </div>
             </div>
             <button
@@ -351,18 +351,18 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
             </button>
           </div>
           
-          <div className="flex items-center justify-between text-sm mb-4">
+          <div className="flex items-center justify-between text-sm mb-3">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-3 w-3" />
                 <span>{formatTime(timeElapsed)}</span>
               </div>
               <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
-                <Target className="h-4 w-4" />
+                <Target className="h-3 w-3" />
                 <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
               </div>
               <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
-                <Zap className="h-4 w-4 text-yellow-300" />
+                <Zap className="h-3 w-3 text-yellow-300" />
                 <span>{score} points</span>
               </div>
             </div>
@@ -376,132 +376,135 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Quiz Content */}
-        <div className="p-6">
+        {/* Quiz Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
           {!quizCompleted ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentQuestionIndex}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Question */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">
-                    {currentQuestion.question_text}
-                  </h3>
-                  
-                  {/* Answer Options */}
-                  <div className="space-y-3">
-                    {currentQuestion.options.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleAnswerSelect(option)}
-                        disabled={showExplanation}
-                        className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-300 ${
-                          selectedAnswer === option
-                            ? showExplanation
-                              ? option === currentQuestion.correct_answer
-                                ? 'border-green-500 bg-green-50 text-green-800'
-                                : 'border-red-500 bg-red-50 text-red-800'
-                              : 'border-[#2A6F68] bg-[#2A6F68]/5 text-[#2A6F68]'
-                            : showExplanation && option === currentQuestion.correct_answer
-                            ? 'border-green-500 bg-green-50 text-green-800'
-                            : 'border-gray-200 hover:border-[#2A6F68]/30 hover:bg-gray-50 text-gray-700'
-                        } ${showExplanation ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{option}</span>
-                          {showExplanation && (
-                            <>
-                              {option === currentQuestion.correct_answer && (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                              )}
-                              {selectedAnswer === option && option !== currentQuestion.correct_answer && (
-                                <X className="h-5 w-5 text-red-600" />
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div className="p-6 h-full flex flex-col">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentQuestionIndex}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex-1 flex flex-col"
+                >
+                  {/* Question */}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6 leading-relaxed">
+                      {currentQuestion.question_text}
+                    </h3>
+                    
+                    {/* Answer Options */}
+                    <div className="space-y-3 mb-6">
+                      {currentQuestion.options.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAnswerSelect(option)}
+                          disabled={showExplanation}
+                          className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-300 ${
+                            selectedAnswer === option
+                              ? showExplanation
+                                ? option === currentQuestion.correct_answer
+                                  ? 'border-green-500 bg-green-50 text-green-800'
+                                  : 'border-red-500 bg-red-50 text-red-800'
+                                : 'border-[#2A6F68] bg-[#2A6F68]/5 text-[#2A6F68]'
+                              : showExplanation && option === currentQuestion.correct_answer
+                              ? 'border-green-500 bg-green-50 text-green-800'
+                              : 'border-gray-200 hover:border-[#2A6F68]/30 hover:bg-gray-50 text-gray-700'
+                          } ${showExplanation ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{option}</span>
+                            {showExplanation && (
+                              <>
+                                {option === currentQuestion.correct_answer && (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                )}
+                                {selectedAnswer === option && option !== currentQuestion.correct_answer && (
+                                  <X className="h-5 w-5 text-red-600" />
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
 
-                {/* Explanation */}
-                <AnimatePresence>
-                  {showExplanation && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className={`p-4 rounded-xl mb-6 border-2 ${
-                        isCorrect 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-red-50 border-red-200'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        {isCorrect ? (
-                          <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
-                        ) : (
-                          <X className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
-                        )}
-                        <div>
-                          <h4 className={`font-bold mb-2 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
-                            {isCorrect ? '🎉 Correct!' : '💡 Learning Opportunity'}
-                          </h4>
-                          <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                            {currentQuestion.explanation}
-                          </p>
-                          {isCorrect && (
-                            <div className="flex items-center space-x-2 mt-3 bg-green-200 rounded px-3 py-1 w-fit">
-                              <Sparkles className="h-4 w-4 text-green-700" />
-                              <span className="text-green-700 font-medium text-sm">+{currentQuestion.points} points!</span>
+                    {/* Explanation */}
+                    <AnimatePresence>
+                      {showExplanation && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className={`p-4 rounded-xl mb-6 border-2 ${
+                            isCorrect 
+                              ? 'bg-green-50 border-green-200' 
+                              : 'bg-red-50 border-red-200'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            {isCorrect ? (
+                              <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
+                            ) : (
+                              <X className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+                            )}
+                            <div>
+                              <h4 className={`font-bold mb-2 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                                {isCorrect ? '🎉 Correct!' : '💡 Learning Opportunity'}
+                              </h4>
+                              <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                {currentQuestion.explanation}
+                              </p>
+                              {isCorrect && (
+                                <div className="flex items-center space-x-2 mt-3 bg-green-200 rounded px-3 py-1 w-fit">
+                                  <Sparkles className="h-4 w-4 text-green-700" />
+                                  <span className="text-green-700 font-medium text-sm">+{currentQuestion.points} points!</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
-                {/* Navigation */}
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={handlePreviousQuestion}
-                    disabled={currentQuestionIndex === 0}
-                    className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-lg hover:bg-gray-100"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </button>
+                  {/* Navigation - Fixed at Bottom */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-auto">
+                    <button
+                      onClick={handlePreviousQuestion}
+                      disabled={currentQuestionIndex === 0}
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-lg hover:bg-gray-100"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span>Previous</span>
+                    </button>
 
-                  {!showExplanation ? (
-                    <button
-                      onClick={handleSubmitAnswer}
-                      disabled={!selectedAnswer}
-                      className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                    >
-                      Submit Answer
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleNextQuestion}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
-                    >
-                      <span>{currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                    {!showExplanation ? (
+                      <button
+                        onClick={handleSubmitAnswer}
+                        disabled={!selectedAnswer}
+                        className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                      >
+                        Submit Answer
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleNextQuestion}
+                        className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
+                      >
+                        <span>{currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           ) : (
             /* Quiz Results */
-            <div className="text-center">
+            <div className="p-8 text-center h-full flex flex-col justify-center">
               <div className="w-24 h-24 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy className="h-12 w-12 text-white" />
               </div>
@@ -509,7 +512,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Completed! 🎉</h3>
               <p className="text-gray-600 mb-6">Excellent work on completing the quiz</p>
               
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-6 max-w-md mx-auto">
                 <div className="bg-[#2A6F68]/10 rounded-xl p-4">
                   <div className="text-2xl font-bold text-[#2A6F68] mb-1">
                     {Math.round((userAnswers.filter((answer, index) => 
