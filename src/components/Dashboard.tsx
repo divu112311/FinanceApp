@@ -22,6 +22,7 @@ import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
+import PlaidCredentialsModal from './PlaidCredentialsModal';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
@@ -32,7 +33,13 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   const { goals, loading: goalsLoading } = useGoals(user);
   const { bankAccounts, loading: accountsLoading, refreshAccounts, totalBalance } = useBankAccounts(user);
-  const { openPlaidLink, isLoading: plaidLoading } = usePlaidLink(user);
+  const { 
+    openPlaidLink, 
+    connectWithCredentials,
+    closeCredentialsModal,
+    isLoading: plaidLoading, 
+    showCredentialsModal
+  } = usePlaidLink(user);
   const [showBalances, setShowBalances] = useState(true);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
@@ -205,6 +212,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
 
   return (
     <div className="space-y-8">
+      {/* Plaid Credentials Modal */}
+      <PlaidCredentialsModal
+        isOpen={showCredentialsModal}
+        onClose={closeCredentialsModal}
+        onSubmit={connectWithCredentials}
+        isLoading={plaidLoading}
+      />
+
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -16,6 +16,7 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
+import PlaidCredentialsModal from './PlaidCredentialsModal';
 
 interface BankAccountManagerProps {
   user: User;
@@ -24,7 +25,14 @@ interface BankAccountManagerProps {
 const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
   const [showBalances, setShowBalances] = useState(true);
   const { bankAccounts, loading, refreshAccounts, totalBalance } = useBankAccounts(user);
-  const { openPlaidLink, isLoading: plaidLoading } = usePlaidLink(user);
+  const { 
+    openPlaidLink, 
+    connectWithCredentials,
+    closeCredentialsModal,
+    isLoading: plaidLoading, 
+    error: plaidError,
+    showCredentialsModal
+  } = usePlaidLink(user);
 
   const getAccountIcon = (type: string, subtype: string) => {
     if (type === 'depository') {
@@ -73,6 +81,14 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* Plaid Credentials Modal */}
+      <PlaidCredentialsModal
+        isOpen={showCredentialsModal}
+        onClose={closeCredentialsModal}
+        onSubmit={connectWithCredentials}
+        isLoading={plaidLoading}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -102,6 +118,23 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
           </motion.button>
         </div>
       </div>
+
+      {/* Error Display */}
+      {plaidError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-red-900 mb-1">Connection Error</h4>
+              <p className="text-sm text-red-800">{plaidError}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Total Balance Card */}
       {bankAccounts.length > 0 && (

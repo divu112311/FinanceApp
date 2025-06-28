@@ -14,13 +14,14 @@ serve(async (req) => {
   try {
     console.log('Creating Plaid link token...')
     
-    const { userId } = await req.json()
+    const { userId, username, password } = await req.json()
     
     if (!userId) {
       throw new Error('Missing required parameter: userId')
     }
 
     console.log('Processing request for userId:', userId)
+    console.log('Using custom credentials:', { username, password: password ? '***' : 'not provided' })
 
     // Get Plaid credentials from environment
     const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')
@@ -96,7 +97,12 @@ serve(async (req) => {
 
     console.log('Using Plaid base URL:', plaidBaseUrl)
 
-    // Create link token request with hardcoded sandbox test credentials
+    // Use provided credentials or fallback to defaults
+    const testUsername = username || 'user_good'
+    const testPassword = password || 'pass_good'
+    const testEmail = `${testUsername}@example.com`
+
+    // Create link token request with custom or default sandbox test credentials
     const linkTokenRequest = {
       client_id: plaidClientId,
       secret: plaidSecret,
@@ -105,10 +111,10 @@ serve(async (req) => {
       language: 'en',
       user: {
         client_user_id: userId,
-        // Hardcode sandbox test user credentials
-        email_address: 'user_good@example.com',
+        // Use custom credentials for testing different accounts
+        email_address: testEmail,
         phone_number: null,
-        legal_name: 'user_good'
+        legal_name: testUsername
       },
       products: ['transactions', 'accounts'],
       required_if_supported_products: ['identity'],
@@ -126,9 +132,9 @@ serve(async (req) => {
     }
 
     console.log('Calling Plaid API to create link token...')
-    console.log('Using hardcoded sandbox credentials:', {
-      email: 'user_good@example.com',
-      legal_name: 'user_good'
+    console.log('Using test credentials:', {
+      email: testEmail,
+      legal_name: testUsername
     })
 
     // Call Plaid API

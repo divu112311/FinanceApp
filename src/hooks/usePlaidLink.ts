@@ -18,6 +18,7 @@ declare global {
 export const usePlaidLink = (user: User | null) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const { refetch: refetchAccounts } = useBankAccounts(user);
 
   const loadPlaidScript = useCallback((): Promise<void> => {
@@ -36,13 +37,24 @@ export const usePlaidLink = (user: User | null) => {
     });
   }, []);
 
-  const openPlaidLink = useCallback(async () => {
+  const openPlaidLink = useCallback(() => {
     if (!user) {
       setError('User not authenticated');
       return;
     }
 
-    console.log('Opening Plaid Link for user:', user.id);
+    // Show credentials modal instead of directly opening Plaid
+    setShowCredentialsModal(true);
+    setError(null);
+  }, [user]);
+
+  const connectWithCredentials = useCallback(async (username: string, password: string) => {
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+
+    console.log('Connecting with credentials:', { username, password: '***' });
 
     setIsLoading(true);
     setError(null);
@@ -51,11 +63,15 @@ export const usePlaidLink = (user: User | null) => {
       // Load Plaid script if not already loaded
       await loadPlaidScript();
 
-      console.log('Creating Plaid link token for user ID:', user.id);
+      console.log('Creating Plaid link token with custom credentials...');
 
-      // Get link token from our edge function with proper user ID
+      // Get link token from our edge function with custom credentials
       const { data: linkTokenData, error: linkTokenError } = await supabase.functions.invoke('plaid-link-token', {
-        body: { userId: user.id },
+        body: { 
+          userId: user.id,
+          username: username,
+          password: password
+        },
       });
 
       console.log('Link token response:', { 
@@ -84,11 +100,11 @@ export const usePlaidLink = (user: User | null) => {
           console.log('Metadata:', metadata);
           
           try {
-            // Exchange public token for access token with proper user ID
+            // Exchange public token for access token
             const { data: exchangeData, error: exchangeError } = await supabase.functions.invoke('plaid-exchange-token', {
               body: {
                 publicToken: public_token,
-                userId: user.id, // Ensure user ID is passed
+                userId: user.id,
                 institution: metadata.institution,
                 accounts: metadata.accounts,
               },
@@ -116,6 +132,7 @@ export const usePlaidLink = (user: User | null) => {
             await refetchAccounts();
 
             setIsLoading(false);
+            setShowCredentialsModal(false);
           } catch (err: any) {
             console.error('Token exchange error:', err);
             setError(err.message || 'Failed to connect accounts');
@@ -134,7 +151,7 @@ export const usePlaidLink = (user: User | null) => {
         onEvent: (eventName: string, metadata: any) => {
           console.log('Plaid Link event:', eventName, metadata);
         },
-        env: import.meta.env.VITE_PLAID_ENV || 'sandbox', // 'sandbox', 'development', or 'production'
+        env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
       };
 
       // Create and open Plaid Link
@@ -148,9 +165,18 @@ export const usePlaidLink = (user: User | null) => {
     }
   }, [user, refetchAccounts, loadPlaidScript]);
 
+  const closeCredentialsModal = useCallback(() => {
+    setShowCredentialsModal(false);
+    setIsLoading(false);
+    setError(null);
+  }, []);
+
   return {
     openPlaidLink,
+    connectWithCredentials,
+    closeCredentialsModal,
     isLoading,
     error,
+    showCredentialsModal,
   };
 };
