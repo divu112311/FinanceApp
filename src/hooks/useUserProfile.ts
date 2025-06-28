@@ -81,7 +81,7 @@ export const useUserProfile = (user: User | null) => {
         .from('users')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -90,9 +90,9 @@ export const useUserProfile = (user: User | null) => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (extendedProfileError && extendedProfileError.code !== 'PGRST116') {
+      if (extendedProfileError) {
         throw extendedProfileError;
       }
 
@@ -101,9 +101,9 @@ export const useUserProfile = (user: User | null) => {
         .from('xp')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (xpError && xpError.code !== 'PGRST116') {
+      if (xpError) {
         throw xpError;
       }
 
