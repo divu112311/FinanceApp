@@ -32,6 +32,9 @@ export const useBankAccounts = (user: User | null) => {
   const fetchBankAccounts = async () => {
     if (!user) return;
 
+    console.log('=== FETCHING BANK ACCOUNTS ===');
+    console.log('User ID:', user.id);
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -41,17 +44,19 @@ export const useBankAccounts = (user: User | null) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching bank accounts:', error);
+        console.error('❌ Error fetching bank accounts:', error);
         return;
       }
 
+      console.log('✅ Bank accounts fetched:', data?.length || 0);
       setBankAccounts(data || []);
       
       // Calculate total balance
       const total = (data || []).reduce((sum, account) => sum + (account.balance || 0), 0);
       setTotalBalance(total);
+      console.log('💰 Total balance calculated:', total);
     } catch (error) {
-      console.error('Error fetching bank accounts:', error);
+      console.error('❌ Error fetching bank accounts:', error);
     } finally {
       setLoading(false);
     }
@@ -146,6 +151,7 @@ export const useBankAccounts = (user: User | null) => {
   };
 
   const refreshAccounts = async () => {
+    console.log('🔄 Refreshing bank accounts...');
     await fetchBankAccounts();
   };
 

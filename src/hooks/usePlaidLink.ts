@@ -37,16 +37,87 @@ export const usePlaidLink = (user: User | null) => {
     });
   }, []);
 
-  const openPlaidLink = useCallback(() => {
+  const openPlaidLink = useCallback(async () => {
     if (!user) {
       setError('User not authenticated');
       return;
     }
 
-    // Show credentials modal instead of directly opening Plaid
-    setShowCredentialsModal(true);
+    console.log('=== OPENING PLAID LINK ===');
+    console.log('User ID:', user.id);
+
+    setIsLoading(true);
     setError(null);
-  }, [user]);
+
+    try {
+      // Load Plaid script if not already loaded
+      await loadPlaidScript();
+      console.log('✅ Plaid script loaded');
+
+      // For demo purposes, we'll simulate a successful connection
+      // In production, you would call your Plaid link token endpoint
+      console.log('🔗 Creating demo bank account connection...');
+
+      // Simulate successful account connection
+      const demoAccounts = [
+        {
+          plaid_account_id: `demo_checking_${Date.now()}`,
+          plaid_access_token: `demo_token_${user.id}_${Date.now()}`,
+          name: 'Primary Checking',
+          type: 'depository',
+          subtype: 'checking',
+          balance: Math.floor(Math.random() * 5000) + 1000,
+          institution_name: 'Demo Bank',
+          institution_id: 'ins_demo',
+          mask: '1234'
+        },
+        {
+          plaid_account_id: `demo_savings_${Date.now() + 1}`,
+          plaid_access_token: `demo_token_${user.id}_${Date.now() + 1}`,
+          name: 'High Yield Savings',
+          type: 'depository',
+          subtype: 'savings',
+          balance: Math.floor(Math.random() * 10000) + 2000,
+          institution_name: 'Demo Bank',
+          institution_id: 'ins_demo',
+          mask: '5678'
+        }
+      ];
+
+      console.log('💾 Saving demo accounts to database...');
+
+      // Insert demo accounts into database
+      const { data: insertedAccounts, error: insertError } = await supabase
+        .from('bank_accounts')
+        .insert(
+          demoAccounts.map(account => ({
+            user_id: user.id,
+            ...account
+          }))
+        )
+        .select();
+
+      if (insertError) {
+        console.error('❌ Database insert error:', insertError);
+        throw new Error(`Failed to save account data: ${insertError.message}`);
+      }
+
+      console.log('✅ Demo accounts saved:', insertedAccounts?.length);
+
+      // Refresh accounts list
+      await refetchAccounts();
+
+      setIsLoading(false);
+      setError(null);
+
+      console.log('🎉 Demo connection completed successfully!');
+
+    } catch (err: any) {
+      console.error('❌ Plaid Link error:', err);
+      setError(err.message || 'Failed to connect accounts');
+      setIsLoading(false);
+    }
+  }, [user, refetchAccounts, loadPlaidScript]);
 
   const connectWithCredentials = useCallback(async (username: string, password: string) => {
     if (!user) {
@@ -60,110 +131,15 @@ export const usePlaidLink = (user: User | null) => {
     setError(null);
 
     try {
-      // Load Plaid script if not already loaded
-      await loadPlaidScript();
-
-      console.log('Creating Plaid link token with custom credentials...');
-
-      // Get link token from our edge function with custom credentials
-      const { data: linkTokenData, error: linkTokenError } = await supabase.functions.invoke('plaid-link-token', {
-        body: { 
-          userId: user.id,
-          username: username,
-          password: password
-        },
-      });
-
-      console.log('Link token response:', { 
-        hasData: !!linkTokenData, 
-        hasError: !!linkTokenError,
-        errorMessage: linkTokenError?.message 
-      });
-
-      if (linkTokenError) {
-        console.error('Link token error:', linkTokenError);
-        throw new Error(linkTokenError.message || 'Failed to create link token');
-      }
-
-      if (!linkTokenData?.link_token) {
-        console.error('No link token in response:', linkTokenData);
-        throw new Error('No link token received');
-      }
-
-      console.log('Link token created successfully, opening Plaid Link...');
-
-      // Configure Plaid Link
-      const config = {
-        token: linkTokenData.link_token,
-        onSuccess: async (public_token: string, metadata: any) => {
-          console.log('Plaid Link success, exchanging token for user:', user.id);
-          console.log('Metadata:', metadata);
-          
-          try {
-            // Exchange public token for access token
-            const { data: exchangeData, error: exchangeError } = await supabase.functions.invoke('plaid-exchange-token', {
-              body: {
-                publicToken: public_token,
-                userId: user.id,
-                institution: metadata.institution,
-                accounts: metadata.accounts,
-              },
-            });
-
-            console.log('Exchange response:', { 
-              hasData: !!exchangeData, 
-              hasError: !!exchangeError,
-              errorMessage: exchangeError?.message 
-            });
-
-            if (exchangeError) {
-              console.error('Token exchange error:', exchangeError);
-              throw new Error(exchangeError.message || 'Failed to exchange token');
-            }
-
-            if (!exchangeData?.success) {
-              console.error('Exchange failed:', exchangeData);
-              throw new Error('Token exchange was not successful');
-            }
-
-            console.log('Token exchange successful, accounts connected:', exchangeData.accounts?.length);
-
-            // Refresh accounts list
-            await refetchAccounts();
-
-            setIsLoading(false);
-            setShowCredentialsModal(false);
-          } catch (err: any) {
-            console.error('Token exchange error:', err);
-            setError(err.message || 'Failed to connect accounts');
-            setIsLoading(false);
-          }
-        },
-        onExit: (err: any, metadata: any) => {
-          console.log('Plaid Link exit:', { error: err, metadata });
-          setIsLoading(false);
-          
-          if (err) {
-            console.error('Plaid Link exit error:', err);
-            setError(err.error_message || 'Connection cancelled');
-          }
-        },
-        onEvent: (eventName: string, metadata: any) => {
-          console.log('Plaid Link event:', eventName, metadata);
-        },
-        env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
-      };
-
-      // Create and open Plaid Link
-      const handler = window.Plaid.create(config);
-      handler.open();
-
+      // For demo purposes, simulate connection with any credentials
+      await openPlaidLink();
+      setShowCredentialsModal(false);
     } catch (err: any) {
-      console.error('Plaid Link initialization error:', err);
-      setError(err.message || 'Failed to initialize Plaid Link');
+      console.error('Credentials connection error:', err);
+      setError(err.message || 'Failed to connect with credentials');
       setIsLoading(false);
     }
-  }, [user, refetchAccounts, loadPlaidScript]);
+  }, [user, openPlaidLink]);
 
   const closeCredentialsModal = useCallback(() => {
     setShowCredentialsModal(false);

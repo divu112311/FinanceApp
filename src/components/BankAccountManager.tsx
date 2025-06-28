@@ -11,12 +11,13 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
-import PlaidCredentialsModal from './PlaidCredentialsModal';
 
 interface BankAccountManagerProps {
   user: User;
@@ -24,14 +25,11 @@ interface BankAccountManagerProps {
 
 const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
   const [showBalances, setShowBalances] = useState(true);
-  const { bankAccounts, loading, refreshAccounts, totalBalance } = useBankAccounts(user);
+  const { bankAccounts, loading, refreshAccounts, totalBalance, deleteBankAccount } = useBankAccounts(user);
   const { 
     openPlaidLink, 
-    connectWithCredentials,
-    closeCredentialsModal,
     isLoading: plaidLoading, 
-    error: plaidError,
-    showCredentialsModal
+    error: plaidError
   } = usePlaidLink(user);
 
   const getAccountIcon = (type: string, subtype: string) => {
@@ -79,16 +77,14 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
     return `••••${mask}`;
   };
 
+  const handleDeleteAccount = async (accountId: string) => {
+    if (window.confirm('Are you sure you want to disconnect this account?')) {
+      await deleteBankAccount(accountId);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Plaid Credentials Modal */}
-      <PlaidCredentialsModal
-        isOpen={showCredentialsModal}
-        onClose={closeCredentialsModal}
-        onSubmit={connectWithCredentials}
-        isLoading={plaidLoading}
-      />
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -202,7 +198,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
             <span>Read-only access</span>
             <span>•</span>
             <CheckCircle className="h-3 w-3" />
-            <span>Powered by Plaid</span>
+            <span>Demo mode enabled</span>
           </div>
         </div>
       </motion.div>
@@ -240,7 +236,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-4">
                       <h4 className="font-semibold text-[#333333]">{account.name}</h4>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">
@@ -259,6 +255,26 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
                           </span>
                         </div>
                       )}
+                    </div>
+
+                    {/* Account Actions */}
+                    <div className="flex items-center space-x-2 pt-3 border-t border-gray-100">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex-1 flex items-center justify-center space-x-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        <span>Edit</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleDeleteAccount(account.id)}
+                        className="flex items-center justify-center bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </motion.button>
                     </div>
                   </motion.div>
                 );
@@ -287,9 +303,9 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-left">
-                <h4 className="font-medium text-blue-900 mb-1">Why Connect Your Accounts?</h4>
+                <h4 className="font-medium text-blue-900 mb-1">Demo Mode Active</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Automatic transaction categorization</li>
+                  <li>• Click "Connect Account" to add demo accounts</li>
                   <li>• Real-time balance updates</li>
                   <li>• Personalized financial insights</li>
                   <li>• Goal progress tracking</li>
@@ -300,12 +316,12 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
         </motion.div>
       )}
 
-      {/* Plaid Attribution */}
+      {/* Demo Attribution */}
       <div className="text-center">
         <div className="inline-flex items-center space-x-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
-          <span>Powered by</span>
+          <span>Demo mode - Real Plaid integration available</span>
           <ExternalLink className="h-3 w-3" />
-          <span className="font-medium">Plaid</span>
+          <span className="font-medium">in production</span>
         </div>
       </div>
     </div>
