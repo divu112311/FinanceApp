@@ -25,7 +25,8 @@ import {
   GraduationCap,
   Heart,
   Gift,
-  Shield
+  Shield,
+  X
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
