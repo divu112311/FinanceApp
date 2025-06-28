@@ -78,7 +78,7 @@ function App() {
                       : 'text-[#333333] hover:bg-gray-100'
                   }`}
                 >
-                  Financial Advisor
+                  Sensei's Circle
                 </button>
                 <button
                   onClick={() => setActiveView('dashboard')}

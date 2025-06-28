@@ -201,8 +201,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   />
                 </motion.div>
                 <div>
-                  <h1 className="text-2xl font-bold mb-1">Financial Command Center</h1>
-                  <p className="text-white/90">Personalized insights, smart actions, and expert guidance</p>
+                  <h1 className="text-2xl font-bold mb-1">Sensei's Circle</h1>
+                  <p className="text-white/90">Strategic counsel for disciplined money moves</p>
                 </div>
               </div>
               
