@@ -378,7 +378,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             <Send className="h-5 w-5" />
           </motion.button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
