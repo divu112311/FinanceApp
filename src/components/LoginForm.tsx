@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LogIn, UserPlus, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import doughjoMascot from '../assets/doughjo-mascot.png';
 
 const LoginForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -61,9 +62,9 @@ const LoginForm: React.FC = () => {
               className="w-16 h-16 mr-3"
             >
               <img 
-                src="/Teal & Rose Gold.png" 
+                src={doughjoMascot} 
                 alt="DoughJo Mascot" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain rounded-full"
               />
             </motion.div>
             <h1 className="text-4xl font-serif font-bold text-[#333333]">DoughJo</h1>

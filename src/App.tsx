@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
+import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -48,11 +49,11 @@ function App() {
                 whileHover={{ scale: 1.05 }}
                 className="flex items-center space-x-3"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center p-1">
                   <img 
-                    src="/Teal & Rose Gold.png" 
+                    src={doughjoMascot} 
                     alt="DoughJo Mascot" 
-                    className="w-8 h-8 object-contain"
+                    className="w-full h-full object-contain rounded-full"
                   />
                 </div>
                 <h1 className="text-2xl font-serif font-bold text-[#333333]">

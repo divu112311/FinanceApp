@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
+import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
   user: User;
@@ -55,9 +56,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
             className="w-16 h-16 opacity-20"
           >
             <img 
-              src="/Teal & Rose Gold.png" 
+              src={doughjoMascot} 
               alt="DoughJo" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain rounded-full"
             />
           </motion.div>
         </div>
@@ -186,9 +187,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-4">
               <img 
-                src="/Teal & Rose Gold.png" 
+                src={doughjoMascot} 
                 alt="DoughJo" 
-                className="w-full h-full object-contain opacity-50"
+                className="w-full h-full object-contain opacity-50 rounded-full"
               />
             </div>
             <p className="text-gray-500 mb-4">No quests yet, young warrior</p>
