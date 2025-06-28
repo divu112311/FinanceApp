@@ -11,7 +11,7 @@ import doughjoMascot from './assets/doughjo-mascot.png';
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
-  const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'learning'>('chat');
+  const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
 
   const handleXPUpdate = async (points: number) => {
     await updateXP(points);
@@ -71,14 +71,14 @@ function App() {
             <div className="flex items-center space-x-4">
               <nav className="flex space-x-2">
                 <button
-                  onClick={() => setActiveView('chat')}
+                  onClick={() => setActiveView('advisor')}
                   className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'chat'
+                    activeView === 'advisor'
                       ? 'bg-[#2A6F68] text-white'
                       : 'text-[#333333] hover:bg-gray-100'
                   }`}
                 >
-                  Chat
+                  Financial Advisor
                 </button>
                 <button
                   onClick={() => setActiveView('dashboard')}
@@ -116,9 +116,9 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <AnimatePresence mode="wait">
-          {activeView === 'chat' ? (
+          {activeView === 'advisor' ? (
             <motion.div
-              key="chat"
+              key="advisor"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
