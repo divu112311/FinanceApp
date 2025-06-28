@@ -94,13 +94,22 @@ export const useAuth = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        // Log the error for debugging but don't throw it
-        // This prevents crashes when the session is already invalid
-        console.warn('Sign out error (non-critical):', error.message);
+        // Check if this is the common 'session_not_found' error
+        if (error.message?.includes('session_not_found') || error.message?.includes('Session from session_id claim in JWT does not exist')) {
+          // This is expected when the session was already invalid - log as info instead of warning
+          console.info('Session was already invalid on server (this is normal):', error.message);
+        } else {
+          // Log other errors as warnings for debugging
+          console.warn('Sign out error (non-critical):', error.message);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       // Catch any promise rejections to prevent unhandled promise rejection errors
-      console.warn('Sign out error (non-critical):', error);
+      if (error?.message?.includes('session_not_found') || error?.message?.includes('Session from session_id claim in JWT does not exist')) {
+        console.info('Session was already invalid on server (this is normal):', error.message);
+      } else {
+        console.warn('Sign out error (non-critical):', error);
+      }
     }
   };
 
