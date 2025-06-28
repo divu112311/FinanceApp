@@ -12,42 +12,54 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Creating Plaid link token...')
+    console.log('=== PLAID LINK TOKEN CREATION START ===')
     
-    const { userId, username, password } = await req.json()
+    const requestBody = await req.json()
+    const { userId, username, password } = requestBody
+    
+    console.log('📥 REQUEST INPUTS:', {
+      userId: userId || 'MISSING',
+      username: username || 'MISSING', 
+      password: password ? '***PROVIDED***' : 'MISSING',
+      fullRequestBody: requestBody
+    })
     
     if (!userId) {
+      console.error('❌ VALIDATION ERROR: Missing userId')
       throw new Error('Missing required parameter: userId')
     }
-
-    console.log('Processing request for userId:', userId)
-    console.log('Using custom credentials:', { username, password: password ? '***' : 'not provided' })
 
     // Get Plaid credentials from environment
     const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')
     const plaidSecret = Deno.env.get('PLAID_SECRET')
     const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox'
     
-    console.log('Plaid environment:', plaidEnv)
-    console.log('Plaid credentials available:', { 
-      hasClientId: !!plaidClientId, 
-      hasSecret: !!plaidSecret 
+    console.log('🔧 PLAID CONFIG:', {
+      environment: plaidEnv,
+      hasClientId: !!plaidClientId,
+      hasSecret: !!plaidSecret,
+      clientIdLength: plaidClientId?.length || 0,
+      secretLength: plaidSecret?.length || 0
     })
     
     if (!plaidClientId || !plaidSecret) {
+      console.error('❌ PLAID CREDENTIALS ERROR: Missing client ID or secret')
       throw new Error('Plaid credentials not configured')
     }
 
-    // Initialize Supabase client with service role key for edge functions
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    console.log('Supabase credentials available:', { 
-      hasUrl: !!supabaseUrl, 
-      hasServiceKey: !!supabaseServiceKey 
+    console.log('🔧 SUPABASE CONFIG:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      urlLength: supabaseUrl?.length || 0,
+      serviceKeyLength: supabaseServiceKey?.length || 0
     })
     
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ SUPABASE CREDENTIALS ERROR: Missing URL or service key')
       throw new Error('Supabase credentials not configured')
     }
 
@@ -58,35 +70,35 @@ serve(async (req) => {
       }
     })
 
-    console.log('Fetching user data for userId:', userId)
+    console.log('🔍 FETCHING USER DATA for userId:', userId)
 
-    // Get user data with service role permissions (bypasses RLS)
+    // Get user data
     const { data: userData, error: userError } = await supabaseClient
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
 
-    console.log('Database query result:', { 
-      hasData: !!userData, 
-      error: userError?.message,
-      errorCode: userError?.code 
+    console.log('👤 USER DATA RESULT:', {
+      hasData: !!userData,
+      error: userError?.message || 'none',
+      errorCode: userError?.code || 'none',
+      userData: userData ? {
+        id: userData.id,
+        email: userData.email,
+        hasFullName: !!userData.full_name
+      } : 'NO DATA'
     })
 
     if (userError) {
-      console.error('Database error fetching user:', userError)
+      console.error('❌ DATABASE ERROR:', userError)
       throw new Error(`Failed to fetch user data: ${userError.message}`)
     }
 
     if (!userData) {
+      console.error('❌ USER NOT FOUND in database')
       throw new Error('User not found in database')
     }
-
-    console.log('User data retrieved successfully:', {
-      userId: userData.id,
-      email: userData.email,
-      hasFullName: !!userData.full_name
-    })
 
     // Determine Plaid environment URL
     const plaidBaseUrl = plaidEnv === 'production' 
@@ -95,14 +107,20 @@ serve(async (req) => {
       ? 'https://development.plaid.com'
       : 'https://sandbox.plaid.com'
 
-    console.log('Using Plaid base URL:', plaidBaseUrl)
+    console.log('🌐 PLAID BASE URL:', plaidBaseUrl)
 
     // Use provided credentials or fallback to defaults
     const testUsername = username || 'user_good'
     const testPassword = password || 'pass_good'
     const testEmail = `${testUsername}@example.com`
 
-    // Create link token request with custom or default sandbox test credentials
+    console.log('🧪 TEST CREDENTIALS:', {
+      username: testUsername,
+      password: '***' + testPassword.slice(-4),
+      email: testEmail
+    })
+
+    // Create link token request - FIXED PRODUCTS ARRAY
     const linkTokenRequest = {
       client_id: plaidClientId,
       secret: plaidSecret,
@@ -111,14 +129,13 @@ serve(async (req) => {
       language: 'en',
       user: {
         client_user_id: userId,
-        // Use custom credentials for testing different accounts
         email_address: testEmail,
         phone_number: null,
         legal_name: testUsername
       },
-      products: ['transactions', 'accounts'],
+      products: ['transactions'], // ✅ FIXED: Using only valid products
       required_if_supported_products: ['identity'],
-      optional_products: ['investments', 'liabilities'],
+      optional_products: ['auth', 'investments', 'liabilities', 'assets'], // ✅ FIXED: Valid optional products
       redirect_uri: null,
       webhook: `${supabaseUrl}/functions/v1/plaid-webhook`,
       account_filters: {
@@ -131,10 +148,13 @@ serve(async (req) => {
       }
     }
 
-    console.log('Calling Plaid API to create link token...')
-    console.log('Using test credentials:', {
-      email: testEmail,
-      legal_name: testUsername
+    console.log('📤 PLAID API REQUEST:', {
+      url: `${plaidBaseUrl}/link/token/create`,
+      client_id: plaidClientId,
+      products: linkTokenRequest.products,
+      optional_products: linkTokenRequest.optional_products,
+      user: linkTokenRequest.user,
+      webhook: linkTokenRequest.webhook
     })
 
     // Call Plaid API
@@ -146,16 +166,31 @@ serve(async (req) => {
       body: JSON.stringify(linkTokenRequest),
     })
 
-    console.log('Plaid API response status:', plaidResponse.status)
+    console.log('📥 PLAID API RESPONSE:', {
+      status: plaidResponse.status,
+      statusText: plaidResponse.statusText,
+      ok: plaidResponse.ok
+    })
 
     if (!plaidResponse.ok) {
       const errorText = await plaidResponse.text()
-      console.error(`Plaid API error: ${plaidResponse.status} - ${errorText}`)
+      console.error('❌ PLAID API ERROR:', {
+        status: plaidResponse.status,
+        statusText: plaidResponse.statusText,
+        errorBody: errorText
+      })
       throw new Error(`Plaid API error: ${plaidResponse.status} - ${errorText}`)
     }
 
     const plaidData = await plaidResponse.json()
-    console.log('Link token created successfully')
+    console.log('✅ PLAID SUCCESS:', {
+      hasLinkToken: !!plaidData.link_token,
+      linkTokenLength: plaidData.link_token?.length || 0,
+      expiration: plaidData.expiration,
+      requestId: plaidData.request_id
+    })
+
+    console.log('=== PLAID LINK TOKEN CREATION SUCCESS ===')
 
     return new Response(
       JSON.stringify({ 
@@ -170,8 +205,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error creating link token:', error)
-    console.error('Error stack:', error.stack)
+    console.error('=== PLAID LINK TOKEN CREATION FAILED ===')
+    console.error('❌ ERROR DETAILS:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
     
     return new Response(
       JSON.stringify({ 
