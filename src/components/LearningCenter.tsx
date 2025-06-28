@@ -172,18 +172,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   return (
     <>
       <div className="space-y-6">
-        {/* Simplified Header */}
+        {/* Updated Header */}
         <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Your Learning Journey 🎓</h1>
+              <h1 className="text-2xl font-bold mb-2">Financial DoughJo Training</h1>
               <p className="text-white/90 mb-4">
-                {userProfile?.financial_experience === 'Beginner' 
-                  ? "Building your financial foundation"
-                  : userProfile?.financial_experience === 'Advanced'
-                  ? "Advanced wealth strategies"
-                  : "Expanding your financial knowledge"
-                }
+                Test your knowledge and earn XP with personalized financial quizzes
               </p>
               <div className="flex items-center gap-3">
                 <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
@@ -442,28 +437,24 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </div>
 
-        {/* Learning Insights */}
+        {/* Updated Training Tips */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center space-x-2 mb-4">
             <Lightbulb className="h-5 w-5 text-[#B76E79]" />
-            <h3 className="text-lg font-bold text-[#333333]">Learning Insights</h3>
+            <h3 className="text-lg font-bold text-[#333333]">Training Tips from Sensei DoughJo</h3>
           </div>
 
           <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg border-l-4 border-[#2A6F68]">
             <div className="flex items-start space-x-3">
               <Activity className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-bold text-[#333333] mb-1">Your Learning Journey</h4>
-                <p className="text-sm text-gray-700">
-                  {overallProgress.percentage >= 80 ? 
-                    `Outstanding progress! You've completed ${overallProgress.completed} modules and are well on your way to financial mastery.` :
-                    overallProgress.percentage >= 50 ?
-                    `Great momentum! You've completed ${overallProgress.completed} modules. Focus on the personalized recommendations to accelerate your learning.` :
-                    overallProgress.percentage >= 25 ?
-                    `Good start! You've completed ${overallProgress.completed} modules. Consistency is key - try to complete one module per week.` :
-                    `Welcome to your financial education journey! Start with the personalized modules designed specifically for your experience level and goals.`
-                  }
-                </p>
+                <h4 className="font-bold text-[#333333] mb-2">Master Your Financial Training</h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• Start with your recommended difficulty level and work your way up</li>
+                  <li>• Read explanations carefully to deepen your understanding</li>
+                  <li>• Retake quizzes to reinforce learning and earn more XP</li>
+                  <li>• Apply what you learn to your real financial decisions</li>
+                </ul>
               </div>
             </div>
           </div>
