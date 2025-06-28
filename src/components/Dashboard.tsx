@@ -182,6 +182,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
 
   const HealthScoreIcon = getHealthScoreIcon(healthScore);
 
+  // Goal insights calculations
+  const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
+  const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || 0), 0);
+  const overallProgress = totalTargetAmount > 0 ? (totalSavedAmount / totalTargetAmount) * 100 : 0;
+  const completedGoals = goals.filter(goal => getProgressPercentage(goal.saved_amount || 0, goal.target_amount || 0) >= 100);
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -405,10 +411,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
         className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
       >
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-[#333333] mb-2">Financial Goals</h2>
-            <p className="text-gray-600">Track your progress toward financial milestones</p>
-          </div>
+          <h2 className="text-xl font-bold text-[#333333]">Financial Goals</h2>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -446,86 +449,73 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
             </motion.button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {goals.slice(0, 3).map((goal, index) => {
-              const categoryInfo = getCategoryInfo(goal.category || 'savings');
-              const CategoryIcon = categoryInfo.icon;
-              const progress = getProgressPercentage(goal.saved_amount || 0, goal.target_amount || 0);
-              const remaining = (goal.target_amount || 0) - (goal.saved_amount || 0);
-              
-              return (
-                <motion.div
-                  key={goal.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 bg-gradient-to-r ${categoryInfo.color} rounded-lg flex items-center justify-center`}>
-                        <CategoryIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-[#333333]">{goal.name}</h4>
-                        <p className="text-sm text-gray-600">{categoryInfo.label}</p>
+          <div className="space-y-6">
+            {/* Goal Cards */}
+            <div className="space-y-4">
+              {goals.map((goal, index) => {
+                const progress = getProgressPercentage(goal.saved_amount || 0, goal.target_amount || 0);
+                const remaining = (goal.target_amount || 0) - (goal.saved_amount || 0);
+                
+                return (
+                  <motion.div
+                    key={goal.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                    className="bg-gray-50 rounded-xl p-6"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-[#333333]">{goal.name}</h3>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-[#333333]">
+                          {formatCurrency(goal.saved_amount || 0)} / {formatCurrency(goal.target_amount || 0)}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-[#333333]">
-                        {formatCurrency(goal.saved_amount || 0)} / {formatCurrency(goal.target_amount || 0)}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {formatCurrency(remaining)} to go
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-600">{progress.toFixed(0)}% complete</span>
-                      <button
-                        onClick={() => setShowGoalsModal(true)}
-                        className="text-[#2A6F68] hover:text-[#235A54] transition-colors"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
+                    <div className="mb-4">
+                      <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ delay: 0.5 + index * 0.1, duration: 1 }}
+                          className="h-3 rounded-full bg-[#2A6F68]"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{progress.toFixed(0)}% complete</span>
+                        <span className="text-gray-600">{formatCurrency(remaining)} to go</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ delay: 0.5 + index * 0.1, duration: 1 }}
-                        className={`h-3 rounded-full bg-gradient-to-r ${categoryInfo.color}`}
-                      />
-                    </div>
-                  </div>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-                  {goal.deadline && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>Target: {new Date(goal.deadline).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-            
-            {goals.length > 3 && (
-              <div className="text-center pt-2">
-                <button
-                  onClick={() => setShowGoalsModal(true)}
-                  className="text-[#2A6F68] hover:text-[#235A54] text-sm font-medium transition-colors"
-                >
-                  View all {goals.length} goals →
-                </button>
-              </div>
-            )}
+            {/* Goal Insights */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-[#2A6F68]/5 rounded-xl p-6 border-l-4 border-[#2A6F68]"
+            >
+              <h3 className="text-lg font-semibold text-[#2A6F68] mb-3">Goal Insight</h3>
+              <p className="text-gray-700 text-sm leading-relaxed">
+                {overallProgress >= 80 ? 
+                  `You're ${overallProgress.toFixed(0)}% of the way to your emergency fund goal. At your current savings rate, you'll reach your target in approximately 3 months. Keep up the excellent work!` :
+                  overallProgress >= 50 ?
+                  `You're making solid progress at ${overallProgress.toFixed(0)}% completion across your goals. Consider automating your savings to accelerate your progress.` :
+                  overallProgress >= 25 ?
+                  `You're ${overallProgress.toFixed(0)}% of the way there! Try the 'pay yourself first' strategy - save for goals before other expenses to build momentum.` :
+                  "Every financial journey starts with a single step. Start small, be consistent, and celebrate each milestone along the way."
+                }
+              </p>
+            </motion.div>
           </div>
         )}
       </motion.div>
 
-      {/* Bank Accounts */}
+      {/* Connected Accounts */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
