@@ -131,6 +131,8 @@ export const useLearning = (user: User | null) => {
           progress_percentage: 0,
           started_at: new Date().toISOString(),
           last_accessed_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,module_id'
         })
         .select()
         .single();
@@ -174,7 +176,9 @@ export const useLearning = (user: User | null) => {
 
       const { data, error } = await supabase
         .from('user_learning_progress')
-        .upsert(updateData)
+        .upsert(updateData, {
+          onConflict: 'user_id,module_id'
+        })
         .select()
         .single();
 
