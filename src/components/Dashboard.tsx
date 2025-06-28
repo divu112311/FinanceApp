@@ -26,6 +26,7 @@ import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
 import PlaidCredentialsModal from './PlaidCredentialsModal';
+import GoalsManager from './GoalsManager';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
@@ -45,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
     showCredentialsModal
   } = usePlaidLink(user);
   const [showBalances, setShowBalances] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'accounts'>('overview');
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -305,364 +307,299 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
         </motion.div>
       )}
 
-      {/* Financial Health Score */}
+      {/* Navigation Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
+        className="bg-white rounded-xl p-2 shadow-sm border border-gray-200"
       >
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-[#333333] mb-2">Financial Health Score</h2>
-            <p className="text-gray-600">Your overall financial wellness assessment</p>
-          </div>
-          <div className="text-right">
-            <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r ${getHealthScoreColor(healthScore)} text-white`}>
-              <HealthScoreIcon className="h-5 w-5" />
-              <span className="font-bold text-lg">{healthScore}/100</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative mb-4">
-          <div className="w-full bg-gray-200 rounded-full h-4">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${healthScore}%` }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              className={`h-4 rounded-full bg-gradient-to-r ${getHealthScoreColor(healthScore)}`}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>Poor (0-49)</span>
-            <span>Fair (50-69)</span>
-            <span>Good (70-84)</span>
-            <span>Excellent (85-100)</span>
-          </div>
-        </div>
-
-        <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg border-l-4 border-[#2A6F68]">
-          <div className="flex items-start space-x-3">
-            <Info className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-semibold text-[#333333] mb-1">Key Insight</h4>
-              <p className="text-sm text-gray-700">
-                {healthScore >= 85 ? 
-                  "Excellent financial health! You're demonstrating strong money management skills across all areas." :
-                  healthScore >= 70 ?
-                  "Good financial foundation with room for improvement in a few key areas." :
-                  healthScore >= 50 ?
-                  "Fair financial health. Focus on building emergency savings and increasing goal progress." :
-                  "Your financial health needs attention. Start with basic emergency savings and clear goal setting."
-                }
-              </p>
-            </div>
-          </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'overview'
+                ? 'bg-[#2A6F68] text-white'
+                : 'text-gray-600 hover:text-[#2A6F68] hover:bg-gray-50'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('goals')}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'goals'
+                ? 'bg-[#2A6F68] text-white'
+                : 'text-gray-600 hover:text-[#2A6F68] hover:bg-gray-50'
+            }`}
+          >
+            Goals
+          </button>
+          <button
+            onClick={() => setActiveTab('accounts')}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'accounts'
+                ? 'bg-[#2A6F68] text-white'
+                : 'text-gray-600 hover:text-[#2A6F68] hover:bg-gray-50'
+            }`}
+          >
+            Accounts
+          </button>
         </div>
       </motion.div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#2A6F68]/10 rounded-lg flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-[#2A6F68]" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowBalances(!showBalances)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                {showBalances ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
-              </button>
-              <TrendingUp className="h-5 w-5 text-green-500" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {formatBalance(totalBalance)}
-          </h3>
-          <p className="text-sm text-gray-600">Total Balance</p>
-          <p className="text-xs text-green-600 mt-1">
-            {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''}
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Target className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {goals.length}
-          </h3>
-          <p className="text-sm text-gray-600">Active Goals</p>
-          <p className="text-xs text-blue-600 mt-1">
-            {goals.filter(g => {
-              const progress = g.target_amount ? ((g.saved_amount || 0) / g.target_amount) * 100 : 0;
-              return progress >= 100;
-            }).length} completed
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#B76E79]/10 rounded-lg flex items-center justify-center">
-              <Award className="h-6 w-6 text-[#B76E79]" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {xp?.badges?.length || 0}
-          </h3>
-          <p className="text-sm text-gray-600">Achievements</p>
-          <p className="text-xs text-[#B76E79] mt-1">
-            {xp?.points || 0} XP earned
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`w-12 h-12 bg-gradient-to-r ${beltRank.color} rounded-lg flex items-center justify-center`}>
-              <span className="text-lg">{beltRank.emoji}</span>
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {beltRank.name}
-          </h3>
-          <p className="text-sm text-gray-600">Current Rank</p>
-        </motion.div>
-      </div>
-
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column - Goals & Achievements */}
-        <div className="space-y-6">
-          {/* Financial Goals */}
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Financial Health Score */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-[#333333]">Financial Goals</h3>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>New Goal</span>
-              </motion.button>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-[#333333] mb-2">Financial Health Score</h2>
+                <p className="text-gray-600">Your overall financial wellness assessment</p>
+              </div>
+              <div className="text-right">
+                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r ${getHealthScoreColor(healthScore)} text-white`}>
+                  <HealthScoreIcon className="h-5 w-5" />
+                  <span className="font-bold text-lg">{healthScore}/100</span>
+                </div>
+              </div>
             </div>
 
-            {goalsLoading ? (
-              <div className="flex items-center justify-center py-8">
+            <div className="relative mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-4">
                 <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-6 h-6 border-2 border-[#2A6F68] border-t-transparent rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${healthScore}%` }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className={`h-4 rounded-full bg-gradient-to-r ${getHealthScoreColor(healthScore)}`}
                 />
               </div>
-            ) : goals.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4">
-                  <img 
-                    src={doughjoMascot} 
-                    alt="DoughJo" 
-                    className="w-full h-full object-contain opacity-50 rounded-full"
-                  />
-                </div>
-                <p className="text-gray-500 mb-4">No goals yet, young warrior</p>
-                <p className="text-sm text-gray-400">Begin your journey by setting your first financial goal!</p>
+              <div className="flex justify-between text-xs text-gray-500 mt-2">
+                <span>Poor (0-49)</span>
+                <span>Fair (50-69)</span>
+                <span>Good (70-84)</span>
+                <span>Excellent (85-100)</span>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {goals.slice(0, 3).map((goal, index) => {
-                  const progress = goal.target_amount 
-                    ? ((goal.saved_amount || 0) / goal.target_amount) * 100 
-                    : 0;
-                  
-                  return (
-                    <div key={goal.id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-[#333333]">🎯 {goal.name}</h4>
-                        <span className="text-sm text-gray-600">
-                          ${(goal.saved_amount || 0).toLocaleString()} / ${(goal.target_amount || 0).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress}%` }}
-                          transition={{ delay: 0.8 + index * 0.1, duration: 1 }}
-                          className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] h-2 rounded-full"
-                        />
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{progress.toFixed(1)}% complete</p>
-                    </div>
-                  );
-                })}
-                {goals.length > 3 && (
-                  <p className="text-sm text-gray-500 text-center pt-2">
-                    +{goals.length - 3} more goals
+            </div>
+
+            <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg border-l-4 border-[#2A6F68]">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-[#333333] mb-1">Key Insight</h4>
+                  <p className="text-sm text-gray-700">
+                    {healthScore >= 85 ? 
+                      "Excellent financial health! You're demonstrating strong money management skills across all areas." :
+                      healthScore >= 70 ?
+                      "Good financial foundation with room for improvement in a few key areas." :
+                      healthScore >= 50 ?
+                      "Fair financial health. Focus on building emergency savings and increasing goal progress." :
+                      "Your financial health needs attention. Start with basic emergency savings and clear goal setting."
+                    }
                   </p>
-                )}
+                </div>
               </div>
-            )}
+            </div>
           </motion.div>
 
-          {/* Achievements */}
-          {xp?.badges && xp.badges.length > 0 && (
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
+              transition={{ delay: 0.3 }}
               className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
             >
-              <h3 className="text-lg font-semibold text-[#333333] mb-4">Recent Achievements</h3>
-              <div className="flex flex-wrap gap-3">
-                {xp.badges.slice(0, 4).map((badge, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8 + index * 0.1 }}
-                    className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-3 py-2 rounded-full text-sm"
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-[#2A6F68]/10 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-[#2A6F68]" />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowBalances(!showBalances)}
+                    className="p-1 hover:bg-gray-100 rounded"
                   >
-                    <Award className="h-4 w-4" />
-                    <span>{badge}</span>
-                  </motion.div>
-                ))}
+                    {showBalances ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                  </button>
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </div>
               </div>
+              <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                {formatBalance(totalBalance)}
+              </h3>
+              <p className="text-sm text-gray-600">Total Balance</p>
+              <p className="text-xs text-green-600 mt-1">
+                {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''}
+              </p>
             </motion.div>
-          )}
-        </div>
 
-        {/* Right Column - Bank Accounts */}
-        <div className="space-y-6">
-          {/* Bank Accounts Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[#333333]">Bank Accounts</h3>
-                <p className="text-sm text-gray-600">Connected financial accounts</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Target className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={refreshAccounts}
-                  disabled={accountsLoading}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <RefreshCw className={`h-4 w-4 ${accountsLoading ? 'animate-spin' : ''}`} />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={openPlaidLink}
-                  disabled={plaidLoading}
-                  className="flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] disabled:opacity-50 transition-colors"
-                >
-                  {plaidLoading ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                    />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  <span>Connect</span>
-                </motion.button>
+              <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                {goals.length}
+              </h3>
+              <p className="text-sm text-gray-600">Active Goals</p>
+              <p className="text-xs text-blue-600 mt-1">
+                {goals.filter(g => {
+                  const progress = g.target_amount ? ((g.saved_amount || 0) / g.target_amount) * 100 : 0;
+                  return progress >= 100;
+                }).length} completed
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-[#B76E79]/10 rounded-lg flex items-center justify-center">
+                  <Award className="h-6 w-6 text-[#B76E79]" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                {xp?.badges?.length || 0}
+              </h3>
+              <p className="text-sm text-gray-600">Achievements</p>
+              <p className="text-xs text-[#B76E79] mt-1">
+                {xp?.points || 0} XP earned
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-12 h-12 bg-gradient-to-r ${beltRank.color} rounded-lg flex items-center justify-center`}>
+                  <span className="text-lg">{beltRank.emoji}</span>
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                {beltRank.name}
+              </h3>
+              <p className="text-sm text-gray-600">Current Rank</p>
+            </motion.div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'goals' && (
+        <GoalsManager user={user} />
+      )}
+
+      {activeTab === 'accounts' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[#333333]">Bank Accounts</h3>
+              <p className="text-sm text-gray-600">Connected financial accounts</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={refreshAccounts}
+                disabled={accountsLoading}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 ${accountsLoading ? 'animate-spin' : ''}`} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={openPlaidLink}
+                disabled={plaidLoading}
+                className="flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] disabled:opacity-50 transition-colors"
+              >
+                {plaidLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                  />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span>Connect</span>
+              </motion.button>
+            </div>
+          </div>
+
+          {bankAccounts.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 mb-2">No accounts connected</p>
+              <p className="text-sm text-gray-400 mb-4">Connect your bank accounts for personalized insights</p>
+              <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+                <CheckCircle className="h-3 w-3" />
+                <span>Bank-level security</span>
+                <span>•</span>
+                <CheckCircle className="h-3 w-3" />
+                <span>Read-only access</span>
               </div>
             </div>
-
-            {bankAccounts.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="h-8 w-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 mb-2">No accounts connected</p>
-                <p className="text-sm text-gray-400 mb-4">Connect your bank accounts for personalized insights</p>
-                <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-                  <CheckCircle className="h-3 w-3" />
-                  <span>Bank-level security</span>
-                  <span>•</span>
-                  <CheckCircle className="h-3 w-3" />
-                  <span>Read-only access</span>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {bankAccounts.slice(0, 3).map((account, index) => {
-                  const IconComponent = getAccountIcon(account.type, account.subtype || '');
-                  
-                  return (
-                    <motion.div
-                      key={account.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 bg-gradient-to-r ${getAccountColor(account.type)} rounded-lg flex items-center justify-center`}>
-                          <IconComponent className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-[#333333] text-sm">{account.name}</h4>
-                          <p className="text-xs text-gray-600">
-                            {getAccountTypeLabel(account.type, account.subtype || '')} • {formatAccountNumber(account.mask)}
-                          </p>
-                        </div>
+          ) : (
+            <div className="space-y-3">
+              {bankAccounts.map((account, index) => {
+                const IconComponent = getAccountIcon(account.type, account.subtype || '');
+                
+                return (
+                  <motion.div
+                    key={account.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 bg-gradient-to-r ${getAccountColor(account.type)} rounded-lg flex items-center justify-center`}>
+                        <IconComponent className="h-5 w-5 text-white" />
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-[#333333]">
-                          {formatBalance(account.balance || 0)}
+                      <div>
+                        <h4 className="font-medium text-[#333333] text-sm">{account.name}</h4>
+                        <p className="text-xs text-gray-600">
+                          {getAccountTypeLabel(account.type, account.subtype || '')} • {formatAccountNumber(account.mask)}
                         </p>
-                        <p className="text-xs text-gray-500">{account.institution_name}</p>
                       </div>
-                    </motion.div>
-                  );
-                })}
-                {bankAccounts.length > 3 && (
-                  <p className="text-sm text-gray-500 text-center pt-2">
-                    +{bankAccounts.length - 3} more accounts
-                  </p>
-                )}
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-[#333333]">
+                        {formatBalance(account.balance || 0)}
+                      </p>
+                      <p className="text-xs text-gray-500">{account.institution_name}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };
