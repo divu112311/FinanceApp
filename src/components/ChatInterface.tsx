@@ -92,40 +92,40 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
       </AnimatePresence>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col space-y-4">
-        {/* Easy Wins Section */}
+      <div className="flex-1 flex flex-col space-y-4 min-w-0">
+        {/* Easy Wins Section - Updated Colors */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl p-4 text-black"
+          className="bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-xl p-4 text-white"
         >
           <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5 text-black" />
-            <h3 className="text-lg font-bold">Easy Wins This Week</h3>
+            <Lightbulb className="h-5 w-5 text-white" />
+            <h3 className="text-lg font-bold text-white">Easy Wins This Week</h3>
           </div>
           <div className="space-y-2">
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm">Those unused subscriptions? Canceling them could free up $47/month for your dreams.</p>
+              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-white/90">Those unused subscriptions? Canceling them could free up $47/month for your dreams.</p>
             </div>
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm">A high-yield savings account could grow your money while you sleep.</p>
+              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-white/90">A high-yield savings account could grow your money while you sleep.</p>
             </div>
             <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm">Automatic bill pay means one less thing to worry about (and no late fees).</p>
+              <div className="w-2 h-2 bg-white rounded-full mt-2 flex-shrink-0"></div>
+              <p className="text-sm text-white/90">Automatic bill pay means one less thing to worry about (and no late fees).</p>
             </div>
           </div>
         </motion.div>
 
         {/* Chat Container */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col">
+        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col min-h-0">
           {/* Chat Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 border-b border-gray-200 rounded-t-2xl"
+            className="p-6 border-b border-gray-200 rounded-t-2xl flex-shrink-0"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-3">
@@ -166,7 +166,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           </motion.div>
 
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
             {messages.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -310,7 +310,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 border-t border-gray-200 rounded-b-2xl"
+            className="p-6 border-t border-gray-200 rounded-b-2xl flex-shrink-0"
           >
             <div className="flex space-x-3">
               <div className="flex-1 relative">
@@ -338,17 +338,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         </div>
       </div>
 
-      {/* AI Learning Insights Sidebar */}
+      {/* AI Learning Insights Sidebar - Fixed Width and Height */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
-        className="w-80 space-y-4"
+        className="w-80 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
       >
         {/* AI Learning Insights Header */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-pink-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-lg flex items-center justify-center">
               <span className="text-white text-lg">🧠</span>
             </div>
             <h3 className="text-lg font-semibold text-[#333333]">AI Learning Insights</h3>
@@ -356,9 +356,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
           <div className="space-y-4">
             {/* Coffee Spending Alert */}
-            <div className="border-l-4 border-red-400 pl-4">
+            <div className="border-l-4 border-[#B76E79] pl-4">
               <div className="flex items-start space-x-3">
-                <TrendingDown className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <TrendingDown className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 mb-1">Coffee Spending Alert</h4>
                   <p className="text-sm text-gray-600 mb-3">
@@ -366,7 +366,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   </p>
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">spending</span>
-                    <button className="px-3 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium hover:bg-teal-200 transition-colors">
+                    <button className="px-3 py-1 bg-[#2A6F68] text-white rounded text-xs font-medium hover:bg-[#235A54] transition-colors">
                       Learn More
                     </button>
                   </div>
@@ -375,9 +375,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </div>
 
             {/* Emergency Fund Progress */}
-            <div className="border-l-4 border-green-400 pl-4">
+            <div className="border-l-4 border-[#2A6F68] pl-4">
               <div className="flex items-start space-x-3">
-                <TrendingUp className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                <TrendingUp className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 mb-1">Emergency Fund Progress</h4>
                   <p className="text-sm text-gray-600 mb-3">
@@ -391,9 +391,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </div>
 
             {/* Investment Opportunity */}
-            <div className="border-l-4 border-blue-400 pl-4">
+            <div className="border-l-4 border-[#2A6F68] pl-4">
               <div className="flex items-start space-x-3">
-                <DollarSign className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <DollarSign className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 mb-1">Investment Opportunity</h4>
                   <p className="text-sm text-gray-600 mb-3">
@@ -409,7 +409,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-4">
             <Zap className="h-5 w-5 text-[#2A6F68]" />
             <h3 className="text-lg font-semibold text-[#333333]">Quick Actions</h3>
@@ -420,7 +420,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setInputMessage("Help me create a budget")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-[#2A6F68]" />
@@ -432,7 +432,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setInputMessage("Analyze my investment options")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-4 w-4 text-[#2A6F68]" />
@@ -444,7 +444,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setInputMessage("Help me optimize my savings")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
             >
               <div className="flex items-center space-x-2">
                 <PiggyBank className="h-4 w-4 text-[#2A6F68]" />
@@ -455,7 +455,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         </div>
 
         {/* Financial Tip of the Day */}
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-xl p-6 text-white flex-shrink-0">
           <div className="flex items-center space-x-2 mb-3">
             <Lightbulb className="h-5 w-5" />
             <h3 className="text-lg font-semibold">Daily Wisdom</h3>
