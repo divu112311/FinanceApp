@@ -20,10 +20,18 @@ serve(async (req) => {
       throw new Error('Missing required parameter: userId')
     }
 
+    console.log('Processing request for userId:', userId)
+
     // Get Plaid credentials from environment
     const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')
     const plaidSecret = Deno.env.get('PLAID_SECRET')
     const plaidEnv = Deno.env.get('PLAID_ENV') || 'sandbox'
+    
+    console.log('Plaid environment:', plaidEnv)
+    console.log('Plaid credentials available:', { 
+      hasClientId: !!plaidClientId, 
+      hasSecret: !!plaidSecret 
+    })
     
     if (!plaidClientId || !plaidSecret) {
       throw new Error('Plaid credentials not configured')
@@ -33,24 +41,36 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
+    console.log('Supabase credentials available:', { 
+      hasUrl: !!supabaseUrl, 
+      hasServiceKey: !!supabaseServiceKey 
+    })
+    
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Supabase credentials missing:', { 
-        hasUrl: !!supabaseUrl, 
-        hasServiceKey: !!supabaseServiceKey 
-      })
       throw new Error('Supabase credentials not configured')
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
     console.log('Fetching user data for userId:', userId)
 
-    // Get user data with better error handling
+    // Get user data with service role permissions (bypasses RLS)
     const { data: userData, error: userError } = await supabaseClient
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
+
+    console.log('Database query result:', { 
+      hasData: !!userData, 
+      error: userError?.message,
+      errorCode: userError?.code 
+    })
 
     if (userError) {
       console.error('Database error fetching user:', userError)
@@ -58,10 +78,14 @@ serve(async (req) => {
     }
 
     if (!userData) {
-      throw new Error('User not found')
+      throw new Error('User not found in database')
     }
 
-    console.log('User data retrieved successfully for:', userData.email)
+    console.log('User data retrieved successfully:', {
+      userId: userData.id,
+      email: userData.email,
+      hasFullName: !!userData.full_name
+    })
 
     // Determine Plaid environment URL
     const plaidBaseUrl = plaidEnv === 'production' 
@@ -69,6 +93,8 @@ serve(async (req) => {
       : plaidEnv === 'development'
       ? 'https://development.plaid.com'
       : 'https://sandbox.plaid.com'
+
+    console.log('Using Plaid base URL:', plaidBaseUrl)
 
     // Create link token request
     const linkTokenRequest = {
@@ -79,9 +105,9 @@ serve(async (req) => {
       language: 'en',
       user: {
         client_user_id: userId,
-        email_address: userData.email,
+        email_address: userData.email || `user-${userId}@example.com`,
         phone_number: null,
-        legal_name: userData.full_name
+        legal_name: userData.full_name || 'User'
       },
       products: ['transactions', 'accounts'],
       required_if_supported_products: ['identity'],
@@ -99,6 +125,7 @@ serve(async (req) => {
     }
 
     console.log('Calling Plaid API to create link token...')
+    console.log('Link token request user data:', linkTokenRequest.user)
 
     // Call Plaid API
     const plaidResponse = await fetch(`${plaidBaseUrl}/link/token/create`, {
@@ -108,6 +135,8 @@ serve(async (req) => {
       },
       body: JSON.stringify(linkTokenRequest),
     })
+
+    console.log('Plaid API response status:', plaidResponse.status)
 
     if (!plaidResponse.ok) {
       const errorText = await plaidResponse.text()
@@ -132,11 +161,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error creating link token:', error)
+    console.error('Error stack:', error.stack)
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        debug: 'Failed to create Plaid link token'
+        debug: 'Failed to create Plaid link token',
+        timestamp: new Date().toISOString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

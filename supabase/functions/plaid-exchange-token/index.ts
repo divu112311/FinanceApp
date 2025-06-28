@@ -20,6 +20,13 @@ serve(async (req) => {
       throw new Error('Missing required parameters: publicToken and userId')
     }
 
+    console.log('Exchange request:', {
+      hasPublicToken: !!publicToken,
+      userId,
+      institutionName: institution?.name,
+      accountCount: accounts?.length
+    })
+
     // Get Plaid credentials from environment
     const plaidClientId = Deno.env.get('PLAID_CLIENT_ID')
     const plaidSecret = Deno.env.get('PLAID_SECRET')
@@ -60,7 +67,7 @@ serve(async (req) => {
     }
 
     const { access_token, item_id } = await plaidResponse.json()
-    console.log('Token exchange successful')
+    console.log('Token exchange successful, item_id:', item_id)
 
     // Get account details from Plaid
     const accountsRequest = {
@@ -68,6 +75,8 @@ serve(async (req) => {
       secret: plaidSecret,
       access_token: access_token,
     }
+
+    console.log('Fetching account details from Plaid...')
 
     const accountsResponse = await fetch(`${plaidBaseUrl}/accounts/get`, {
       method: 'POST',
@@ -80,11 +89,11 @@ serve(async (req) => {
     if (!accountsResponse.ok) {
       const errorText = await accountsResponse.text()
       console.error(`Plaid accounts error: ${accountsResponse.status} - ${errorText}`)
-      throw new Error(`Failed to fetch account details: ${accountsResponse.status}`)
+      throw new Error(`Failed to fetch account details: ${accountsResponse.status} - ${errorText}`)
     }
 
     const accountsData = await accountsResponse.json()
-    console.log(`Retrieved ${accountsData.accounts.length} accounts`)
+    console.log(`Retrieved ${accountsData.accounts.length} accounts from Plaid`)
 
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -94,7 +103,12 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured')
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
     // Store accounts in database
     const accountsToInsert = accountsData.accounts.map((account: any) => ({
@@ -112,6 +126,12 @@ serve(async (req) => {
     }))
 
     console.log('Storing accounts in database...')
+    console.log('Accounts to insert:', accountsToInsert.map(acc => ({
+      name: acc.name,
+      type: acc.type,
+      subtype: acc.subtype,
+      balance: acc.balance
+    })))
 
     const { data: insertedAccounts, error: insertError } = await supabaseClient
       .from('bank_accounts')
@@ -120,6 +140,12 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Database insert error:', insertError)
+      console.error('Insert error details:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint
+      })
       throw new Error(`Failed to store account data: ${insertError.message}`)
     }
 
@@ -129,7 +155,8 @@ serve(async (req) => {
       JSON.stringify({ 
         accounts: insertedAccounts,
         item_id: item_id,
-        institution: institution
+        institution: institution,
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -139,11 +166,13 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error exchanging token:', error)
+    console.error('Error stack:', error.stack)
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        debug: 'Failed to exchange Plaid token'
+        debug: 'Failed to exchange Plaid token',
+        timestamp: new Date().toISOString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
