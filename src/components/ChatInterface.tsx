@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User as UserIcon, Zap } from 'lucide-react';
+import { Send, User as UserIcon, Zap, AlertCircle, CheckCircle } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useChat } from '../hooks/useChat';
 import doughjoMascot from '../assets/doughjo-mascot.png';
@@ -13,6 +13,7 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [xpGained, setXpGained] = useState<number | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error' | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, loading, sendMessage } = useChat(user);
 
@@ -22,6 +23,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const testOpenRouterConnection = async () => {
+    setConnectionStatus('checking');
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: 'Test connection',
+          userId: user.id,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.response && !data.error) {
+          setConnectionStatus('connected');
+        } else {
+          setConnectionStatus('error');
+          console.error('OpenRouter API test failed:', data);
+        }
+      } else {
+        setConnectionStatus('error');
+        console.error('Edge function test failed:', response.status);
+      }
+    } catch (error) {
+      setConnectionStatus('error');
+      console.error('Connection test error:', error);
+    }
+
+    // Clear status after 3 seconds
+    setTimeout(() => setConnectionStatus(null), 3000);
   };
 
   const handleSendMessage = async () => {
@@ -54,6 +92,45 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] max-w-4xl mx-auto">
+      {/* Connection Status */}
+      <AnimatePresence>
+        {connectionStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.8 }}
+            className={`fixed top-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 flex items-center space-x-2 ${
+              connectionStatus === 'checking' ? 'bg-blue-500 text-white' :
+              connectionStatus === 'connected' ? 'bg-green-500 text-white' :
+              'bg-red-500 text-white'
+            }`}
+          >
+            {connectionStatus === 'checking' && (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                />
+                <span>Testing OpenRouter connection...</span>
+              </>
+            )}
+            {connectionStatus === 'connected' && (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                <span>OpenRouter API connected!</span>
+              </>
+            )}
+            {connectionStatus === 'error' && (
+              <>
+                <AlertCircle className="h-4 w-4" />
+                <span>OpenRouter API not responding</span>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* XP Gained Animation */}
       <AnimatePresence>
         {xpGained && (
@@ -75,29 +152,51 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-t-2xl p-6 border-b border-gray-200"
       >
-        <div className="flex items-center space-x-3 mb-2">
-          <motion.div 
-            animate={{ 
-              rotate: [0, 5, -5, 0],
-              scale: [1, 1.05, 1]
-            }}
-            transition={{ 
-              duration: 3,
-              repeat: Infinity,
-              repeatType: "reverse"
-            }}
-            className="w-12 h-12 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center p-1"
-          >
-            <img 
-              src={doughjoMascot} 
-              alt="DoughJo Sensei" 
-              className="w-full h-full object-contain rounded-full"
-            />
-          </motion.div>
-          <div>
-            <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
-            <p className="text-sm text-gray-600">Your AI Financial Sensei</p>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-3">
+            <motion.div 
+              animate={{ 
+                rotate: [0, 5, -5, 0],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{ 
+                duration: 3,
+                repeat: Infinity,
+                repeatType: "reverse"
+              }}
+              className="w-12 h-12 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center p-1"
+            >
+              <img 
+                src={doughjoMascot} 
+                alt="DoughJo Sensei" 
+                className="w-full h-full object-contain rounded-full"
+              />
+            </motion.div>
+            <div>
+              <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
+              <p className="text-sm text-gray-600">Your AI Financial Sensei</p>
+            </div>
           </div>
+          
+          {/* Test Connection Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={testOpenRouterConnection}
+            disabled={connectionStatus === 'checking'}
+            className="flex items-center space-x-2 bg-[#2A6F68] text-white px-3 py-2 rounded-lg hover:bg-[#235A54] disabled:opacity-50 transition-colors text-sm"
+          >
+            {connectionStatus === 'checking' ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-3 h-3 border border-white border-t-transparent rounded-full"
+              />
+            ) : (
+              <Zap className="h-3 w-3" />
+            )}
+            <span>Test AI</span>
+          </motion.button>
         </div>
         <p className="text-[#666666] text-sm">
           Welcome to the dojo, young grasshopper! Ask me anything about your financial journey. 
