@@ -53,7 +53,9 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   const [timeElapsed, setTimeElapsed] = useState(0);
 
   useEffect(() => {
-    console.log('QuizInterface mounted for module:', moduleId);
+    console.log('=== QUIZ INTERFACE MOUNTED ===');
+    console.log('Module ID:', moduleId);
+    console.log('Module Title:', moduleTitle);
     fetchQuizQuestions();
   }, [moduleId]);
 
@@ -68,7 +70,9 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   }, [quizCompleted]);
 
   const fetchQuizQuestions = async () => {
-    console.log('Fetching quiz questions for module:', moduleId);
+    console.log('=== FETCHING QUIZ QUESTIONS ===');
+    console.log('Module ID:', moduleId);
+    
     try {
       const { data, error } = await supabase
         .from('quiz_questions')
@@ -78,15 +82,42 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
 
       console.log('Quiz questions response:', { data, error });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching quiz questions:', error);
+        throw error;
+      }
 
-      const formattedQuestions = data?.map(q => ({
-        ...q,
-        options: Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]')
-      })) || [];
+      if (!data || data.length === 0) {
+        console.warn('No quiz questions found for module:', moduleId);
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+
+      const formattedQuestions = data.map(q => {
+        let options = [];
+        try {
+          // Handle different option formats
+          if (typeof q.options === 'string') {
+            options = JSON.parse(q.options);
+          } else if (Array.isArray(q.options)) {
+            options = q.options;
+          } else {
+            console.warn('Invalid options format for question:', q.id);
+            options = [];
+          }
+        } catch (e) {
+          console.error('Error parsing options for question:', q.id, e);
+          options = [];
+        }
+
+        return {
+          ...q,
+          options
+        };
+      });
 
       console.log('Formatted questions:', formattedQuestions);
-
       setQuestions(formattedQuestions);
       setUserAnswers(new Array(formattedQuestions.length).fill(''));
     } catch (error) {
@@ -97,18 +128,35 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   };
 
   const handleAnswerSelect = (answer: string) => {
-    if (showExplanation) return;
-    console.log('Answer selected:', answer);
+    console.log('=== ANSWER SELECTED ===');
+    console.log('Selected answer:', answer);
+    console.log('Show explanation:', showExplanation);
+    console.log('Current question index:', currentQuestionIndex);
+    
+    if (showExplanation) {
+      console.log('Explanation already shown, ignoring click');
+      return;
+    }
+    
     setSelectedAnswer(answer);
+    console.log('Answer set to:', answer);
   };
 
   const handleSubmitAnswer = () => {
-    if (!selectedAnswer || showExplanation) return;
-
-    console.log('Submitting answer:', selectedAnswer);
-    const currentQuestion = questions[currentQuestionIndex];
-    const correct = selectedAnswer === currentQuestion.correct_answer;
+    console.log('=== SUBMITTING ANSWER ===');
+    console.log('Selected answer:', selectedAnswer);
+    console.log('Show explanation:', showExplanation);
     
+    if (!selectedAnswer || showExplanation) {
+      console.log('No answer selected or explanation already shown');
+      return;
+    }
+
+    const currentQuestion = questions[currentQuestionIndex];
+    console.log('Current question:', currentQuestion);
+    console.log('Correct answer:', currentQuestion.correct_answer);
+    
+    const correct = selectedAnswer === currentQuestion.correct_answer;
     console.log('Answer is correct:', correct);
     
     setIsCorrect(correct);
@@ -118,19 +166,34 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestionIndex] = selectedAnswer;
     setUserAnswers(newAnswers);
+    console.log('Updated user answers:', newAnswers);
 
     if (correct) {
-      setScore(prev => prev + currentQuestion.points);
+      const newScore = score + currentQuestion.points;
+      setScore(newScore);
+      console.log('Score updated to:', newScore);
     }
   };
 
   const handleNextQuestion = () => {
+    console.log('=== NEXT QUESTION ===');
+    console.log('Current index:', currentQuestionIndex);
+    console.log('Total questions:', questions.length);
+    
     if (currentQuestionIndex < questions.length - 1) {
-      console.log('Moving to next question');
-      setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedAnswer(userAnswers[currentQuestionIndex + 1] || '');
-      setShowExplanation(false);
-      setIsCorrect(false);
+      const nextIndex = currentQuestionIndex + 1;
+      console.log('Moving to question:', nextIndex);
+      
+      setCurrentQuestionIndex(nextIndex);
+      setSelectedAnswer(userAnswers[nextIndex] || '');
+      setShowExplanation(!!userAnswers[nextIndex]);
+      
+      if (userAnswers[nextIndex]) {
+        const nextQuestion = questions[nextIndex];
+        setIsCorrect(userAnswers[nextIndex] === nextQuestion.correct_answer);
+      } else {
+        setIsCorrect(false);
+      }
     } else {
       console.log('Quiz completed');
       completeQuiz();
@@ -138,18 +201,32 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   };
 
   const handlePreviousQuestion = () => {
+    console.log('=== PREVIOUS QUESTION ===');
+    
     if (currentQuestionIndex > 0) {
-      console.log('Moving to previous question');
-      setCurrentQuestionIndex(prev => prev - 1);
-      setSelectedAnswer(userAnswers[currentQuestionIndex - 1] || '');
-      setShowExplanation(!!userAnswers[currentQuestionIndex - 1]);
-      setIsCorrect(userAnswers[currentQuestionIndex - 1] === questions[currentQuestionIndex - 1]?.correct_answer);
+      const prevIndex = currentQuestionIndex - 1;
+      console.log('Moving to question:', prevIndex);
+      
+      setCurrentQuestionIndex(prevIndex);
+      setSelectedAnswer(userAnswers[prevIndex] || '');
+      setShowExplanation(!!userAnswers[prevIndex]);
+      
+      if (userAnswers[prevIndex]) {
+        const prevQuestion = questions[prevIndex];
+        setIsCorrect(userAnswers[prevIndex] === prevQuestion.correct_answer);
+      } else {
+        setIsCorrect(false);
+      }
     }
   };
 
   const completeQuiz = () => {
-    console.log('Completing quiz with score:', score);
+    console.log('=== COMPLETING QUIZ ===');
+    console.log('Final score:', score);
+    console.log('User answers:', userAnswers);
+    
     setQuizCompleted(true);
+    
     const correctAnswers = userAnswers.filter((answer, index) => 
       answer === questions[index]?.correct_answer
     ).length;
@@ -157,7 +234,12 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     const finalScore = Math.round((correctAnswers / questions.length) * 100);
     const xpEarned = Math.round(score * (finalScore / 100));
     
-    console.log('Final score:', finalScore, 'XP earned:', xpEarned);
+    console.log('Final calculations:', {
+      correctAnswers,
+      totalQuestions: questions.length,
+      finalScore,
+      xpEarned
+    });
     
     setTimeout(() => {
       onComplete(finalScore, xpEarned);
@@ -206,22 +288,15 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
           className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl"
         >
           <div className="text-center">
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Brain className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            </motion.div>
+            <Brain className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-2">No Quiz Available</h3>
             <p className="text-gray-600 mb-6">This module doesn't have quiz questions yet.</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={onClose}
               className="bg-[#2A6F68] text-white px-6 py-3 rounded-lg hover:bg-[#235A54] transition-colors font-medium"
             >
               Close
-            </motion.button>
+            </button>
           </div>
         </motion.div>
       </motion.div>
@@ -244,108 +319,53 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
       >
-        {/* Enhanced Header */}
-        <div className="bg-gradient-to-br from-[#2A6F68] via-[#2A6F68] to-[#B76E79] p-8 text-white relative overflow-hidden">
-          {/* Background Animation */}
-          <div className="absolute inset-0">
-            <motion.div
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.1, 0.2, 0.1]
-              }}
-              transition={{ 
-                duration: 4,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full"
-            />
-            <motion.div
-              animate={{ 
-                scale: [1, 1.3, 1],
-                opacity: [0.1, 0.15, 0.1]
-              }}
-              transition={{ 
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1
-              }}
-              className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full"
-            />
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Brain className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{moduleTitle}</h2>
+                <p className="text-white/80">Interactive Quiz</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <motion.div
-                  animate={{ rotate: [0, 10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"
-                >
-                  <Brain className="h-6 w-6" />
-                </motion.div>
-                <div>
-                  <h2 className="text-2xl font-bold">{moduleTitle}</h2>
-                  <p className="text-white/80">Interactive Quiz</p>
-                </div>
+          
+          <div className="flex items-center justify-between text-sm mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
+                <Clock className="h-4 w-4" />
+                <span>{formatTime(timeElapsed)}</span>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-3 hover:bg-white/20 rounded-xl transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </motion.button>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm mb-4">
-              <div className="flex items-center space-x-6">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-2"
-                >
-                  <Clock className="h-4 w-4" />
-                  <span className="font-medium">{formatTime(timeElapsed)}</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-2"
-                >
-                  <Target className="h-4 w-4" />
-                  <span className="font-medium">Question {currentQuestionIndex + 1} of {questions.length}</span>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-2"
-                >
-                  <Zap className="h-4 w-4 text-yellow-300" />
-                  <span className="font-medium">{score} points</span>
-                </motion.div>
+              <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
+                <Target className="h-4 w-4" />
+                <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+              </div>
+              <div className="flex items-center space-x-1 bg-white/20 rounded px-2 py-1">
+                <Zap className="h-4 w-4 text-yellow-300" />
+                <span>{score} points</span>
               </div>
             </div>
-            
-            {/* Enhanced Progress Bar */}
-            <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                className="bg-white h-3 rounded-full relative overflow-hidden"
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              >
-                <motion.div
-                  animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                />
-              </motion.div>
-            </div>
+          </div>
+          
+          <div className="w-full bg-white/20 rounded-full h-2">
+            <div
+              className="bg-white h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
 
         {/* Quiz Content */}
-        <div className="p-8">
+        <div className="p-6">
           {!quizCompleted ? (
             <AnimatePresence mode="wait">
               <motion.div
@@ -356,122 +376,82 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                 transition={{ duration: 0.3 }}
               >
                 {/* Question */}
-                <div className="mb-8">
-                  <motion.h3 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-2xl font-bold text-gray-900 mb-6 leading-relaxed"
-                  >
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">
                     {currentQuestion.question_text}
-                  </motion.h3>
+                  </h3>
                   
                   {/* Answer Options */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {currentQuestion.options.map((option, index) => (
-                      <motion.button
+                      <button
                         key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: showExplanation ? 1 : 1.02, x: showExplanation ? 0 : 5 }}
-                        whileTap={{ scale: showExplanation ? 1 : 0.98 }}
-                        onClick={() => handleAnswerSelect(option)}
+                        onClick={() => {
+                          console.log('Option clicked:', option);
+                          handleAnswerSelect(option);
+                        }}
                         disabled={showExplanation}
-                        className={`w-full p-6 text-left rounded-2xl border-2 transition-all duration-300 ${
+                        className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-300 ${
                           selectedAnswer === option
                             ? showExplanation
                               ? option === currentQuestion.correct_answer
-                                ? 'border-green-500 bg-green-50 text-green-800 shadow-lg'
-                                : 'border-red-500 bg-red-50 text-red-800 shadow-lg'
-                              : 'border-[#2A6F68] bg-[#2A6F68]/5 text-[#2A6F68] shadow-lg'
+                                ? 'border-green-500 bg-green-50 text-green-800'
+                                : 'border-red-500 bg-red-50 text-red-800'
+                              : 'border-[#2A6F68] bg-[#2A6F68]/5 text-[#2A6F68]'
                             : showExplanation && option === currentQuestion.correct_answer
-                            ? 'border-green-500 bg-green-50 text-green-800 shadow-lg'
+                            ? 'border-green-500 bg-green-50 text-green-800'
                             : 'border-gray-200 hover:border-[#2A6F68]/30 hover:bg-gray-50 text-gray-700'
-                        } ${showExplanation ? 'cursor-default' : 'cursor-pointer'}`}
+                        } ${showExplanation ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'}`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-lg">{option}</span>
+                          <span className="font-medium">{option}</span>
                           {showExplanation && (
                             <>
                               {option === currentQuestion.correct_answer && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 200 }}
-                                >
-                                  <CheckCircle className="h-6 w-6 text-green-600" />
-                                </motion.div>
+                                <CheckCircle className="h-5 w-5 text-green-600" />
                               )}
                               {selectedAnswer === option && option !== currentQuestion.correct_answer && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 200 }}
-                                >
-                                  <X className="h-6 w-6 text-red-600" />
-                                </motion.div>
+                                <X className="h-5 w-5 text-red-600" />
                               )}
                             </>
                           )}
                         </div>
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Enhanced Explanation */}
+                {/* Explanation */}
                 <AnimatePresence>
                   {showExplanation && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0, y: -10 }}
-                      animate={{ opacity: 1, height: 'auto', y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: -10 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                      className={`p-6 rounded-2xl mb-8 border-2 ${
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`p-4 rounded-xl mb-6 border-2 ${
                         isCorrect 
-                          ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200' 
-                          : 'bg-gradient-to-r from-red-50 to-red-100 border-red-200'
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-red-50 border-red-200'
                       }`}
                     >
-                      <div className="flex items-start space-x-4">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                        >
-                          {isCorrect ? (
-                            <CheckCircle className="h-8 w-8 text-green-600 mt-1 flex-shrink-0" />
-                          ) : (
-                            <X className="h-8 w-8 text-red-600 mt-1 flex-shrink-0" />
-                          )}
-                        </motion.div>
-                        <div className="flex-1">
-                          <motion.h4 
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className={`text-xl font-bold mb-3 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}
-                          >
-                            {isCorrect ? '🎉 Excellent!' : '💡 Learning Opportunity'}
-                          </motion.h4>
-                          <motion.p 
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className={`text-base leading-relaxed ${isCorrect ? 'text-green-700' : 'text-red-700'}`}
-                          >
+                      <div className="flex items-start space-x-3">
+                        {isCorrect ? (
+                          <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
+                        ) : (
+                          <X className="h-6 w-6 text-red-600 mt-1 flex-shrink-0" />
+                        )}
+                        <div>
+                          <h4 className={`font-bold mb-2 ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                            {isCorrect ? '🎉 Correct!' : '💡 Learning Opportunity'}
+                          </h4>
+                          <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
                             {currentQuestion.explanation}
-                          </motion.p>
+                          </p>
                           {isCorrect && (
-                            <motion.div 
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.5 }}
-                              className="flex items-center space-x-2 mt-4 bg-green-200 rounded-lg px-4 py-2 w-fit"
-                            >
-                              <Sparkles className="h-5 w-5 text-green-700" />
-                              <span className="text-green-700 font-semibold">+{currentQuestion.points} points earned!</span>
-                            </motion.div>
+                            <div className="flex items-center space-x-2 mt-3 bg-green-200 rounded px-3 py-1 w-fit">
+                              <Sparkles className="h-4 w-4 text-green-700" />
+                              <span className="text-green-700 font-medium text-sm">+{currentQuestion.points} points!</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -479,125 +459,69 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                   )}
                 </AnimatePresence>
 
-                {/* Enhanced Navigation */}
+                {/* Navigation */}
                 <div className="flex items-center justify-between">
-                  <motion.button
-                    whileHover={{ scale: 1.05, x: -5 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={handlePreviousQuestion}
                     disabled={currentQuestionIndex === 0}
-                    className="flex items-center space-x-2 px-6 py-3 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-xl hover:bg-gray-100"
+                    className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-lg hover:bg-gray-100"
                   >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="font-medium">Previous</span>
-                  </motion.button>
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Previous</span>
+                  </button>
 
                   {!showExplanation ? (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={handleSubmitAnswer}
                       disabled={!selectedAnswer}
-                      className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-8 py-3 rounded-xl hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold"
+                      className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
                     >
                       Submit Answer
-                    </motion.button>
+                    </button>
                   ) : (
-                    <motion.button
-                      whileHover={{ scale: 1.05, x: 5 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={handleNextQuestion}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-8 py-3 rounded-xl hover:shadow-lg transition-all font-semibold"
+                      className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
                     >
                       <span>{currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}</span>
-                      <ArrowRight className="h-5 w-5" />
-                    </motion.button>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
               </motion.div>
             </AnimatePresence>
           ) : (
-            /* Enhanced Quiz Results */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                className="w-32 h-32 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center mx-auto mb-8 relative"
-              >
-                <motion.div
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{ 
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute inset-0 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full"
-                />
-                <Trophy className="h-16 w-16 text-white relative z-10" />
-              </motion.div>
+            /* Quiz Results */
+            <div className="text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center mx-auto mb-6">
+                <Trophy className="h-12 w-12 text-white" />
+              </div>
               
-              <motion.h3 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-3xl font-bold text-gray-900 mb-3"
-              >
-                Quiz Completed! 🎉
-              </motion.h3>
-              <motion.p 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="text-gray-600 mb-8 text-lg"
-              >
-                Excellent work on completing the quiz
-              </motion.p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Quiz Completed! 🎉</h3>
+              <p className="text-gray-600 mb-6">Excellent work on completing the quiz</p>
               
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="bg-gradient-to-br from-[#2A6F68]/10 to-[#2A6F68]/20 rounded-2xl p-6 border border-[#2A6F68]/20"
-                >
-                  <div className="text-4xl font-bold text-[#2A6F68] mb-2">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-[#2A6F68]/10 rounded-xl p-4">
+                  <div className="text-2xl font-bold text-[#2A6F68] mb-1">
                     {Math.round((userAnswers.filter((answer, index) => 
                       answer === questions[index]?.correct_answer
                     ).length / questions.length) * 100)}%
                   </div>
-                  <div className="text-gray-600 font-medium">Final Score</div>
-                </motion.div>
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="bg-gradient-to-br from-[#B76E79]/10 to-[#B76E79]/20 rounded-2xl p-6 border border-[#B76E79]/20"
-                >
-                  <div className="text-4xl font-bold text-[#B76E79] mb-2">{score}</div>
-                  <div className="text-gray-600 font-medium">XP Earned</div>
-                </motion.div>
+                  <div className="text-gray-600 text-sm">Final Score</div>
+                </div>
+                <div className="bg-[#B76E79]/10 rounded-xl p-4">
+                  <div className="text-2xl font-bold text-[#B76E79] mb-1">{score}</div>
+                  <div className="text-gray-600 text-sm">XP Earned</div>
+                </div>
               </div>
               
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={onClose}
-                className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-10 py-4 rounded-xl hover:shadow-lg transition-all font-semibold text-lg"
+                className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-8 py-3 rounded-lg hover:shadow-lg transition-all font-medium"
               >
                 Continue Learning Journey
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           )}
         </div>
       </motion.div>
