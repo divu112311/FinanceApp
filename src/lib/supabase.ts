@@ -32,7 +32,7 @@ export const supabase = createClient(
 // Export a flag to check if Supabase is properly configured
 export const isSupabaseConfigured = hasValidCredentials;
 
-// Database types
+// Updated Database types
 export interface Database {
   public: {
     Tables: {
@@ -40,20 +40,85 @@ export interface Database {
         Row: {
           id: string;
           email: string | null;
-          full_name: string | null;
+          first_name: string;
+          last_name: string;
+          phone_number: string | null;
+          date_of_birth: string | null;
+          is_active: boolean | null;
           created_at: string | null;
+          updated_at: string | null;
         };
         Insert: {
           id?: string;
           email?: string | null;
-          full_name?: string | null;
+          first_name: string;
+          last_name: string;
+          phone_number?: string | null;
+          date_of_birth?: string | null;
+          is_active?: boolean | null;
           created_at?: string | null;
+          updated_at?: string | null;
         };
         Update: {
           id?: string;
           email?: string | null;
-          full_name?: string | null;
+          first_name?: string;
+          last_name?: string;
+          phone_number?: string | null;
+          date_of_birth?: string | null;
+          is_active?: boolean | null;
           created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      user_profiles: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          age_range: string | null;
+          income_range: string | null;
+          financial_experience: string | null;
+          primary_goals: string[] | null;
+          learning_style: string | null;
+          time_availability: string | null;
+          interests: string[] | null;
+          notification_preferences: any | null;
+          privacy_settings: any | null;
+          theme_preferences: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          age_range?: string | null;
+          income_range?: string | null;
+          financial_experience?: string | null;
+          primary_goals?: string[] | null;
+          learning_style?: string | null;
+          time_availability?: string | null;
+          interests?: string[] | null;
+          notification_preferences?: any | null;
+          privacy_settings?: any | null;
+          theme_preferences?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          age_range?: string | null;
+          income_range?: string | null;
+          financial_experience?: string | null;
+          primary_goals?: string[] | null;
+          learning_style?: string | null;
+          time_availability?: string | null;
+          interests?: string[] | null;
+          notification_preferences?: any | null;
+          privacy_settings?: any | null;
+          theme_preferences?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
         };
       };
       goals: {

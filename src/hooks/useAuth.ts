@@ -24,13 +24,14 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
         },
       },
     });
@@ -44,12 +45,14 @@ export const useAuth = () => {
         .insert({
           id: data.user.id,
           email: data.user.email,
-          full_name: fullName,
+          first_name: firstName,
+          last_name: lastName,
+          is_active: true,
         });
 
       if (profileError) throw profileError;
 
-      // Create user profile entry
+      // Create user profile entry with default preferences
       const { error: userProfileError } = await supabase
         .from('user_profiles')
         .insert({
@@ -61,6 +64,22 @@ export const useAuth = () => {
           learning_style: 'Visual',
           time_availability: '30min',
           interests: [],
+          notification_preferences: {
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
+            goal_reminders: true,
+            learning_reminders: true,
+            weekly_summary: true
+          },
+          privacy_settings: {
+            profile_visibility: 'private',
+            data_sharing: false,
+            analytics_tracking: true,
+            third_party_sharing: false
+          },
+          theme_preferences: 'auto'
         });
 
       if (userProfileError) throw userProfileError;

@@ -5,8 +5,47 @@ import { supabase } from '../lib/supabase';
 interface UserProfile {
   id: string;
   email: string | null;
-  full_name: string | null;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  is_active: boolean | null;
   created_at: string | null;
+  updated_at: string | null;
+}
+
+interface ExtendedUserProfile {
+  id: string;
+  user_id: string | null;
+  age_range: string | null;
+  income_range: string | null;
+  financial_experience: string | null;
+  primary_goals: string[] | null;
+  learning_style: string | null;
+  time_availability: string | null;
+  interests: string[] | null;
+  notification_preferences: NotificationPreferences | null;
+  privacy_settings: PrivacySettings | null;
+  theme_preferences: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface NotificationPreferences {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  sms_notifications: boolean;
+  marketing_emails: boolean;
+  goal_reminders: boolean;
+  learning_reminders: boolean;
+  weekly_summary: boolean;
+}
+
+interface PrivacySettings {
+  profile_visibility: 'public' | 'private' | 'friends';
+  data_sharing: boolean;
+  analytics_tracking: boolean;
+  third_party_sharing: boolean;
 }
 
 interface UserXP {
@@ -18,6 +57,7 @@ interface UserXP {
 
 export const useUserProfile = (user: User | null) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [extendedProfile, setExtendedProfile] = useState<ExtendedUserProfile | null>(null);
   const [xp, setXP] = useState<UserXP | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +66,7 @@ export const useUserProfile = (user: User | null) => {
       fetchUserData();
     } else {
       setProfile(null);
+      setExtendedProfile(null);
       setXP(null);
       setLoading(false);
     }
@@ -44,6 +85,17 @@ export const useUserProfile = (user: User | null) => {
 
       if (profileError) throw profileError;
 
+      // Fetch extended user profile
+      const { data: extendedProfileData, error: extendedProfileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (extendedProfileError && extendedProfileError.code !== 'PGRST116') {
+        throw extendedProfileError;
+      }
+
       // Fetch user XP
       const { data: xpData, error: xpError } = await supabase
         .from('xp')
@@ -51,15 +103,92 @@ export const useUserProfile = (user: User | null) => {
         .eq('user_id', user.id)
         .single();
 
-      if (xpError) throw xpError;
+      if (xpError && xpError.code !== 'PGRST116') {
+        throw xpError;
+      }
 
       setProfile(profileData);
+      setExtendedProfile(extendedProfileData);
       setXP(xpData);
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user || !profile) return;
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      return;
+    }
+
+    setProfile(data);
+    return data;
+  };
+
+  const updateExtendedProfile = async (updates: Partial<ExtendedUserProfile>) => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: user.id,
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating extended profile:', error);
+      return;
+    }
+
+    setExtendedProfile(data);
+    return data;
+  };
+
+  const updateNotificationPreferences = async (preferences: Partial<NotificationPreferences>) => {
+    if (!user) return;
+
+    const currentPreferences = extendedProfile?.notification_preferences || {};
+    const updatedPreferences = { ...currentPreferences, ...preferences };
+
+    return updateExtendedProfile({
+      notification_preferences: updatedPreferences
+    });
+  };
+
+  const updatePrivacySettings = async (settings: Partial<PrivacySettings>) => {
+    if (!user) return;
+
+    const currentSettings = extendedProfile?.privacy_settings || {};
+    const updatedSettings = { ...currentSettings, ...settings };
+
+    return updateExtendedProfile({
+      privacy_settings: updatedSettings
+    });
+  };
+
+  const updateThemePreference = async (theme: string) => {
+    if (!user) return;
+
+    return updateExtendedProfile({
+      theme_preferences: theme
+    });
   };
 
   const updateXP = async (pointsToAdd: number, newBadge?: string) => {
@@ -89,11 +218,29 @@ export const useUserProfile = (user: User | null) => {
     return data;
   };
 
+  const getFullName = () => {
+    if (!profile) return '';
+    return `${profile.first_name} ${profile.last_name}`.trim();
+  };
+
+  const getDisplayName = () => {
+    if (!profile) return 'User';
+    return profile.first_name || 'User';
+  };
+
   return {
     profile,
+    extendedProfile,
     xp,
     loading,
+    updateProfile,
+    updateExtendedProfile,
+    updateNotificationPreferences,
+    updatePrivacySettings,
+    updateThemePreference,
     updateXP,
+    getFullName,
+    getDisplayName,
     refetch: fetchUserData,
   };
 };

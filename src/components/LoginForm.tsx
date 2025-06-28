@@ -9,7 +9,8 @@ const LoginForm: React.FC = () => {
   const [formState, setFormState] = useState({
     email: '',
     password: '',
-    fullName: ''
+    firstName: '',
+    lastName: ''
   });
   const [error, setError] = useState('');
   const { signIn, signUp, loading } = useAuth();
@@ -22,7 +23,11 @@ const LoginForm: React.FC = () => {
       if (isLogin) {
         await signIn(formState.email, formState.password);
       } else {
-        await signUp(formState.email, formState.password, formState.fullName);
+        if (!formState.firstName.trim() || !formState.lastName.trim()) {
+          setError('First name and last name are required');
+          return;
+        }
+        await signUp(formState.email, formState.password, formState.firstName.trim(), formState.lastName.trim());
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
@@ -113,18 +118,34 @@ const LoginForm: React.FC = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
+                className="grid grid-cols-2 gap-4"
               >
-                <label className="block text-sm font-medium text-[#333333] mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formState.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all bg-white/50"
-                  placeholder="Enter your full name"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-[#333333] mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formState.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all bg-white/50"
+                    placeholder="First name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#333333] mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formState.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all bg-white/50"
+                    placeholder="Last name"
+                  />
+                </div>
               </motion.div>
             )}
 
