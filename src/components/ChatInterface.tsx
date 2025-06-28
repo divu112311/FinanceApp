@@ -149,7 +149,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const recentMessages = messages.slice(-6);
 
   return (
-    <div className="flex h-[calc(100vh-140px)] max-w-7xl mx-auto gap-6">
+    <div className="max-w-7xl mx-auto">
       {/* XP Gained Animation */}
       <AnimatePresence>
         {xpGained && (
@@ -165,388 +165,379 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         )}
       </AnimatePresence>
 
-      {/* Left Column - Easy Wins, Quick Actions, and Chat */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
-      >
-        {/* Easy Wins Section - Dynamic Content */}
-        <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-4 text-[#2A6F68] flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5 text-[#2A6F68]" />
-            <h3 className="text-lg font-bold text-[#2A6F68]">Easy Wins This Week</h3>
-          </div>
-          <div className="space-y-2">
-            {/* Dynamic easy wins based on user data */}
-            {totalBalance > 10000 && (
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-[#2A6F68]/90">
-                  With ${totalBalance.toLocaleString()} in accounts, consider moving excess checking funds to high-yield savings for better returns.
-                </p>
-              </div>
-            )}
-            
-            {goalProgress < 50 && goals.length > 0 && (
-              <div className="flex items-start space-x-2">
-                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm text-[#2A6F68]/90">
-                  Automate ${Math.ceil((totalGoalAmount - totalSavedAmount) / 24)} monthly to reach your goals faster.
-                </p>
-              </div>
-            )}
-            
-            <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-[#2A6F68]/90">Review and cancel unused subscriptions - most people save $40-80/month this way.</p>
+      {/* Two Column Layout - Balanced Heights */}
+      <div className="grid grid-cols-2 gap-6 h-auto">
+        {/* Left Column - Easy Wins, Quick Actions, and Chat */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-6"
+        >
+          {/* Easy Wins Section - Dynamic Content */}
+          <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68]">
+            <div className="flex items-center space-x-2 mb-4">
+              <Lightbulb className="h-5 w-5 text-[#2A6F68]" />
+              <h3 className="text-lg font-bold text-[#2A6F68]">Easy Wins This Week</h3>
             </div>
-            
-            <div className="flex items-start space-x-2">
-              <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
-              <p className="text-sm text-[#2A6F68]/90">Set up automatic bill pay to avoid late fees and improve your credit score.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-4">
-            <Zap className="h-5 w-5 text-[#2A6F68]" />
-            <h3 className="text-lg font-semibold text-[#333333]">Quick Actions</h3>
-          </div>
-
-          <div className="space-y-2">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me create a budget based on my current accounts")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Create Budget</span>
-              </div>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Analyze my investment options based on my current savings")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Investment Analysis</span>
-              </div>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setInputMessage("Help me optimize my savings strategy for my goals")}
-              className="w-full text-left p-3 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
-            >
-              <div className="flex items-center space-x-2">
-                <PiggyBank className="h-4 w-4 text-[#2A6F68]" />
-                <span className="text-sm font-medium text-[#333333]">Optimize Savings</span>
-              </div>
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Chat Container - Flexible Height */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col min-h-0">
-          {/* Chat Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 border-b border-gray-200 rounded-t-2xl flex-shrink-0"
-          >
-            <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
-              {messages.length > 0 && (
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {messages.length} messages
-                </span>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Messages Container - Shows last 6 messages for better conversation visibility */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
-            {recentMessages.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-6"
-              >
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-[#333333] mb-2">
-                    Let's Build Your Financial Success Plan
-                  </h3>
-                  <p className="text-gray-600 text-sm max-w-md mx-auto">
-                    I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
-                    {goals.length > 0 && ` and ${goals.length} financial goal${goals.length !== 1 ? 's' : ''}`}. 
-                    Let's optimize your financial strategy!
+            <div className="space-y-3">
+              {/* Dynamic easy wins based on user data */}
+              {totalBalance > 10000 && (
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-[#2A6F68]/90">
+                    With ${totalBalance.toLocaleString()} in accounts, consider moving excess checking funds to high-yield savings for better returns.
                   </p>
                 </div>
-                
-                <div className="grid grid-cols-1 gap-2 max-w-lg mx-auto">
-                  {suggestedQuestions.map((question, index) => (
-                    <motion.button
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02, backgroundColor: '#f8fafc' }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setInputMessage(question)}
-                      className="p-3 text-left bg-white hover:bg-gray-50 rounded-lg text-sm text-[#333333] transition-all border-2 border-gray-100 hover:border-[#2A6F68]/20 shadow-sm hover:shadow-md"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-[#2A6F68] rounded-full"></div>
-                        <span className="font-medium">{question}</span>
-                      </div>
-                    </motion.button>
-                  ))}
+              )}
+              
+              {goalProgress < 50 && goals.length > 0 && (
+                <div className="flex items-start space-x-3">
+                  <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-[#2A6F68]/90">
+                    Automate ${Math.ceil((totalGoalAmount - totalSavedAmount) / 24)} monthly to reach your goals faster.
+                  </p>
                 </div>
-              </motion.div>
-            )}
+              )}
+              
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-[#2A6F68]/90">Review and cancel unused subscriptions - most people save $40-80/month this way.</p>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-[#2A6F68] rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-sm text-[#2A6F68]/90">Set up automatic bill pay to avoid late fees and improve your credit score.</p>
+              </div>
+            </div>
+          </div>
 
-            {/* Show last 6 messages for better conversation visibility */}
-            {recentMessages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          {/* Quick Actions */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center space-x-2 mb-4">
+              <Zap className="h-5 w-5 text-[#2A6F68]" />
+              <h3 className="text-lg font-semibold text-[#333333]">Quick Actions</h3>
+            </div>
+
+            <div className="space-y-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setInputMessage("Help me create a budget based on my current accounts")}
+                className="w-full text-left p-4 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
               >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                    message.sender === 'user'
-                      ? 'bg-[#2A6F68] text-white rounded-br-sm'
-                      : 'bg-gray-100 text-[#333333] rounded-bl-sm'
-                  }`}
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-[#2A6F68]" />
+                  <span className="font-medium text-[#333333]">Create Budget</span>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setInputMessage("Analyze my investment options based on my current savings")}
+                className="w-full text-left p-4 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
+              >
+                <div className="flex items-center space-x-3">
+                  <TrendingUp className="h-5 w-5 text-[#2A6F68]" />
+                  <span className="font-medium text-[#333333]">Investment Analysis</span>
+                </div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setInputMessage("Help me optimize my savings strategy for my goals")}
+                className="w-full text-left p-4 bg-gray-50 hover:bg-[#2A6F68]/5 rounded-lg transition-colors border border-transparent hover:border-[#2A6F68]/20"
+              >
+                <div className="flex items-center space-x-3">
+                  <PiggyBank className="h-5 w-5 text-[#2A6F68]" />
+                  <span className="font-medium text-[#333333]">Optimize Savings</span>
+                </div>
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Chat Container - Fixed Height */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 h-[500px] flex flex-col">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-gray-200 rounded-t-2xl flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <h2 className="text-lg font-semibold text-[#333333]">Sensei DoughJo</h2>
+                {messages.length > 0 && (
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {messages.length} messages
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Messages Container - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {recentMessages.length === 0 && (
+                <div className="text-center py-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2">
+                      Let's Build Your Financial Success Plan
+                    </h3>
+                    <p className="text-gray-600 text-sm max-w-md mx-auto">
+                      I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
+                      {goals.length > 0 && ` and ${goals.length} financial goal${goals.length !== 1 ? 's' : ''}`}. 
+                      Let's optimize your financial strategy!
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2 max-w-lg mx-auto">
+                    {suggestedQuestions.slice(0, 3).map((question, index) => (
+                      <motion.button
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setInputMessage(question)}
+                        className="p-3 text-left bg-white hover:bg-gray-50 rounded-lg text-sm text-[#333333] transition-all border-2 border-gray-100 hover:border-[#2A6F68]/20 shadow-sm hover:shadow-md"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-[#2A6F68] rounded-full"></div>
+                          <span className="font-medium">{question}</span>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Show last 6 messages for better conversation visibility */}
+              {recentMessages.map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-start space-x-2">
-                    {message.sender !== 'user' && (
-                      <div className="w-5 h-5 mt-1 flex-shrink-0">
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                      message.sender === 'user'
+                        ? 'bg-[#2A6F68] text-white rounded-br-sm'
+                        : 'bg-gray-100 text-[#333333] rounded-bl-sm'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2">
+                      {message.sender !== 'user' && (
+                        <div className="w-5 h-5 mt-1 flex-shrink-0">
+                          <img 
+                            src={doughjoMascot} 
+                            alt="DoughJo" 
+                            className="w-full h-full object-contain rounded-full"
+                          />
+                        </div>
+                      )}
+                      <p className="text-sm leading-relaxed">{message.message}</p>
+                      {message.sender === 'user' && (
+                        <UserIcon className="h-4 w-4 mt-1 text-white/70 flex-shrink-0" />
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5">
                         <img 
                           src={doughjoMascot} 
                           alt="DoughJo" 
                           className="w-full h-full object-contain rounded-full"
                         />
                       </div>
-                    )}
-                    <p className="text-sm leading-relaxed">{message.message}</p>
-                    {message.sender === 'user' && (
-                      <UserIcon className="h-4 w-4 mt-1 text-white/70 flex-shrink-0" />
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {loading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex justify-start"
-              >
-                <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5">
-                      <img 
-                        src={doughjoMascot} 
-                        alt="DoughJo" 
-                        className="w-full h-full object-contain rounded-full"
-                      />
-                    </div>
-                    <div className="flex space-x-1">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                            delay: i * 0.2
-                          }}
-                          className="w-2 h-2 bg-[#B76E79] rounded-full"
-                        />
-                      ))}
+                      <div className="flex space-x-1">
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{
+                              duration: 0.8,
+                              repeat: Infinity,
+                              delay: i * 0.2
+                            }}
+                            className="w-2 h-2 bg-[#B76E79] rounded-full"
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
+                </motion.div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-gray-200 rounded-b-2xl flex-shrink-0">
+              <div className="flex space-x-3">
+                <div className="flex-1 relative">
+                  <textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask about your finances, goals, or get personalized advice..."
+                    rows={1}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent resize-none transition-all"
+                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                  />
                 </div>
-              </motion.div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 border-t border-gray-200 rounded-b-2xl flex-shrink-0"
-          >
-            <div className="flex space-x-3">
-              <div className="flex-1 relative">
-                <textarea
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask about your finances, goals, or get personalized advice..."
-                  rows={1}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent resize-none transition-all"
-                  style={{ minHeight: '44px', maxHeight: '120px' }}
-                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || loading}
+                  className="bg-[#2A6F68] text-white p-3 rounded-lg hover:bg-[#235A54] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send className="h-5 w-5" />
+                </motion.button>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || loading}
-                className="bg-[#2A6F68] text-white p-3 rounded-lg hover:bg-[#235A54] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Send className="h-5 w-5" />
-              </motion.button>
             </div>
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* Right Column - AI Learning Insights and Sensei Wisdom */}
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
-        className="w-1/2 flex flex-col space-y-4 h-[calc(100vh-140px)] overflow-y-auto"
-      >
-        {/* AI Learning Insights - Dynamic Content */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-6">
-            <div className="w-8 h-8 bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-lg flex items-center justify-center">
-              <Brain className="h-5 w-5 text-[#B76E79]" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#333333]">AI Learning Insights</h3>
           </div>
+        </motion.div>
 
-          <div className="space-y-4">
-            {dynamicInsights.length > 0 ? (
-              dynamicInsights.map((insight, index) => (
-                <div key={index} className={`border-l-4 ${insight.color} pl-4`}>
-                  <div className="flex items-start space-x-3">
-                    <insight.icon className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">{insight.title}</h4>
-                      <p className="text-sm text-gray-600 mb-3">{insight.message}</p>
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{insight.type}</span>
+        {/* Right Column - AI Learning Insights and Sensei Wisdom */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-6"
+        >
+          {/* AI Learning Insights - Dynamic Content */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center space-x-2 mb-6">
+              <div className="w-8 h-8 bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-lg flex items-center justify-center">
+                <Brain className="h-5 w-5 text-[#B76E79]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#333333]">AI Learning Insights</h3>
+            </div>
+
+            <div className="space-y-4">
+              {dynamicInsights.length > 0 ? (
+                dynamicInsights.map((insight, index) => (
+                  <div key={index} className={`border-l-4 ${insight.color} pl-4`}>
+                    <div className="flex items-start space-x-3">
+                      <insight.icon className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{insight.title}</h4>
+                        <p className="text-sm text-gray-600 mb-3">{insight.message}</p>
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{insight.type}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              // Default insights when no dynamic data available
-              <>
-                <div className="border-l-4 border-[#2A6F68] pl-4">
-                  <div className="flex items-start space-x-3">
-                    <TrendingUp className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Connect Your Accounts</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Link your bank accounts to get personalized insights about your spending patterns and savings opportunities.
-                      </p>
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">setup</span>
+                ))
+              ) : (
+                // Default insights when no dynamic data available
+                <>
+                  <div className="border-l-4 border-[#2A6F68] pl-4">
+                    <div className="flex items-start space-x-3">
+                      <TrendingUp className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">Connect Your Accounts</h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Link your bank accounts to get personalized insights about your spending patterns and savings opportunities.
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">setup</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="border-l-4 border-[#B76E79] pl-4">
-                  <div className="flex items-start space-x-3">
-                    <Target className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Set Financial Goals</h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Create specific financial goals to track your progress and stay motivated on your wealth-building journey.
-                      </p>
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">planning</span>
+                  <div className="border-l-4 border-[#B76E79] pl-4">
+                    <div className="flex items-start space-x-3">
+                      <Target className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">Set Financial Goals</h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Create specific financial goals to track your progress and stay motivated on your wealth-building journey.
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">planning</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Sensei Wisdom - Dynamic Content */}
-        <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68] flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-[#2A6F68]/20 border border-[#2A6F68]/30 rounded-lg flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-[#2A6F68]" />
-            </div>
-            <h3 className="text-lg font-semibold">Sensei Wisdom</h3>
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
-              <p className="text-sm text-[#2A6F68]/90 mb-2">
-                {totalBalance > 0 ? (
-                  `Great progress! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
-                ) : (
-                  `Welcome to your financial journey! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
-                )}
-              </p>
-              
-              {goals.length > 0 && (
-                <div className="grid grid-cols-2 gap-3 mt-3">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-[#2A6F68]">{formatCurrency(totalSavedAmount)}</div>
-                    <div className="text-xs text-[#2A6F68]/80">Total Saved</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-[#2A6F68]">{goalProgress.toFixed(1)}%</div>
-                    <div className="text-xs text-[#2A6F68]/80">Goal Progress</div>
-                  </div>
-                </div>
+                </>
               )}
             </div>
+          </div>
 
-            <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
-              <p className="text-sm text-[#2A6F68]/90">
-                {totalBalance > 5000 ? (
-                  `Here's what I recommend: consider automating your savings to reach your goals faster. With your current balance, you could potentially save an additional $${Math.ceil(totalBalance * 0.02)} monthly.`
-                ) : (
-                  `Here's what I recommend we tackle first: start with the basics - create a budget, build a small emergency fund, and set up automatic savings. Small steps lead to big results!`
+          {/* Sensei Wisdom - Dynamic Content */}
+          <div className="bg-[#2A6F68]/10 border border-[#2A6F68]/20 rounded-xl p-6 text-[#2A6F68]">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-8 h-8 bg-[#2A6F68]/20 border border-[#2A6F68]/30 rounded-lg flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-[#2A6F68]" />
+              </div>
+              <h3 className="text-lg font-semibold">Sensei Wisdom</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
+                <p className="text-sm text-[#2A6F68]/90 mb-2">
+                  {totalBalance > 0 ? (
+                    `Great progress! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
+                  ) : (
+                    `Welcome to your financial journey! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
+                  )}
+                </p>
+                
+                {goals.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-[#2A6F68]">{formatCurrency(totalSavedAmount)}</div>
+                      <div className="text-xs text-[#2A6F68]/80">Total Saved</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-[#2A6F68]">{goalProgress.toFixed(1)}%</div>
+                      <div className="text-xs text-[#2A6F68]/80">Goal Progress</div>
+                    </div>
+                  </div>
                 )}
-              </p>
+              </div>
+
+              <div className="bg-[#2A6F68]/5 border border-[#2A6F68]/10 rounded-lg p-4">
+                <p className="text-sm text-[#2A6F68]/90">
+                  {totalBalance > 5000 ? (
+                    `Here's what I recommend: consider automating your savings to reach your goals faster. With your current balance, you could potentially save an additional $${Math.ceil(totalBalance * 0.02)} monthly.`
+                  ) : (
+                    `Here's what I recommend we tackle first: start with the basics - create a budget, build a small emergency fund, and set up automatic savings. Small steps lead to big results!`
+                  )}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Daily Wisdom */}
-        <div className="bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-xl p-6 text-[#B76E79] flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-3">
-            <Lightbulb className="h-5 w-5" />
-            <h3 className="text-lg font-semibold">Daily Wisdom</h3>
+          {/* Daily Wisdom */}
+          <div className="bg-[#B76E79]/10 border border-[#B76E79]/20 rounded-xl p-6 text-[#B76E79]">
+            <div className="flex items-center space-x-2 mb-3">
+              <Lightbulb className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Daily Wisdom</h3>
+            </div>
+            <p className="text-sm text-[#B76E79]/90 leading-relaxed">
+              "The best time to plant a tree was 20 years ago. The second best time is now." 
+              Start investing today, even if it's just $25 per month.
+            </p>
+            <div className="mt-3 text-xs text-[#B76E79]/70">
+              - Sensei DoughJo
+            </div>
           </div>
-          <p className="text-sm text-[#B76E79]/90 leading-relaxed">
-            "The best time to plant a tree was 20 years ago. The second best time is now." 
-            Start investing today, even if it's just $25 per month.
-          </p>
-          <div className="mt-3 text-xs text-[#B76E79]/70">
-            - Sensei DoughJo
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };
