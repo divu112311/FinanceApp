@@ -176,26 +176,24 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   };
 
   const handleNextQuestion = () => {
-    console.log('=== NEXT QUESTION ===');
+    console.log('=== NEXT QUESTION CLICKED ===');
     console.log('Current index:', currentQuestionIndex);
     console.log('Total questions:', questions.length);
+    console.log('Show explanation:', showExplanation);
     
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       console.log('Moving to question:', nextIndex);
       
+      // Reset state for next question
       setCurrentQuestionIndex(nextIndex);
-      setSelectedAnswer(userAnswers[nextIndex] || '');
-      setShowExplanation(!!userAnswers[nextIndex]);
+      setSelectedAnswer(''); // Always reset to empty for new question
+      setShowExplanation(false); // Always hide explanation for new question
+      setIsCorrect(false); // Reset correct state
       
-      if (userAnswers[nextIndex]) {
-        const nextQuestion = questions[nextIndex];
-        setIsCorrect(userAnswers[nextIndex] === nextQuestion.correct_answer);
-      } else {
-        setIsCorrect(false);
-      }
+      console.log('State reset for next question');
     } else {
-      console.log('Quiz completed');
+      console.log('Quiz completed - all questions answered');
       completeQuiz();
     }
   };
@@ -208,13 +206,17 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       console.log('Moving to question:', prevIndex);
       
       setCurrentQuestionIndex(prevIndex);
-      setSelectedAnswer(userAnswers[prevIndex] || '');
-      setShowExplanation(!!userAnswers[prevIndex]);
       
-      if (userAnswers[prevIndex]) {
+      // Check if this question was already answered
+      const prevAnswer = userAnswers[prevIndex];
+      if (prevAnswer) {
+        setSelectedAnswer(prevAnswer);
+        setShowExplanation(true);
         const prevQuestion = questions[prevIndex];
-        setIsCorrect(userAnswers[prevIndex] === prevQuestion.correct_answer);
+        setIsCorrect(prevAnswer === prevQuestion.correct_answer);
       } else {
+        setSelectedAnswer('');
+        setShowExplanation(false);
         setIsCorrect(false);
       }
     }
@@ -479,13 +481,18 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                       Submit Answer
                     </button>
                   ) : (
-                    <button
-                      onClick={handleNextQuestion}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        console.log('Next/Finish button clicked');
+                        handleNextQuestion();
+                      }}
                       className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all font-medium"
                     >
                       <span>{currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}</span>
                       <ArrowRight className="h-4 w-4" />
-                    </button>
+                    </motion.button>
                   )}
                 </div>
               </motion.div>
