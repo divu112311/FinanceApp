@@ -1,21 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Building2, 
-  CreditCard, 
-  PiggyBank, 
-  TrendingUp,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle,
-  ExternalLink,
-  Trash2,
-  Edit3,
-  Sync
-} from 'lucide-react';
+import { Plus, Building2, CreditCard, PiggyBank, TrendingUp, Eye, EyeOff, RefreshCw, AlertCircle, CheckCircle, ExternalLink, Trash2, Edit3, FolderSync as Sync } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
