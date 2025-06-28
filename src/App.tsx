@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
+import LearningCenter from './components/LearningCenter';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import doughjoMascot from './assets/doughjo-mascot.png';
@@ -10,7 +11,7 @@ import doughjoMascot from './assets/doughjo-mascot.png';
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
-  const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('chat');
+  const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'learning'>('chat');
 
   const handleXPUpdate = async (points: number) => {
     await updateXP(points);
@@ -89,6 +90,16 @@ function App() {
                 >
                   Dashboard
                 </button>
+                <button
+                  onClick={() => setActiveView('learning')}
+                  className={`px-4 py-2 rounded-lg transition-all ${
+                    activeView === 'learning'
+                      ? 'bg-[#2A6F68] text-white'
+                      : 'text-[#333333] hover:bg-gray-100'
+                  }`}
+                >
+                  Learning
+                </button>
               </nav>
               
               <button
@@ -115,7 +126,7 @@ function App() {
             >
               <ChatInterface user={user} onXPUpdate={handleXPUpdate} />
             </motion.div>
-          ) : (
+          ) : activeView === 'dashboard' ? (
             <motion.div
               key="dashboard"
               initial={{ opacity: 0, x: 20 }}
@@ -124,6 +135,16 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <Dashboard user={user} xp={xp} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="learning"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LearningCenter user={user} xp={xp} onXPUpdate={handleXPUpdate} />
             </motion.div>
           )}
         </AnimatePresence>
