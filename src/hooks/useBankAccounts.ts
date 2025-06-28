@@ -9,13 +9,17 @@ interface BankAccount {
   plaid_access_token: string;
   name: string;
   type: string;
-  subtype: string | null;
+  account_subtype: string | null; // Updated from subtype
   balance: number | null;
   institution_name: string;
   institution_id: string;
   mask: string | null;
+  plaid_item_id: string | null; // New field
+  is_active: boolean | null; // New field
+  last_synced_at: string | null; // New field
   last_updated: string | null;
   created_at: string | null;
+  updated_at: string | null; // New field
 }
 
 export const useBankAccounts = (user: User | null) => {
@@ -41,6 +45,7 @@ export const useBankAccounts = (user: User | null) => {
         .from('bank_accounts')
         .select('*')
         .eq('user_id', user.id)
+        .eq('is_active', true) // Only fetch active accounts
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -62,7 +67,7 @@ export const useBankAccounts = (user: User | null) => {
     }
   };
 
-  const addBankAccount = async (accountData: Omit<BankAccount, 'id' | 'user_id' | 'created_at'>) => {
+  const addBankAccount = async (accountData: Omit<BankAccount, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
     try {
@@ -71,6 +76,9 @@ export const useBankAccounts = (user: User | null) => {
         .insert({
           user_id: user.id,
           ...accountData,
+          is_active: true,
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -95,7 +103,10 @@ export const useBankAccounts = (user: User | null) => {
     try {
       const { data, error } = await supabase
         .from('bank_accounts')
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -130,9 +141,13 @@ export const useBankAccounts = (user: User | null) => {
     try {
       const deletedAccount = bankAccounts.find(account => account.id === id);
       
+      // Soft delete by setting is_active to false
       const { error } = await supabase
         .from('bank_accounts')
-        .delete()
+        .update({ 
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .eq('user_id', user.id);
 
@@ -156,6 +171,33 @@ export const useBankAccounts = (user: User | null) => {
     await fetchBankAccounts();
   };
 
+  const syncAccount = async (id: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('bank_accounts')
+        .update({ 
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error syncing bank account:', error);
+        return false;
+      }
+
+      // Refresh accounts after sync
+      await fetchBankAccounts();
+      return true;
+    } catch (error) {
+      console.error('Error syncing bank account:', error);
+      return false;
+    }
+  };
+
   return {
     bankAccounts,
     loading,
@@ -164,6 +206,7 @@ export const useBankAccounts = (user: User | null) => {
     updateBankAccount,
     deleteBankAccount,
     refreshAccounts,
+    syncAccount,
     refetch: fetchBankAccounts,
   };
 };

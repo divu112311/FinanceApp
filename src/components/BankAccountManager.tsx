@@ -13,7 +13,8 @@ import {
   CheckCircle,
   ExternalLink,
   Trash2,
-  Edit3
+  Edit3,
+  Sync
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
@@ -26,7 +27,7 @@ interface BankAccountManagerProps {
 
 const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
   const [showBalances, setShowBalances] = useState(true);
-  const { bankAccounts, loading, refreshAccounts, totalBalance, deleteBankAccount } = useBankAccounts(user);
+  const { bankAccounts, loading, refreshAccounts, totalBalance, deleteBankAccount, syncAccount } = useBankAccounts(user);
   const { 
     openPlaidLink, 
     connectWithCredentials,
@@ -82,10 +83,33 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
     return `••••${mask}`;
   };
 
+  const formatLastSynced = (lastSynced: string | null) => {
+    if (!lastSynced) return 'Never synced';
+    const date = new Date(lastSynced);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffHours >= 24) {
+      return `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) > 1 ? 's' : ''} ago`;
+    } else if (diffHours >= 1) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes >= 1) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
+  };
+
   const handleDeleteAccount = async (accountId: string) => {
     if (window.confirm('Are you sure you want to disconnect this account?')) {
       await deleteBankAccount(accountId);
     }
+  };
+
+  const handleSyncAccount = async (accountId: string) => {
+    await syncAccount(accountId);
   };
 
   return (
@@ -224,7 +248,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AnimatePresence>
               {bankAccounts.map((account, index) => {
-                const IconComponent = getAccountIcon(account.type, account.subtype || '');
+                const IconComponent = getAccountIcon(account.type, account.account_subtype || '');
                 
                 return (
                   <motion.div
@@ -253,25 +277,32 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
                       <h4 className="font-semibold text-[#333333]">{account.name}</h4>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">
-                          {getAccountTypeLabel(account.type, account.subtype || '')}
+                          {getAccountTypeLabel(account.type, account.account_subtype || '')}
                         </span>
                         <span className="text-xs text-gray-500">
                           {account.institution_name}
                         </span>
                       </div>
                       
-                      {account.last_updated && (
-                        <div className="text-xs text-gray-400 flex items-center space-x-1">
-                          <RefreshCw className="h-3 w-3" />
-                          <span>
-                            Updated {new Date(account.last_updated).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
+                      <div className="text-xs text-gray-400 flex items-center space-x-1">
+                        <RefreshCw className="h-3 w-3" />
+                        <span>
+                          Last synced: {formatLastSynced(account.last_synced_at)}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Account Actions */}
                     <div className="flex items-center space-x-2 pt-3 border-t border-gray-100">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleSyncAccount(account.id)}
+                        className="flex-1 flex items-center justify-center space-x-1 bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                      >
+                        <Sync className="h-3 w-3" />
+                        <span>Sync</span>
+                      </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

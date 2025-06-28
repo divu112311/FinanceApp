@@ -116,27 +116,32 @@ serve(async (req) => {
       }
     })
 
-    // Store accounts in database
+    // Store accounts in database with updated schema
     const accountsToInsert = accountsData.accounts.map((account: any) => ({
       user_id: userId,
       plaid_account_id: account.account_id,
       plaid_access_token: access_token,
+      plaid_item_id: item_id, // New field
       name: account.name,
       type: account.type,
-      subtype: account.subtype,
+      account_subtype: account.subtype, // Updated field name
       balance: account.balances.current,
       institution_name: institution?.name || 'Unknown Institution',
       institution_id: institution?.institution_id || 'unknown',
       mask: account.mask,
+      is_active: true, // New field
+      last_synced_at: new Date().toISOString(), // New field
       last_updated: new Date().toISOString(),
+      updated_at: new Date().toISOString(), // New field
     }))
 
     console.log('💾 STORING ACCOUNTS IN DATABASE...')
     console.log('Accounts to insert:', accountsToInsert.map(acc => ({
       name: acc.name,
       type: acc.type,
-      subtype: acc.subtype,
-      balance: acc.balance
+      account_subtype: acc.account_subtype,
+      balance: acc.balance,
+      plaid_item_id: acc.plaid_item_id
     })))
 
     const { data: insertedAccounts, error: insertError } = await supabaseClient

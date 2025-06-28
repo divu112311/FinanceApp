@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { useChat } from '../hooks/useChat';
 import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
+import { useUserProfile } from '../hooks/useUserProfile';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface ChatInterfaceProps {
@@ -19,15 +20,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const { messages, loading, sendMessage } = useChat(user);
   const { goals } = useGoals(user);
   const { bankAccounts, totalBalance } = useBankAccounts(user);
-
-  // Remove auto-scroll effect to prevent scrolling to bottom
-  // useEffect(() => {
-  //   scrollToBottom();
-  // }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const { getDisplayName } = useUserProfile(user);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || loading) return;
@@ -120,7 +113,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
     }
 
     // Investment opportunity
-    const checkingAccounts = bankAccounts.filter(acc => acc.subtype === 'checking');
+    const checkingAccounts = bankAccounts.filter(acc => acc.account_subtype === 'checking');
     const totalChecking = checkingAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
     if (totalChecking > 5000) {
       insights.push({
@@ -325,7 +318,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     <div className="text-center py-6">
                       <div className="mb-4">
                         <h4 className="font-semibold text-gray-900 mb-2">
-                          Let's Optimize Your Finances
+                          Let's Optimize Your Finances, {getDisplayName()}
                         </h4>
                         <p className="text-gray-600 text-sm max-w-md mx-auto">
                           I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
@@ -541,9 +534,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   <div className="bg-white/60 rounded-xl p-4 border border-white/40">
                     <p className="text-sm text-[#2A6F68] mb-3 font-medium">
                       {totalBalance > 0 ? (
-                        `Great progress! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
+                        `Great progress, ${getDisplayName()}! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
                       ) : (
-                        `Welcome to your financial journey! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
+                        `Welcome to your financial journey, ${getDisplayName()}! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
                       )}
                     </p>
                     
