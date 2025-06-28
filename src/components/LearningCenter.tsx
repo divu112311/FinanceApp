@@ -68,48 +68,71 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
   const handleStartModule = async (moduleId: string) => {
     const module = modules.find(m => m.id === moduleId);
-    if (!module) return;
+    if (!module) {
+      console.error('Module not found:', moduleId);
+      return;
+    }
+
+    console.log('=== MODULE CLICK DEBUG ===');
+    console.log('Module:', module.title);
+    console.log('Content Type:', module.content_type);
+    console.log('Current Status:', module.progress?.status);
+    console.log('Is Quiz?', module.content_type === 'quiz');
 
     if (module.progress?.status === 'completed') {
-      return; // Already completed
+      console.log('Module already completed, skipping');
+      return;
     }
 
     // If it's a quiz module, show the quiz interface
     if (module.content_type === 'quiz') {
-      console.log('Opening quiz for module:', module.title);
+      console.log('Opening quiz interface for:', module.title);
       setSelectedModule(module);
       setShowQuiz(true);
       return;
     }
 
     // For non-quiz modules, start and simulate completion
-    if (module.progress?.status === 'not_started' || !module.progress) {
-      await startModule(moduleId);
-    }
+    try {
+      if (module.progress?.status === 'not_started' || !module.progress) {
+        console.log('Starting module:', module.title);
+        await startModule(moduleId);
+      }
 
-    // Simulate completion for non-quiz modules
-    await updateProgress(moduleId, 100, module.duration_minutes);
-    onXPUpdate(module.xp_reward);
+      // Simulate completion for non-quiz modules
+      console.log('Completing module:', module.title);
+      await updateProgress(moduleId, 100, module.duration_minutes);
+      onXPUpdate(module.xp_reward);
+    } catch (error) {
+      console.error('Error handling module:', error);
+    }
   };
 
   const handleQuizComplete = async (score: number, xpEarned: number) => {
     if (!selectedModule) return;
 
-    console.log('Quiz completed with score:', score, 'XP earned:', xpEarned);
+    console.log('=== QUIZ COMPLETION ===');
+    console.log('Module:', selectedModule.title);
+    console.log('Score:', score);
+    console.log('XP Earned:', xpEarned);
 
-    // Update progress to completed
-    await updateProgress(selectedModule.id, 100, selectedModule.duration_minutes);
-    
-    // Award XP
-    onXPUpdate(xpEarned);
-    
-    // Close quiz
-    setShowQuiz(false);
-    setSelectedModule(null);
+    try {
+      // Update progress to completed
+      await updateProgress(selectedModule.id, 100, selectedModule.duration_minutes);
+      
+      // Award XP
+      onXPUpdate(xpEarned);
+      
+      // Close quiz
+      setShowQuiz(false);
+      setSelectedModule(null);
+    } catch (error) {
+      console.error('Error completing quiz:', error);
+    }
   };
 
   const handleQuizClose = () => {
-    console.log('Quiz closed');
+    console.log('Quiz closed by user');
     setShowQuiz(false);
     setSelectedModule(null);
   };
@@ -148,309 +171,122 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
   return (
     <>
-      <div className="space-y-8">
-        {/* Enhanced Header with Floating Elements */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative bg-gradient-to-br from-[#2A6F68] via-[#2A6F68] to-[#B76E79] rounded-3xl p-8 text-white overflow-hidden"
-        >
-          {/* Floating Background Elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              animate={{ 
-                x: [0, 50, 0],
-                y: [0, -25, 0],
-                rotate: [0, 180, 360]
-              }}
-              transition={{ 
-                duration: 15,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute top-10 right-10 w-20 h-20 bg-white/5 rounded-full"
-            />
-            <motion.div
-              animate={{ 
-                x: [0, -40, 0],
-                y: [0, 30, 0],
-                rotate: [0, -180, -360]
-              }}
-              transition={{ 
-                duration: 20,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute bottom-10 left-10 w-16 h-16 bg-white/5 rounded-full"
-            />
-          </div>
-
-          {/* Mascot with Enhanced Animation */}
-          <div className="absolute top-6 right-6">
-            <motion.div
-              animate={{ 
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.05, 1],
-                y: [0, -3, 0]
-              }}
-              transition={{ 
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="relative"
-            >
+      <div className="space-y-6">
+        {/* Simplified Header */}
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Your Learning Journey 🎓</h1>
+              <p className="text-white/90 mb-4">
+                {userProfile?.financial_experience === 'Beginner' 
+                  ? "Building your financial foundation"
+                  : userProfile?.financial_experience === 'Advanced'
+                  ? "Advanced wealth strategies"
+                  : "Expanding your financial knowledge"
+                }
+              </p>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
+                  <span>{beltRank.emoji}</span>
+                  <span className="font-medium">{beltRank.name}</span>
+                </div>
+                <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>{overallProgress.completed}/{overallProgress.total} Complete</span>
+                </div>
+              </div>
+            </div>
+            <div className="w-16 h-16">
               <img 
                 src={doughjoMascot} 
                 alt="DoughJo" 
-                className="relative w-16 h-16 object-contain rounded-full"
+                className="w-full h-full object-contain rounded-full opacity-80"
               />
-            </motion.div>
-          </div>
-          
-          <div className="relative z-10">
-            <motion.h1 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-3xl font-serif font-bold mb-3"
-            >
-              <span className="inline-flex items-center space-x-2">
-                <span>Your Learning Journey</span>
-                <motion.span
-                  animate={{ rotate: [0, 15, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  🎓
-                </motion.span>
-              </span>
-            </motion.h1>
-            
-            <motion.p 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-white/90 mb-6 text-lg"
-            >
-              {userProfile?.financial_experience === 'Beginner' 
-                ? "Building your financial foundation with personalized guidance"
-                : userProfile?.financial_experience === 'Advanced'
-                ? "Advanced strategies for wealth mastery and optimization"
-                : "Expanding your financial knowledge and investment skills"
-              }
-            </motion.p>
-            
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-wrap items-center gap-3"
-            >
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-xl px-4 py-2 shadow-lg`}
-              >
-                <span className="text-lg">{beltRank.emoji}</span>
-                <span className="font-semibold">{beltRank.name}</span>
-              </motion.div>
-              
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2"
-              >
-                <BookOpen className="h-5 w-5" />
-                <span className="font-medium">{overallProgress.completed}/{overallProgress.total} Complete</span>
-              </motion.div>
-              
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2"
-              >
-                <Trophy className="h-5 w-5" />
-                <span className="font-medium">{userProfile?.financial_experience || 'Learner'}</span>
-              </motion.div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Enhanced Progress Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#333333] mb-2">Learning Progress</h2>
-              <p className="text-gray-600">Your path to financial mastery</p>
             </div>
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="text-right"
-            >
-              <div className="text-4xl font-bold text-[#2A6F68] mb-1">
-                {overallProgress.percentage.toFixed(0)}%
+          </div>
+        </div>
+
+        {/* Simplified Progress Overview */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-[#333333]">Learning Progress</h2>
+            <div className="text-2xl font-bold text-[#2A6F68]">
+              {overallProgress.percentage.toFixed(0)}%
+            </div>
+          </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div
+              className="h-3 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
+              style={{ width: `${overallProgress.percentage}%` }}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-xl font-bold text-[#2A6F68]">{overallProgress.completed}</div>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-[#B76E79]">{overallProgress.inProgress}</div>
+              <div className="text-sm text-gray-600">In Progress</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-green-600">
+                {modules.reduce((sum, m) => sum + (m.progress?.status === 'completed' ? m.xp_reward : 0), 0)}
               </div>
-              <div className="text-sm text-gray-600">Complete</div>
-            </motion.div>
-          </div>
-
-          <div className="relative mb-6">
-            <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${overallProgress.percentage}%` }}
-                transition={{ duration: 2, ease: "easeOut" }}
-                className="h-6 rounded-full bg-gradient-to-r from-[#2A6F68] via-[#2A6F68] to-[#B76E79] relative overflow-hidden"
-              >
-                <motion.div
-                  animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                />
-              </motion.div>
+              <div className="text-sm text-gray-600">XP Earned</div>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { 
-                value: overallProgress.completed, 
-                label: 'Modules Completed', 
-                color: 'from-[#2A6F68] to-[#2A6F68]',
-                icon: CheckCircle
-              },
-              { 
-                value: overallProgress.inProgress, 
-                label: 'In Progress', 
-                color: 'from-[#B76E79] to-[#B76E79]',
-                icon: Activity
-              },
-              { 
-                value: modules.reduce((sum, m) => sum + (m.progress?.status === 'completed' ? m.xp_reward : 0), 0), 
-                label: 'XP Earned', 
-                color: 'from-green-400 to-green-600',
-                icon: Zap
-              }
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-                whileHover={{ scale: 1.02, y: -2 }}
-                className={`text-center p-6 bg-gradient-to-br ${stat.color} rounded-xl text-white shadow-lg`}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  className="w-12 h-12 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center"
-                >
-                  <stat.icon className="h-6 w-6" />
-                </motion.div>
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + index * 0.1, type: "spring", stiffness: 200 }}
-                  className="text-3xl font-bold mb-1"
-                >
-                  {stat.value}
-                </motion.div>
-                <div className="text-white/90 text-sm font-medium">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Enhanced Personalized Modules - FIXED LAYOUT */}
+        {/* Personalized Modules */}
         {personalizedModules.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-6"
-          >
-            <div className="flex items-center space-x-3">
-              <motion.div
-                animate={{ rotate: [0, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Sparkles className="h-6 w-6 text-[#B76E79]" />
-              </motion.div>
-              <h2 className="text-2xl font-bold text-[#333333]">Perfect for You Right Now</h2>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-5 w-5 text-[#B76E79]" />
+              <h2 className="text-xl font-bold text-[#333333]">Perfect for You Right Now</h2>
             </div>
             
-            {/* FIXED: Balanced grid layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {personalizedModules.map((module, index) => {
                 const TypeIcon = getTypeIcon(module.content_type);
                 
                 return (
-                  <motion.div
+                  <div
                     key={module.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                    whileHover={{ 
-                      scale: 1.02, 
-                      y: -5,
-                      boxShadow: "0 20px 40px rgba(0,0,0,0.1)"
-                    }}
-                    className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:border-[#2A6F68]/20 transition-all duration-300 group"
+                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        <motion.div 
-                          whileHover={{ scale: 1.1, rotate: 5 }}
-                          className="w-14 h-14 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-xl flex items-center justify-center shadow-lg"
-                        >
-                          <TypeIcon className="h-7 w-7 text-white" />
-                        </motion.div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-lg flex items-center justify-center">
+                          <TypeIcon className="h-6 w-6 text-white" />
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(module.difficulty)}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(module.difficulty)}`}>
                             {module.difficulty}
                           </span>
-                          {module.is_featured && (
-                            <motion.span 
-                              animate={{ scale: [1, 1.05, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                              className="px-3 py-1 bg-gradient-to-r from-[#B76E79] to-[#B76E79] text-white rounded-full text-xs font-semibold"
-                            >
-                              Featured
-                            </motion.span>
-                          )}
                           {module.content_type === 'quiz' && (
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
-                              Interactive Quiz
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
+                              Quiz
                             </span>
                           )}
                         </div>
                       </div>
                       {module.progress?.status === 'completed' && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 200 }}
-                        >
-                          <CheckCircle className="h-6 w-6 text-green-500" />
-                        </motion.div>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
                       )}
                     </div>
 
-                    <h3 className="text-xl font-bold text-[#333333] mb-3 group-hover:text-[#2A6F68] transition-colors">
-                      {module.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2">
-                      {module.description}
-                    </p>
+                    <h3 className="text-lg font-bold text-[#333333] mb-2">{module.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{module.description}</p>
 
                     {module.progress?.status === 'in_progress' && (
                       <div className="mb-4">
-                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${module.progress.progress_percentage}%` }}
-                            className="h-3 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="h-2 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
+                            style={{ width: `${module.progress.progress_percentage}%` }}
                           />
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -471,15 +307,15 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         </div>
                       </div>
                       
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => {
-                          console.log('Button clicked for module:', module.title, 'Type:', module.content_type);
+                          console.log('=== BUTTON CLICKED ===');
+                          console.log('Module:', module.title);
+                          console.log('Type:', module.content_type);
                           handleStartModule(module.id);
                         }}
                         disabled={module.progress?.status === 'completed'}
-                        className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                           module.progress?.status === 'completed'
                             ? 'bg-green-100 text-green-700 cursor-default'
                             : module.progress?.status === 'in_progress'
@@ -495,59 +331,43 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         {module.progress?.status !== 'completed' && (
                           <ArrowRight className="h-4 w-4" />
                         )}
-                      </motion.button>
+                      </button>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* Enhanced Explore More Section - FIXED LAYOUT */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-6"
-        >
-          <h2 className="text-2xl font-bold text-[#333333]">Explore More</h2>
+        {/* Explore More Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-[#333333]">Explore More</h2>
           
-          {/* FIXED: Balanced grid layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recommendedModules.map((module, index) => {
               const TypeIcon = getTypeIcon(module.content_type);
               const isLocked = module.required_level > level;
               
               return (
-                <motion.div
+                <div
                   key={module.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.05 }}
-                  whileHover={{ 
-                    scale: isLocked ? 1 : 1.02, 
-                    y: isLocked ? 0 : -3
-                  }}
-                  className={`bg-white rounded-xl p-6 shadow-md border border-gray-100 transition-all duration-300 ${
-                    isLocked ? 'opacity-60' : 'hover:shadow-lg hover:border-[#2A6F68]/20'
+                  className={`bg-white rounded-xl p-4 shadow-sm border border-gray-200 transition-all ${
+                    isLocked ? 'opacity-60' : 'hover:shadow-md'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <motion.div 
-                        whileHover={isLocked ? {} : { scale: 1.1, rotate: 5 }}
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          isLocked ? 'bg-gray-100' : 'bg-gradient-to-br from-[#2A6F68] to-[#B76E79]'
-                        }`}
-                      >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isLocked ? 'bg-gray-100' : 'bg-gradient-to-br from-[#2A6F68] to-[#B76E79]'
+                      }`}>
                         {isLocked ? (
-                          <Lock className="h-6 w-6 text-gray-400" />
+                          <Lock className="h-5 w-5 text-gray-400" />
                         ) : (
-                          <TypeIcon className="h-6 w-6 text-white" />
+                          <TypeIcon className="h-5 w-5 text-white" />
                         )}
-                      </motion.div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(module.difficulty)}`}>
                           {module.difficulty}
                         </span>
@@ -559,12 +379,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       </div>
                     </div>
                     {module.progress?.status === 'completed' && (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     )}
                   </div>
 
                   <h3 className="font-bold text-[#333333] mb-2 text-sm">{module.title}</h3>
-                  <p className="text-gray-600 text-xs mb-3 leading-relaxed line-clamp-2">{module.description}</p>
+                  <p className="text-gray-600 text-xs mb-3 line-clamp-2">{module.description}</p>
 
                   {module.progress?.status === 'in_progress' && (
                     <div className="mb-3">
@@ -594,11 +414,11 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         Level {module.required_level}+
                       </div>
                     ) : (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                      <button
                         onClick={() => {
-                          console.log('Button clicked for module:', module.title, 'Type:', module.content_type);
+                          console.log('=== EXPLORE MODULE CLICKED ===');
+                          console.log('Module:', module.title);
+                          console.log('Type:', module.content_type);
                           handleStartModule(module.id);
                         }}
                         disabled={module.progress?.status === 'completed'}
@@ -613,48 +433,30 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         {module.progress?.status === 'completed' ? 'Done' : 
                          module.progress?.status === 'in_progress' ? 'Continue' : 
                          module.content_type === 'quiz' ? 'Quiz' : 'Start'}
-                      </motion.button>
+                      </button>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Enhanced Learning Insights */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <motion.div
-              animate={{ rotate: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Lightbulb className="h-6 w-6 text-[#B76E79]" />
-            </motion.div>
-            <h3 className="text-xl font-bold text-[#333333]">Learning Insights</h3>
+        {/* Learning Insights */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-2 mb-4">
+            <Lightbulb className="h-5 w-5 text-[#B76E79]" />
+            <h3 className="text-lg font-bold text-[#333333]">Learning Insights</h3>
           </div>
 
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="p-6 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-xl border-l-4 border-[#2A6F68]"
-          >
-            <div className="flex items-start space-x-4">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Activity className="h-6 w-6 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-              </motion.div>
+          <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg border-l-4 border-[#2A6F68]">
+            <div className="flex items-start space-x-3">
+              <Activity className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-bold text-[#333333] mb-2">Your Learning Journey</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">
+                <h4 className="font-bold text-[#333333] mb-1">Your Learning Journey</h4>
+                <p className="text-sm text-gray-700">
                   {overallProgress.percentage >= 80 ? 
-                    `Outstanding progress! You've completed ${overallProgress.completed} modules and earned ${modules.reduce((sum, m) => sum + (m.progress?.status === 'completed' ? m.xp_reward : 0), 0)} XP. You're well on your way to financial mastery.` :
+                    `Outstanding progress! You've completed ${overallProgress.completed} modules and are well on your way to financial mastery.` :
                     overallProgress.percentage >= 50 ?
                     `Great momentum! You've completed ${overallProgress.completed} modules. Focus on the personalized recommendations to accelerate your learning.` :
                     overallProgress.percentage >= 25 ?
@@ -664,11 +466,11 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                 </p>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
 
-      {/* Enhanced Quiz Interface */}
+      {/* Quiz Interface */}
       <AnimatePresence>
         {showQuiz && selectedModule && (
           <QuizInterface

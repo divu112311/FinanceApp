@@ -63,6 +63,8 @@ export const useLearning = (user: User | null) => {
 
     setLoading(true);
     try {
+      console.log('=== FETCHING LEARNING DATA ===');
+      
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('user_profiles')
@@ -70,6 +72,7 @@ export const useLearning = (user: User | null) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('User profile:', profileData);
       setUserProfile(profileData);
 
       // Fetch all learning modules
@@ -79,13 +82,20 @@ export const useLearning = (user: User | null) => {
         .order('is_featured', { ascending: false })
         .order('created_at', { ascending: true });
 
-      if (modulesError) throw modulesError;
+      if (modulesError) {
+        console.error('Error fetching modules:', modulesError);
+        throw modulesError;
+      }
+
+      console.log('Learning modules fetched:', modulesData?.length);
 
       // Fetch user progress
       const { data: progressData } = await supabase
         .from('user_learning_progress')
         .select('*')
         .eq('user_id', user.id);
+
+      console.log('User progress fetched:', progressData?.length);
 
       // Create progress map
       const progressMap = new Map<string, UserProgress>();
@@ -99,6 +109,7 @@ export const useLearning = (user: User | null) => {
         progress: progressMap.get(module.id)
       })) || [];
 
+      console.log('Modules with progress:', modulesWithProgress.length);
       setModules(modulesWithProgress);
       setUserProgress(progressMap);
 
@@ -121,35 +132,80 @@ export const useLearning = (user: User | null) => {
   const startModule = async (moduleId: string) => {
     if (!user) return;
 
+    console.log('=== STARTING MODULE ===');
+    console.log('Module ID:', moduleId);
+    console.log('User ID:', user.id);
+
     try {
-      const { data, error } = await supabase
+      // Check if progress already exists
+      const { data: existingProgress } = await supabase
         .from('user_learning_progress')
-        .upsert({
-          user_id: user.id,
-          module_id: moduleId,
-          status: 'in_progress',
-          progress_percentage: 0,
-          started_at: new Date().toISOString(),
-          last_accessed_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,module_id'
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId)
+        .maybeSingle();
 
-      if (error) throw error;
+      console.log('Existing progress:', existingProgress);
 
-      // Update local state
-      setUserProgress(prev => new Map(prev.set(moduleId, data)));
-      
-      // Update modules
-      setModules(prev => prev.map(module => 
-        module.id === moduleId 
-          ? { ...module, progress: data }
-          : module
-      ));
+      if (existingProgress) {
+        console.log('Progress already exists, updating last_accessed_at');
+        const { data, error } = await supabase
+          .from('user_learning_progress')
+          .update({
+            last_accessed_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('module_id', moduleId)
+          .select()
+          .single();
 
-      return data;
+        if (error) throw error;
+
+        // Update local state
+        setUserProgress(prev => new Map(prev.set(moduleId, data)));
+        
+        // Update modules
+        setModules(prev => prev.map(module => 
+          module.id === moduleId 
+            ? { ...module, progress: data }
+            : module
+        ));
+
+        return data;
+      } else {
+        console.log('Creating new progress record');
+        const { data, error } = await supabase
+          .from('user_learning_progress')
+          .insert({
+            user_id: user.id,
+            module_id: moduleId,
+            status: 'in_progress',
+            progress_percentage: 0,
+            started_at: new Date().toISOString(),
+            last_accessed_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating progress:', error);
+          throw error;
+        }
+
+        console.log('Progress created:', data);
+
+        // Update local state
+        setUserProgress(prev => new Map(prev.set(moduleId, data)));
+        
+        // Update modules
+        setModules(prev => prev.map(module => 
+          module.id === moduleId 
+            ? { ...module, progress: data }
+            : module
+        ));
+
+        return data;
+      }
     } catch (error) {
       console.error('Error starting module:', error);
       return null;
@@ -159,11 +215,14 @@ export const useLearning = (user: User | null) => {
   const updateProgress = async (moduleId: string, progressPercentage: number, timeSpent: number = 0) => {
     if (!user) return;
 
+    console.log('=== UPDATING PROGRESS ===');
+    console.log('Module ID:', moduleId);
+    console.log('Progress:', progressPercentage);
+    console.log('Time spent:', timeSpent);
+
     try {
       const isCompleted = progressPercentage >= 100;
       const updateData: any = {
-        user_id: user.id,
-        module_id: moduleId,
         status: isCompleted ? 'completed' : 'in_progress',
         progress_percentage: progressPercentage,
         time_spent_minutes: timeSpent,
@@ -174,15 +233,22 @@ export const useLearning = (user: User | null) => {
         updateData.completed_at = new Date().toISOString();
       }
 
+      console.log('Update data:', updateData);
+
       const { data, error } = await supabase
         .from('user_learning_progress')
-        .upsert(updateData, {
-          onConflict: 'user_id,module_id'
-        })
+        .update(updateData)
+        .eq('user_id', user.id)
+        .eq('module_id', moduleId)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating progress:', error);
+        throw error;
+      }
+
+      console.log('Progress updated:', data);
 
       // Update local state
       setUserProgress(prev => new Map(prev.set(moduleId, data)));
@@ -194,41 +260,10 @@ export const useLearning = (user: User | null) => {
           : module
       ));
 
-      // If completed, award XP
-      if (isCompleted) {
-        const module = modules.find(m => m.id === moduleId);
-        if (module) {
-          await awardXP(module.xp_reward);
-        }
-      }
-
       return data;
     } catch (error) {
       console.error('Error updating progress:', error);
       return null;
-    }
-  };
-
-  const awardXP = async (points: number) => {
-    if (!user) return;
-
-    try {
-      // Get current XP
-      const { data: currentXP } = await supabase
-        .from('xp')
-        .select('points')
-        .eq('user_id', user.id)
-        .single();
-
-      const newPoints = (currentXP?.points || 0) + points;
-
-      await supabase
-        .from('xp')
-        .update({ points: newPoints })
-        .eq('user_id', user.id);
-
-    } catch (error) {
-      console.error('Error awarding XP:', error);
     }
   };
 
@@ -280,7 +315,7 @@ export const useLearning = (user: User | null) => {
       if (module.required_level > userLevel) return false;
 
       return true;
-    }).slice(0, 8);
+    }).slice(0, 9);
   };
 
   const getCompletedModules = () => {
