@@ -29,13 +29,23 @@ serve(async (req) => {
       throw new Error('Plaid credentials not configured')
     }
 
-    // Initialize Supabase client to get user info
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    // Initialize Supabase client with service role key for edge functions
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase credentials missing:', { 
+        hasUrl: !!supabaseUrl, 
+        hasServiceKey: !!supabaseServiceKey 
+      })
+      throw new Error('Supabase credentials not configured')
+    }
 
-    // Get user data
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
+
+    console.log('Fetching user data for userId:', userId)
+
+    // Get user data with better error handling
     const { data: userData, error: userError } = await supabaseClient
       .from('users')
       .select('*')
@@ -43,8 +53,15 @@ serve(async (req) => {
       .single()
 
     if (userError) {
-      throw new Error('Failed to fetch user data')
+      console.error('Database error fetching user:', userError)
+      throw new Error(`Failed to fetch user data: ${userError.message}`)
     }
+
+    if (!userData) {
+      throw new Error('User not found')
+    }
+
+    console.log('User data retrieved successfully for:', userData.email)
 
     // Determine Plaid environment URL
     const plaidBaseUrl = plaidEnv === 'production' 
@@ -70,7 +87,7 @@ serve(async (req) => {
       required_if_supported_products: ['identity'],
       optional_products: ['investments', 'liabilities'],
       redirect_uri: null,
-      webhook: `${Deno.env.get('SUPABASE_URL')}/functions/v1/plaid-webhook`,
+      webhook: `${supabaseUrl}/functions/v1/plaid-webhook`,
       account_filters: {
         depository: {
           account_subtypes: ['checking', 'savings', 'money_market', 'cd']
@@ -95,7 +112,7 @@ serve(async (req) => {
     if (!plaidResponse.ok) {
       const errorText = await plaidResponse.text()
       console.error(`Plaid API error: ${plaidResponse.status} - ${errorText}`)
-      throw new Error(`Plaid API error: ${plaidResponse.status}`)
+      throw new Error(`Plaid API error: ${plaidResponse.status} - ${errorText}`)
     }
 
     const plaidData = await plaidResponse.json()

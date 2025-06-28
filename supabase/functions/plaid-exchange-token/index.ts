@@ -56,7 +56,7 @@ serve(async (req) => {
     if (!plaidResponse.ok) {
       const errorText = await plaidResponse.text()
       console.error(`Plaid exchange error: ${plaidResponse.status} - ${errorText}`)
-      throw new Error(`Plaid API error: ${plaidResponse.status}`)
+      throw new Error(`Plaid API error: ${plaidResponse.status} - ${errorText}`)
     }
 
     const { access_token, item_id } = await plaidResponse.json()
@@ -86,11 +86,15 @@ serve(async (req) => {
     const accountsData = await accountsResponse.json()
     console.log(`Retrieved ${accountsData.accounts.length} accounts`)
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+    // Initialize Supabase client with service role key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase credentials not configured')
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     // Store accounts in database
     const accountsToInsert = accountsData.accounts.map((account: any) => ({
@@ -116,7 +120,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Database insert error:', insertError)
-      throw new Error('Failed to store account data')
+      throw new Error(`Failed to store account data: ${insertError.message}`)
     }
 
     console.log(`Successfully stored ${insertedAccounts.length} accounts`)
