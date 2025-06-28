@@ -68,7 +68,7 @@ export const useLearning = (user: User | null) => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       setUserProfile(profileData);
 
