@@ -96,7 +96,7 @@ serve(async (req) => {
 
     console.log('Using Plaid base URL:', plaidBaseUrl)
 
-    // Create link token request
+    // Create link token request with hardcoded sandbox test credentials
     const linkTokenRequest = {
       client_id: plaidClientId,
       secret: plaidSecret,
@@ -105,9 +105,10 @@ serve(async (req) => {
       language: 'en',
       user: {
         client_user_id: userId,
-        email_address: userData.email || `user-${userId}@example.com`,
+        // Hardcode sandbox test user credentials
+        email_address: 'user_good@example.com',
         phone_number: null,
-        legal_name: userData.full_name || 'User'
+        legal_name: 'user_good'
       },
       products: ['transactions', 'accounts'],
       required_if_supported_products: ['identity'],
@@ -125,7 +126,10 @@ serve(async (req) => {
     }
 
     console.log('Calling Plaid API to create link token...')
-    console.log('Link token request user data:', linkTokenRequest.user)
+    console.log('Using hardcoded sandbox credentials:', {
+      email: 'user_good@example.com',
+      legal_name: 'user_good'
+    })
 
     // Call Plaid API
     const plaidResponse = await fetch(`${plaidBaseUrl}/link/token/create`, {
