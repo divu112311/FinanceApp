@@ -76,6 +76,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
     // If it's a quiz module, show the quiz interface
     if (module.content_type === 'quiz') {
+      console.log('Opening quiz for module:', module.title);
       setSelectedModule(module);
       setShowQuiz(true);
       return;
@@ -94,6 +95,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   const handleQuizComplete = async (score: number, xpEarned: number) => {
     if (!selectedModule) return;
 
+    console.log('Quiz completed with score:', score, 'XP earned:', xpEarned);
+
     // Update progress to completed
     await updateProgress(selectedModule.id, 100, selectedModule.duration_minutes);
     
@@ -106,6 +109,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   };
 
   const handleQuizClose = () => {
+    console.log('Quiz closed');
     setShowQuiz(false);
     setSelectedModule(null);
   };
@@ -155,41 +159,29 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           <div className="absolute inset-0 overflow-hidden">
             <motion.div
               animate={{ 
-                x: [0, 100, 0],
-                y: [0, -50, 0],
+                x: [0, 50, 0],
+                y: [0, -25, 0],
                 rotate: [0, 180, 360]
+              }}
+              transition={{ 
+                duration: 15,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute top-10 right-10 w-20 h-20 bg-white/5 rounded-full"
+            />
+            <motion.div
+              animate={{ 
+                x: [0, -40, 0],
+                y: [0, 30, 0],
+                rotate: [0, -180, -360]
               }}
               transition={{ 
                 duration: 20,
                 repeat: Infinity,
                 ease: "linear"
               }}
-              className="absolute top-10 right-10 w-32 h-32 bg-white/5 rounded-full"
-            />
-            <motion.div
-              animate={{ 
-                x: [0, -80, 0],
-                y: [0, 60, 0],
-                rotate: [0, -180, -360]
-              }}
-              transition={{ 
-                duration: 25,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-              className="absolute bottom-10 left-10 w-24 h-24 bg-white/5 rounded-full"
-            />
-            <motion.div
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.1, 0.2, 0.1]
-              }}
-              transition={{ 
-                duration: 4,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full"
+              className="absolute bottom-10 left-10 w-16 h-16 bg-white/5 rounded-full"
             />
           </div>
 
@@ -197,33 +189,21 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           <div className="absolute top-6 right-6">
             <motion.div
               animate={{ 
-                rotate: [0, 10, -10, 0],
-                scale: [1, 1.1, 1],
-                y: [0, -5, 0]
+                rotate: [0, 5, -5, 0],
+                scale: [1, 1.05, 1],
+                y: [0, -3, 0]
               }}
               transition={{ 
-                duration: 4,
+                duration: 3,
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
               className="relative"
             >
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 0.6, 0.3]
-                }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute inset-0 bg-white/20 rounded-full blur-md"
-              />
               <img 
                 src={doughjoMascot} 
                 alt="DoughJo" 
-                className="relative w-20 h-20 object-contain rounded-full"
+                className="relative w-16 h-16 object-contain rounded-full"
               />
             </motion.div>
           </div>
@@ -238,7 +218,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <span className="inline-flex items-center space-x-2">
                 <span>Your Learning Journey</span>
                 <motion.span
-                  animate={{ rotate: [0, 20, 0] }}
+                  animate={{ rotate: [0, 15, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   🎓
@@ -382,7 +362,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </motion.div>
 
-        {/* Enhanced Personalized Modules */}
+        {/* Enhanced Personalized Modules - FIXED LAYOUT */}
         {personalizedModules.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -400,7 +380,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-2xl font-bold text-[#333333]">Perfect for You Right Now</h2>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* FIXED: Balanced grid layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {personalizedModules.map((module, index) => {
                 const TypeIcon = getTypeIcon(module.content_type);
                 
@@ -493,7 +474,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleStartModule(module.id)}
+                        onClick={() => {
+                          console.log('Button clicked for module:', module.title, 'Type:', module.content_type);
+                          handleStartModule(module.id);
+                        }}
                         disabled={module.progress?.status === 'completed'}
                         className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all ${
                           module.progress?.status === 'completed'
@@ -520,7 +504,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </motion.div>
         )}
 
-        {/* Enhanced Explore More Section */}
+        {/* Enhanced Explore More Section - FIXED LAYOUT */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -529,6 +513,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         >
           <h2 className="text-2xl font-bold text-[#333333]">Explore More</h2>
           
+          {/* FIXED: Balanced grid layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendedModules.map((module, index) => {
               const TypeIcon = getTypeIcon(module.content_type);
@@ -612,7 +597,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => handleStartModule(module.id)}
+                        onClick={() => {
+                          console.log('Button clicked for module:', module.title, 'Type:', module.content_type);
+                          handleStartModule(module.id);
+                        }}
                         disabled={module.progress?.status === 'completed'}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                           module.progress?.status === 'completed'
