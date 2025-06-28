@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
-import TransactionsView from './components/TransactionsView';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import doughjoMascot from './assets/doughjo-mascot.png';
@@ -11,7 +10,7 @@ import doughjoMascot from './assets/doughjo-mascot.png';
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
-  const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'transactions'>('chat');
+  const [activeView, setActiveView] = useState<'dashboard' | 'chat'>('chat');
 
   const handleXPUpdate = async (points: number) => {
     await updateXP(points);
@@ -90,16 +89,6 @@ function App() {
                 >
                   Dashboard
                 </button>
-                <button
-                  onClick={() => setActiveView('transactions')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'transactions'
-                      ? 'bg-[#2A6F68] text-white'
-                      : 'text-[#333333] hover:bg-gray-100'
-                  }`}
-                >
-                  Transactions
-                </button>
               </nav>
               
               <button
@@ -126,7 +115,7 @@ function App() {
             >
               <ChatInterface user={user} onXPUpdate={handleXPUpdate} />
             </motion.div>
-          ) : activeView === 'dashboard' ? (
+          ) : (
             <motion.div
               key="dashboard"
               initial={{ opacity: 0, x: 20 }}
@@ -135,16 +124,6 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <Dashboard user={user} xp={xp} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="transactions"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TransactionsView user={user} />
             </motion.div>
           )}
         </AnimatePresence>

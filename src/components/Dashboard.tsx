@@ -16,7 +16,10 @@ import {
   CheckCircle,
   AlertTriangle,
   TrendingDown,
-  Info
+  Info,
+  Wifi,
+  WifiOff,
+  Clock
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
@@ -38,6 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
     connectWithCredentials,
     closeCredentialsModal,
     isLoading: plaidLoading, 
+    error: plaidError,
     showCredentialsModal
   } = usePlaidLink(user);
   const [showBalances, setShowBalances] = useState(true);
@@ -220,6 +224,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
         isLoading={plaidLoading}
       />
 
+      {/* Plaid Connection Status Indicator */}
+      {plaidLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-20 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center space-x-2"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+          />
+          <span className="text-sm">Connecting to Plaid...</span>
+        </motion.div>
+      )}
+
       {/* Welcome Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -267,6 +287,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           </div>
         </div>
       </motion.div>
+
+      {/* Error Display */}
+      {plaidError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-4"
+        >
+          <div className="flex items-start space-x-3">
+            <WifiOff className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-red-900 mb-1">Plaid Connection Error</h4>
+              <p className="text-sm text-red-800">{plaidError}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Financial Health Score */}
       <motion.div
