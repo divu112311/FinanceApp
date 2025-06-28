@@ -190,31 +190,52 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   return (
     <>
       <div className="space-y-6">
-        {/* Updated Header */}
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">Finance Kata</h1>
-              <p className="text-white/90 mb-4">
-                Sharpen your money moves through daily financial practice
-              </p>
-              <div className="flex items-center gap-3">
+        {/* Compact Header - Same height as other pages */}
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full transform translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full transform -translate-x-12 translate-y-12"></div>
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <motion.div
+                  animate={{ 
+                    rotate: [0, 5, -5, 0],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{ 
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center p-1"
+                >
+                  <img 
+                    src={doughjoMascot} 
+                    alt="DoughJo" 
+                    className="w-full h-full object-contain rounded-lg"
+                  />
+                </motion.div>
+                <div>
+                  <h1 className="text-2xl font-bold mb-1">Finance Kata</h1>
+                  <p className="text-white/90">Sharpen your money moves through daily financial practice</p>
+                </div>
+              </div>
+              
+              {/* Compact Quick Stats */}
+              <div className="flex items-center space-x-4">
                 <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
-                  <span>{beltRank.emoji}</span>
-                  <span className="font-medium">{beltRank.name}</span>
+                  <span className="text-sm">{beltRank.emoji}</span>
+                  <span className="text-sm font-medium">{beltRank.name}</span>
                 </div>
                 <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-1">
                   <BookOpen className="h-4 w-4" />
-                  <span>{overallProgress.completed}/{overallProgress.total} Complete</span>
+                  <span className="text-sm">{overallProgress.completed}/{overallProgress.total} Complete</span>
                 </div>
               </div>
-            </div>
-            <div className="w-16 h-16">
-              <img 
-                src={doughjoMascot} 
-                alt="DoughJo" 
-                className="w-full h-full object-contain rounded-full opacity-80"
-              />
             </div>
           </div>
         </div>

@@ -20,9 +20,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const { goals } = useGoals(user);
   const { bankAccounts, totalBalance } = useBankAccounts(user);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Remove auto-scroll effect to prevent scrolling to bottom
+  // useEffect(() => {
+  //   scrollToBottom();
+  // }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -318,7 +319,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   )}
                 </div>
 
-                {/* Messages Container */}
+                {/* Messages Container - Fixed height to prevent auto-scroll */}
                 <div className="h-80 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-gray-50 to-white">
                   {recentMessages.length === 0 && (
                     <div className="text-center py-6">

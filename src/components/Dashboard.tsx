@@ -315,7 +315,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                 />
               </motion.div>
               <div>
-                <h1 className="text-2xl font-bold mb-1">Financial Dashboard</h1>
+                <h1 className="text-2xl font-bold mb-1">Dough Vault</h1>
                 <p className="text-white/90">Your complete financial overview and insights</p>
               </div>
             </div>

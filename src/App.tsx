@@ -88,7 +88,7 @@ function App() {
                       : 'text-[#333333] hover:bg-gray-100'
                   }`}
                 >
-                  Dashboard
+                  Dough Vault
                 </button>
                 <button
                   onClick={() => setActiveView('learning')}
