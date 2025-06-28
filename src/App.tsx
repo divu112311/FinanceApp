@@ -4,6 +4,7 @@ import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
 import LearningCenter from './components/LearningCenter';
+import LandingPage from './components/LandingPage';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import doughjoMascot from './assets/doughjo-mascot.png';
@@ -12,9 +13,18 @@ function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
   const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
+  const [showAuth, setShowAuth] = useState(false);
 
   const handleXPUpdate = async (points: number) => {
     await updateXP(points);
+  };
+
+  const handleGetStarted = () => {
+    setShowAuth(true);
+  };
+
+  const handleSignIn = () => {
+    setShowAuth(true);
   };
 
   if (authLoading || profileLoading) {
@@ -29,7 +39,13 @@ function App() {
     );
   }
 
-  if (!user) {
+  // Show landing page if user is not authenticated and not trying to sign in
+  if (!user && !showAuth) {
+    return <LandingPage onGetStarted={handleGetStarted} onSignIn={handleSignIn} />;
+  }
+
+  // Show login form if user is not authenticated but wants to sign in
+  if (!user && showAuth) {
     return <LoginForm />;
   }
 
