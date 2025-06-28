@@ -128,6 +128,8 @@ export const useBankAccounts = (user: User | null) => {
     if (!user) return false;
 
     try {
+      const deletedAccount = bankAccounts.find(account => account.id === id);
+      
       const { error } = await supabase
         .from('bank_accounts')
         .delete()
@@ -139,7 +141,6 @@ export const useBankAccounts = (user: User | null) => {
         return false;
       }
 
-      const deletedAccount = bankAccounts.find(account => account.id === id);
       setBankAccounts(prev => prev.filter(account => account.id !== id));
       setTotalBalance(prev => prev - (deletedAccount?.balance || 0));
       
