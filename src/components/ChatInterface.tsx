@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User as UserIcon, Zap, TrendingUp, Target, PiggyBank, AlertTriangle, CheckCircle, Lightbulb, DollarSign, Calendar, Award, TrendingDown, Coffee, CreditCard, Banknote } from 'lucide-react';
+import { Send, User as UserIcon, Zap, TrendingUp, Target, PiggyBank, AlertTriangle, CheckCircle, Lightbulb, DollarSign, Calendar, Award, TrendingDown, Coffee, CreditCard, Banknote, Brain, MessageCircle } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useChat } from '../hooks/useChat';
 import { useGoals } from '../hooks/useGoals';
@@ -93,11 +93,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col space-y-4 min-w-0">
-        {/* Easy Wins Section - Updated Colors */}
+        {/* Easy Wins Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-xl p-4 text-white"
+          className="bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-xl p-4 text-white flex-shrink-0"
         >
           <div className="flex items-center space-x-2 mb-3">
             <Lightbulb className="h-5 w-5 text-white" />
@@ -156,7 +156,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             
             <div className="bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg p-4 border-l-4 border-[#2A6F68]">
               <p className="text-[#333333] text-sm font-medium mb-2">
-                🎯 Ready to transform your financial future?
+                🎯 Let's optimize your financial strategy
               </p>
               <p className="text-[#666666] text-sm leading-relaxed">
                 I'm here to provide personalized financial guidance, create actionable strategies, and help you build lasting wealth. 
@@ -165,8 +165,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
             </div>
           </motion.div>
 
-          {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+          {/* Messages Container - Fixed Height with Better Scrolling */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0" style={{ maxHeight: 'calc(100vh - 400px)' }}>
             {messages.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -235,7 +235,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
               </motion.div>
             )}
 
-            {messages.map((message, index) => (
+            {/* Show last 3 messages for better visibility */}
+            {messages.slice(-3).map((message, index) => (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -244,7 +245,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                     message.sender === 'user'
                       ? 'bg-[#2A6F68] text-white rounded-br-sm'
                       : 'bg-gray-100 text-[#333333] rounded-bl-sm'
@@ -334,11 +335,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                 <Send className="h-5 w-5" />
               </motion.button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* AI Learning Insights Sidebar - Fixed Width and Height */}
+      {/* Right Sidebar - Fixed Width and Height */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -349,7 +350,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-2 mb-6">
             <div className="w-8 h-8 bg-gradient-to-r from-[#B76E79] to-[#2A6F68] rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">🧠</span>
+              <Brain className="h-5 w-5 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-[#333333]">AI Learning Insights</h3>
           </div>
@@ -404,6 +405,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DoughJo Wisdom Section */}
+        <div className="bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-xl p-6 text-white flex-shrink-0">
+          <div className="flex items-center space-x-2 mb-4">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold">DoughJo Wisdom</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white/10 rounded-lg p-4 border border-white/20">
+              <p className="text-sm text-white/90 mb-2">
+                Good morning, Alex! I've been analyzing your financial situation overnight. I found some significant opportunities that could save you $3,720 annually. Let me walk you through what I discovered:
+              </p>
+              <div className="grid grid-cols-3 gap-3 mt-3">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-white">$1,680</div>
+                  <div className="text-xs text-white/80">Debt Consolidation savings</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-white">$2,040</div>
+                  <div className="text-xs text-white/80">Tax Optimization savings</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-white">Risk</div>
+                  <div className="text-xs text-white/80">Investment Rebalancing Reduction</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 rounded-lg p-4 border border-white/20">
+              <p className="text-sm text-white/90">
+                Here's what I recommend we tackle first: consolidate that $28k debt at 18.4% into a 7.2% personal loan. This alone saves you $1,680 annually and frees up $140/month for your emergency fund. Should I run the numbers on specific lenders?
+              </p>
             </div>
           </div>
         </div>
