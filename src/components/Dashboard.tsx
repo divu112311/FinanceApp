@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   DollarSign, 
   TrendingUp, 
   Target, 
   Award,
-  Plus
+  Plus,
+  Activity,
+  Building2
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
+import FinancialHealthBoard from './FinancialHealthBoard';
+import BankAccountManager from './BankAccountManager';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
@@ -18,6 +22,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   const { goals, loading: goalsLoading } = useGoals(user);
+  const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'accounts'>('overview');
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -33,6 +38,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   };
 
   const beltRank = getBeltRank(level);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'health', label: 'Financial Health', icon: TrendingUp },
+    { id: 'accounts', label: 'Bank Accounts', icon: Building2 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -84,173 +95,218 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#2A6F68]/10 rounded-lg flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-[#2A6F68]" />
-            </div>
-            <TrendingUp className="h-5 w-5 text-green-500" />
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            $0
-          </h3>
-          <p className="text-sm text-gray-600">Financial Power</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Target className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {goals.length}
-          </h3>
-          <p className="text-sm text-gray-600">Active Quests</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-[#B76E79]/10 rounded-lg flex items-center justify-center">
-              <Award className="h-6 w-6 text-[#B76E79]" />
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {xp?.badges?.length || 0}
-          </h3>
-          <p className="text-sm text-gray-600">Achievements</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`w-12 h-12 bg-gradient-to-r ${beltRank.color} rounded-lg flex items-center justify-center`}>
-              <span className="text-lg">{beltRank.emoji}</span>
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-[#333333] mb-1">
-            {beltRank.name}
-          </h3>
-          <p className="text-sm text-gray-600">Current Rank</p>
-        </motion.div>
-      </div>
-
-      {/* Goals Section */}
+      {/* Navigation Tabs */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-xl p-2 shadow-sm border border-gray-200"
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-[#333333]">Financial Quests</h3>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Quest</span>
-          </motion.button>
+        <div className="flex space-x-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all flex-1 justify-center ${
+                activeTab === tab.id
+                  ? 'bg-[#2A6F68] text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              <span className="font-medium">{tab.label}</span>
+            </button>
+          ))}
         </div>
-
-        {goalsLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-6 h-6 border-2 border-[#2A6F68] border-t-transparent rounded-full"
-            />
-          </div>
-        ) : goals.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4">
-              <img 
-                src={doughjoMascot} 
-                alt="DoughJo" 
-                className="w-full h-full object-contain opacity-50 rounded-full"
-              />
-            </div>
-            <p className="text-gray-500 mb-4">No quests yet, young warrior</p>
-            <p className="text-sm text-gray-400">Begin your journey by setting your first financial goal!</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {goals.map((goal, index) => {
-              const progress = goal.target_amount 
-                ? ((goal.saved_amount || 0) / goal.target_amount) * 100 
-                : 0;
-              
-              return (
-                <div key={goal.id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium text-[#333333]">🎯 {goal.name}</h4>
-                    <span className="text-sm text-gray-600">
-                      ${(goal.saved_amount || 0).toLocaleString()} / ${(goal.target_amount || 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ delay: 0.8 + index * 0.1, duration: 1 }}
-                      className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] h-2 rounded-full"
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{progress.toFixed(1)}% complete</p>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </motion.div>
 
-      {/* Badges Section */}
-      {xp?.badges && xp.badges.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <h3 className="text-lg font-semibold text-[#333333] mb-4">Earned Achievements</h3>
-          <div className="flex flex-wrap gap-3">
-            {xp.badges.map((badge, index) => (
+      {/* Tab Content */}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.7 + index * 0.1 }}
-                className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-3 py-2 rounded-full text-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
               >
-                <Award className="h-4 w-4" />
-                <span>{badge}</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-[#2A6F68]/10 rounded-lg flex items-center justify-center">
+                    <DollarSign className="h-6 w-6 text-[#2A6F68]" />
+                  </div>
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                  $0
+                </h3>
+                <p className="text-sm text-gray-600">Financial Power</p>
               </motion.div>
-            ))}
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Target className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                  {goals.length}
+                </h3>
+                <p className="text-sm text-gray-600">Active Quests</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-[#B76E79]/10 rounded-lg flex items-center justify-center">
+                    <Award className="h-6 w-6 text-[#B76E79]" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                  {xp?.badges?.length || 0}
+                </h3>
+                <p className="text-sm text-gray-600">Achievements</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 bg-gradient-to-r ${beltRank.color} rounded-lg flex items-center justify-center`}>
+                    <span className="text-lg">{beltRank.emoji}</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-[#333333] mb-1">
+                  {beltRank.name}
+                </h3>
+                <p className="text-sm text-gray-600">Current Rank</p>
+              </motion.div>
+            </div>
+
+            {/* Goals Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-[#333333]">Financial Quests</h3>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New Quest</span>
+                </motion.button>
+              </div>
+
+              {goalsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-6 h-6 border-2 border-[#2A6F68] border-t-transparent rounded-full"
+                  />
+                </div>
+              ) : goals.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4">
+                    <img 
+                      src={doughjoMascot} 
+                      alt="DoughJo" 
+                      className="w-full h-full object-contain opacity-50 rounded-full"
+                    />
+                  </div>
+                  <p className="text-gray-500 mb-4">No quests yet, young warrior</p>
+                  <p className="text-sm text-gray-400">Begin your journey by setting your first financial goal!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {goals.map((goal, index) => {
+                    const progress = goal.target_amount 
+                      ? ((goal.saved_amount || 0) / goal.target_amount) * 100 
+                      : 0;
+                    
+                    return (
+                      <div key={goal.id} className="border-b border-gray-100 pb-4 last:border-b-0">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-[#333333]">🎯 {goal.name}</h4>
+                          <span className="text-sm text-gray-600">
+                            ${(goal.saved_amount || 0).toLocaleString()} / ${(goal.target_amount || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ delay: 0.8 + index * 0.1, duration: 1 }}
+                            className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] h-2 rounded-full"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{progress.toFixed(1)}% complete</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+
+            {/* Badges Section */}
+            {xp?.badges && xp.badges.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+              >
+                <h3 className="text-lg font-semibold text-[#333333] mb-4">Earned Achievements</h3>
+                <div className="flex flex-wrap gap-3">
+                  {xp.badges.map((badge, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.7 + index * 0.1 }}
+                      className="flex items-center space-x-2 bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white px-3 py-2 rounded-full text-sm"
+                    >
+                      <Award className="h-4 w-4" />
+                      <span>{badge}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
-        </motion.div>
-      )}
+        )}
+
+        {activeTab === 'health' && (
+          <FinancialHealthBoard user={user} xp={xp} />
+        )}
+
+        {activeTab === 'accounts' && (
+          <BankAccountManager user={user} />
+        )}
+      </motion.div>
     </div>
   );
 };
