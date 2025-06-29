@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   DollarSign, 
@@ -33,8 +33,7 @@ import {
   Zap,
   ArrowUp,
   ArrowDown,
-  Minus,
-  Lightbulb
+  Minus
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
@@ -42,7 +41,6 @@ import { useBankAccounts } from '../hooks/useBankAccounts';
 import { usePlaidLink } from '../hooks/usePlaidLink';
 import GoalsManager from './GoalsManager';
 import PlaidCredentialsModal from './PlaidCredentialsModal';
-import FinancialInsights from './FinancialInsights';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface DashboardProps {
@@ -61,7 +59,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   const [showBalances, setShowBalances] = useState(true);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [showInsights, setShowInsights] = useState(true);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -367,11 +364,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           </div>
         </div>
       </motion.div>
-
-      {/* AI Financial Insights Section */}
-      {showInsights && (
-        <FinancialInsights user={user} />
-      )}
 
       {/* Side-by-side Account Summary (Left) and Financial Health Score (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
