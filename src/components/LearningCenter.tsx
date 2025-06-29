@@ -31,8 +31,10 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
 import { useAILearning } from '../hooks/useAILearning';
+import { useFeaturedLearning } from '../hooks/useFeaturedLearning';
 import QuizInterface from './QuizInterface';
 import ArticleView from './ArticleView';
+import FeaturedLearningModule from './FeaturedLearningModule';
 
 interface LearningCenterProps {
   user: User;
@@ -62,6 +64,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     getOverallProgress: getAIProgress,
     generateQuizQuestions
   } = useAILearning(user);
+
+  const {
+    featuredModule,
+    loading: featuredLoading,
+    generating: generatingFeatured,
+    generateFeaturedLearning
+  } = useFeaturedLearning(user);
 
   const [showQuiz, setShowQuiz] = useState(false);
   const [showArticle, setShowArticle] = useState(false);
@@ -114,7 +123,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     if (aiModules.length === 0 && !aiLoading && !generating) {
       generateAILearningContent();
     }
-  }, [aiModules.length, aiLoading, generating]);
+    
+    // If no featured module and not already generating, trigger generation
+    if (!featuredModule && !featuredLoading && !generatingFeatured) {
+      generateFeaturedLearning();
+    }
+  }, [aiModules.length, aiLoading, generating, featuredModule, featuredLoading, generatingFeatured]);
 
   const handleStartModule = async (moduleId: string, isAIModule: boolean = false) => {
     console.log('=== HANDLE START MODULE ===');
@@ -359,6 +373,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
+  const handleStartFeatured = () => {
+    if (featuredModule) {
+      handleStartModule(featuredModule.id, false);
+    }
+  };
+
   // Get button label based on content type
   const getButtonLabel = (contentType: string) => {
     switch (contentType) {
@@ -444,95 +464,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
       />
     );
   }
-
-  // Video player modal
-  const VideoPlayerModal = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
-      >
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-4 text-white flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <Video className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">Credit Score Fundamentals</h2>
-              <p className="text-white/80 text-xs">Video Lesson</p>
-            </div>
-          </div>
-          <button
-            onClick={handleCloseContent}
-            className="p-1 hover:bg-white/20 rounded transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
-        <div className="p-4">
-          <div className="aspect-video bg-black rounded-lg overflow-hidden">
-            <video 
-              controls 
-              className="w-full h-full"
-              poster="https://images.pexels.com/photos/4386372/pexels-photo-4386372.jpeg"
-              onEnded={() => {
-                // Award XP when video completes
-                onXPUpdate(35);
-                setTimeout(() => {
-                  handleCloseContent();
-                }, 1000);
-              }}
-            >
-              <source src="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </div>
-          
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-1 text-gray-500 text-sm">
-                <Clock className="h-4 w-4" />
-                <span>18 minutes</span>
-              </div>
-              <div className="flex items-center space-x-1 text-yellow-500 text-sm">
-                <Zap className="h-4 w-4" />
-                <span>+35 XP on completion</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
-                <Bookmark className="h-3 w-3" />
-                <span>Save</span>
-              </button>
-              <button 
-                onClick={handleCloseContent}
-                className="flex items-center space-x-1 px-3 py-1 bg-[#2A6F68] text-white rounded-lg hover:bg-[#235A54] transition-colors text-sm"
-              >
-                <CheckCircle className="h-3 w-3" />
-                <span>Mark Complete</span>
-              </button>
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <h3 className="font-semibold text-gray-900 mb-2">About This Lesson</h3>
-            <p className="text-sm text-gray-700">
-              Learn what affects your credit score and how to improve it. This video covers credit reports, payment history, credit utilization, and practical strategies to build and maintain excellent credit.
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
 
   return (
     <>
@@ -772,45 +703,68 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                 <h2 className="text-lg font-bold text-[#333333]">Featured Learning</h2>
               </div>
               
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 shadow-md text-white overflow-hidden relative"
-              >
-                <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-md text-xs font-bold">
-                  Featured
+              {featuredLoading || generatingFeatured ? (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center justify-center">
+                  <div className="text-center py-8">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-8 h-8 border-2 border-[#2A6F68] border-t-transparent rounded-full mx-auto mb-4"
+                    />
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2">Preparing Featured Content</h3>
+                    <p className="text-gray-600">Creating this week's featured learning module...</p>
+                  </div>
                 </div>
-                
-                <div className="absolute top-4 right-4 bg-green-100 text-green-800 px-2 py-0.5 rounded-md text-xs font-bold">
-                  Beginner
-                </div>
-                
-                <div className="mt-8">
-                  <h3 className="text-2xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
-                  <p className="text-white/90 mb-4">
-                    Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
-                  </p>
-                  
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span>45 min</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Zap className="h-4 w-4 text-yellow-300" />
-                      <span>+100 XP</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <BookOpen className="h-4 w-4" />
-                      <span>Financial Basics</span>
-                    </div>
+              ) : featuredModule ? (
+                <FeaturedLearningModule 
+                  user={user} 
+                  module={featuredModule} 
+                  onStart={handleStartFeatured} 
+                />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 shadow-md text-white overflow-hidden relative"
+                >
+                  <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-md text-xs font-bold">
+                    Featured
                   </div>
                   
-                  <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-                    Completed
-                  </button>
-                </div>
-              </motion.div>
+                  <div className="absolute top-4 right-4 bg-green-100 text-green-800 px-2 py-0.5 rounded-md text-xs font-bold">
+                    Beginner
+                  </div>
+                  
+                  <div className="mt-8">
+                    <h3 className="text-2xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
+                    <p className="text-white/90 mb-4">
+                      Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
+                    </p>
+                    
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4" />
+                        <span>45 min</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Zap className="h-4 w-4 text-yellow-300" />
+                        <span>+100 XP</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Financial Basics</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => generateFeaturedLearning()}
+                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                    >
+                      Generate Featured Content
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
 
@@ -1000,7 +954,93 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
       {/* Video Player Modal */}
       <AnimatePresence>
-        {showVideo && <VideoPlayerModal />}
+        {showVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-4 text-white flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Video className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Credit Score Fundamentals</h2>
+                    <p className="text-white/80 text-xs">Video Lesson</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseContent}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  <video 
+                    controls 
+                    className="w-full h-full"
+                    poster="https://images.pexels.com/photos/4386372/pexels-photo-4386372.jpeg"
+                    onEnded={() => {
+                      // Award XP when video completes
+                      onXPUpdate(35);
+                      setTimeout(() => {
+                        handleCloseContent();
+                      }, 1000);
+                    }}
+                  >
+                    <source src="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1 text-gray-500 text-sm">
+                      <Clock className="h-4 w-4" />
+                      <span>18 minutes</span>
+                    </div>
+                    <div className="flex items-center space-x-1 text-yellow-500 text-sm">
+                      <Zap className="h-4 w-4" />
+                      <span>+35 XP on completion</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button className="flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                      <Bookmark className="h-3 w-3" />
+                      <span>Save</span>
+                    </button>
+                    <button 
+                      onClick={handleCloseContent}
+                      className="flex items-center space-x-1 px-3 py-1 bg-[#2A6F68] text-white rounded-lg hover:bg-[#235A54] transition-colors text-sm"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                      <span>Mark Complete</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">About This Lesson</h3>
+                  <p className="text-sm text-gray-700">
+                    Learn what affects your credit score and how to improve it. This video covers credit reports, payment history, credit utilization, and practical strategies to build and maintain excellent credit.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </>
   );
