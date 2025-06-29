@@ -80,7 +80,17 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
   const beltRank = getBeltRank(level);
   const todaysPractice = getTodaysPractice();
-  const recommendedModules = getRecommendedModules();
+  
+  // Filter out duplicates from recommended modules
+  const recommendedModulesMap = new Map();
+  const recommendedModules = getRecommendedModules().filter(module => {
+    if (recommendedModulesMap.has(module.title)) {
+      return false;
+    }
+    recommendedModulesMap.set(module.title, true);
+    return true;
+  });
+  
   const aiProgress = getAIProgress();
   const regularProgress = getRegularProgress();
   
@@ -471,7 +481,46 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
               
               <div className="space-y-3">
-                {aiModules.slice(0, 4).map((module, index) => {
+                {/* Add new video lesson */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68]/20 to-[#B76E79]/20 rounded-lg flex items-center justify-center">
+                        <Video className="h-5 w-5 text-[#2A6F68]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            VIDEO
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>18 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +35 XP
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => {}}
+                        className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
+                      >
+                        START
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Display filtered recommended modules */}
+                {recommendedModules.slice(0, 3).map((module, index) => {
                   const TypeIcon = getTypeIcon(module.content_type);
                   
                   return (
@@ -591,7 +640,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-lg font-bold text-[#333333]">Explore More</h2>
               
               <div className="space-y-3">
-                {recommendedModules.slice(0, 3).map((module, index) => {
+                {recommendedModules.slice(3, 6).map((module, index) => {
                   const TypeIcon = getTypeIcon(module.content_type);
                   
                   return (
