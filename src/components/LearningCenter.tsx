@@ -29,6 +29,7 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
 import QuizInterface from './QuizInterface';
+import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface LearningCenterProps {
   user: User;
@@ -194,27 +195,21 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     <>
       <div className="space-y-6">
         {/* Finance Kata Header */}
-        <div className="bg-[#2A6F68] rounded-xl p-6 text-white relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Finance Kata</h1>
-                <p className="text-white/90 text-sm">Sharpen your money moves through daily financial practice</p>
-              </div>
+        <div className="bg-[#2A6F68] rounded-xl p-6 text-white relative overflow-hidden flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-white" />
             </div>
-            
-            <div className="flex items-center space-x-3">
-              <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
-                <span className="text-sm">{beltRank.emoji}</span>
-                <span className="text-sm font-medium">{beltRank.name}</span>
-              </div>
-              <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
-                {overallProgress.completed}/{overallProgress.total} Complete
-              </div>
+            <div>
+              <h1 className="text-xl font-bold">Finance Kata</h1>
+              <p className="text-white/90 text-sm">Sharpen your money moves through daily financial practice</p>
             </div>
+          </div>
+          
+          <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
+            <span className="text-white font-medium">White Belt</span>
+            <span className="mx-2 text-white/60">•</span>
+            <span className="text-white/90">5/28 Complete</span>
           </div>
         </div>
 
@@ -277,22 +272,14 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             </div>
           </div>
 
-          <div className="mt-4 flex justify-end">
-            <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-              View All
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Badges */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-3">
+          {/* Recent Badges */}
+          <div className="mt-4 flex justify-between items-center">
             <h3 className="text-sm font-medium text-gray-700">Recent Badges</h3>
             <button className="text-xs text-blue-600 hover:text-blue-800">
               View All
             </button>
           </div>
-          <div className="flex space-x-4">
+          <div className="mt-2 flex space-x-4">
             <div className="flex flex-col items-center">
               <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mb-1">
                 <Zap className="h-5 w-5 text-amber-600" />
@@ -315,7 +302,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
             </div>
             
-            <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-6 text-white">
+            <div className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 text-white">
               <div className="flex items-center space-x-2 mb-1">
                 <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
                 <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
@@ -413,6 +400,32 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                 </div>
               </div>
             </div>
+
+            {/* Training Tips from Sensei DoughJo */}
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Lightbulb className="h-4 w-4 text-amber-600" />
+                </div>
+                <h3 className="font-bold text-amber-800">Training Tips from Sensei DoughJo</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <h4 className="font-medium text-amber-800 mb-1">Daily Financial Kata</h4>
+                  <p className="text-sm text-amber-700">
+                    "Like martial arts, financial mastery requires daily practice. Start each morning by reviewing your spending from yesterday."
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-amber-800 mb-1">Today's Tip</h4>
+                  <p className="text-sm text-amber-700">
+                    Track one small expense you usually ignore - like coffee or snacks. Awareness is the first step to mastery.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -430,7 +443,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">Emergency Fund Basics</h3>
-                    <div className="text-xs text-gray-500">15 MIN</div>
+                    <div className="text-xs text-gray-500">+15 XP</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -453,14 +466,14 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
-                    <div className="text-xs text-gray-500">25 MIN</div>
+                    <div className="text-xs text-gray-500">+15 XP</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-full bg-gray-200 rounded-full h-2 w-24">
                     <div className="h-2 rounded-full bg-blue-500" style={{ width: '60%' }} />
                   </div>
-                  <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                  <div className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
                     CONTINUE
                   </div>
                 </div>
@@ -476,10 +489,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">Investment 101</h3>
-                    <div className="text-xs text-gray-500">35 MIN</div>
+                    <div className="text-xs text-gray-500">+20 XP</div>
                   </div>
                 </div>
-                <div className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-medium">
+                <div className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
                   START
                 </div>
               </div>
@@ -489,7 +502,9 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
         {/* For You Section */}
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-[#333333]">For You</h2>
+          <div className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+            FOR YOU
+          </div>
           
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center space-x-3 mb-4">
@@ -498,7 +513,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               </div>
               <div>
                 <h3 className="font-bold text-gray-900">Budgeting Strategies That Actually Work</h3>
-                <p className="text-sm text-gray-600">Practical methods - 50/30/20 rule, zero-based budgeting</p>
+                <p className="text-sm text-gray-600">Practical methods – 50/30/20 rule, zero-based budgeting</p>
               </div>
             </div>
             
@@ -513,39 +528,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               </div>
               <div className="flex items-center space-x-1">
                 <Clock className="h-3 w-3" />
-                <span>10 MINS</span>
+                <span>19 MIN</span>
               </div>
             </div>
             
             <button className="w-full bg-teal-500 text-white py-2 rounded-lg font-medium hover:bg-teal-600 transition-colors">
               START LEARNING
             </button>
-          </div>
-        </div>
-
-        {/* Training Tips */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center space-x-2 mb-4">
-            <Lightbulb className="h-5 w-5 text-amber-500" />
-            <h3 className="text-lg font-bold text-[#333333]">Training Tips from Sensei DoughJo</h3>
-          </div>
-
-          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                <Zap className="h-4 w-4 text-amber-600" />
-              </div>
-              <h4 className="font-bold text-amber-800">Daily Financial Kata</h4>
-            </div>
-            <p className="text-sm text-amber-700 leading-relaxed">
-              "Like martial arts, financial mastery requires daily practice. Start each morning by reviewing your spending from yesterday."
-            </p>
-            <div className="mt-2 text-xs text-amber-600 font-medium">
-              Today's Tip:
-              <p className="mt-1">
-                "Track one small expense you usually ignore - like coffee or snacks. Awareness is the first step to mastery."
-              </p>
-            </div>
           </div>
         </div>
       </div>
