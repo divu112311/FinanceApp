@@ -84,7 +84,13 @@ serve(async (req) => {
       user: userData?.first_name || userData?.full_name || 'Unknown',
       goals: goalsData.length,
       accounts: accountsData.length,
-      transactions: transactionsData.length
+      transactions: transactionsData.length,
+      accountsData: accountsData.map(acc => ({
+        name: acc.name,
+        balance: acc.balance,
+        type: acc.type,
+        subtype: acc.account_subtype || acc.subtype
+      }))
     })
 
     // Generate smart wins based on financial data
@@ -363,42 +369,64 @@ serve(async (req) => {
     console.log(`Generated ${limitedSmartWins.length} smart wins`)
     
     // First, expire any existing wins
-    const { error: expireError } = await supabaseClient
-      .from('smart_wins')
-      .update({ expires_at: now.toISOString() })
-      .eq('user_id', userId)
-      .is('expires_at', null)
-    
-    if (expireError) {
+    try {
+      const { error: expireError } = await supabaseClient
+        .from('smart_wins')
+        .update({ expires_at: now.toISOString() })
+        .eq('user_id', userId)
+        .is('expires_at', null)
+      
+      if (expireError) {
+        console.error('Error expiring old smart wins:', expireError)
+      }
+    } catch (expireError) {
       console.error('Error expiring old smart wins:', expireError)
     }
     
     // Then insert new wins
-    const { data: insertedWins, error: insertError } = await supabaseClient
-      .from('smart_wins')
-      .insert(limitedSmartWins)
-      .select()
-    
-    if (insertError) {
+    try {
+      const { data: insertedWins, error: insertError } = await supabaseClient
+        .from('smart_wins')
+        .insert(limitedSmartWins)
+        .select()
+      
+      if (insertError) {
+        console.error('Error storing smart wins:', insertError)
+        throw new Error(`Failed to store smart wins: ${insertError.message}`)
+      }
+      
+      console.log(`✅ Successfully stored ${insertedWins?.length || 0} smart wins`)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          smartWins: insertedWins,
+          generated: true,
+          count: insertedWins?.length || 0
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
+    } catch (insertError) {
       console.error('Error storing smart wins:', insertError)
-      throw new Error(`Failed to store smart wins: ${insertError.message}`)
+      
+      // Return the generated wins even if we couldn't store them
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          smartWins: limitedSmartWins,
+          generated: true,
+          count: limitedSmartWins.length,
+          stored: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
     }
-    
-    console.log(`✅ Successfully stored ${insertedWins.length} smart wins`)
-    console.log('=== GENERATE SMART WINS FUNCTION SUCCESS ===')
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        smartWins: insertedWins,
-        generated: true,
-        count: insertedWins.length
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
 
   } catch (error) {
     console.error('=== GENERATE SMART WINS FUNCTION FAILED ===')
