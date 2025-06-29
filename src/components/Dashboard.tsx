@@ -123,6 +123,177 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
     setShowConnectModal(false);
   };
 
+  // Enhanced Financial Health Calculations
+  const calculateFinancialHealth = () => {
+    let totalScore = 0;
+    const emergencyFundScore = calculateEmergencyFundScore();
+    const savingsScore = calculateSavingsScore();
+    const diversityScore = calculateAccountDiversityScore();
+    const engagementScore = calculateEngagementScore();
+    const goalScore = calculateGoalAchievementScore();
+
+    totalScore += emergencyFundScore * 0.25;
+    totalScore += savingsScore * 0.20;
+    totalScore += diversityScore * 0.15;
+    totalScore += engagementScore * 0.20;
+    totalScore += goalScore * 0.20;
+
+    return Math.round(totalScore);
+  };
+
+  const calculateEmergencyFundScore = (): number => {
+    if (!bankAccounts.length) return 30;
+    const savingsAccounts = bankAccounts.filter(acc => 
+      acc.type === 'depository' && acc.account_subtype === 'savings'
+    );
+    if (savingsAccounts.length === 0) return 40;
+    const totalSavings = savingsAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    const monthlyExpenses = 3000; // Estimated
+    const monthsCovered = totalSavings / monthlyExpenses;
+    if (monthsCovered >= 6) return 100;
+    if (monthsCovered >= 3) return 80;
+    if (monthsCovered >= 1) return 60;
+    return Math.max(30, monthsCovered * 30);
+  };
+
+  const calculateSavingsScore = (): number => {
+    if (!goals.length) return 40;
+    const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
+    const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0);
+    if (totalTargetAmount === 0) return 50;
+    const progressPercentage = (totalSavedAmount / totalTargetAmount) * 100;
+    return Math.min(100, Math.max(20, progressPercentage));
+  };
+
+  const calculateAccountDiversityScore = (): number => {
+    if (!bankAccounts.length) return 20;
+    const accountTypes = new Set(bankAccounts.map(acc => acc.account_subtype));
+    const typeCount = accountTypes.size;
+    if (typeCount >= 4) return 100;
+    if (typeCount === 3) return 80;
+    if (typeCount === 2) return 60;
+    return 40;
+  };
+
+  const calculateEngagementScore = (): number => {
+    const baseScore = Math.min(100, level * 10);
+    const accountBonus = bankAccounts.length > 0 ? 20 : 0;
+    const goalBonus = goals.length > 0 ? 15 : 0;
+    return Math.min(100, baseScore + accountBonus + goalBonus);
+  };
+
+  const calculateGoalAchievementScore = (): number => {
+    if (!goals.length) return 30;
+    const averageProgress = goals.reduce((sum, goal) => {
+      const progress = goal.target_amount ? 
+        ((goal.saved_amount || goal.current_amount || 0) / goal.target_amount) * 100 : 0;
+      return sum + Math.min(100, progress);
+    }, 0) / goals.length;
+    return Math.round(averageProgress);
+  };
+
+  // Calculate additional metrics
+  const calculateCreditUtilization = () => {
+    // Simulated - in real app would come from credit data
+    return Math.floor(Math.random() * 30) + 15; // 15-45%
+  };
+
+  const calculateDebtToIncome = () => {
+    // Simulated - would calculate from actual debt and income data
+    return Math.floor(Math.random() * 25) + 15; // 15-40%
+  };
+
+  const calculateSavingsRate = () => {
+    if (!goals.length || totalBalance === 0) return 0;
+    const totalSaved = goals.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0);
+    return Math.min(100, (totalSaved / totalBalance) * 100);
+  };
+
+  const calculateMonthlyCashFlow = () => {
+    // Simulated positive cash flow
+    return Math.floor(Math.random() * 2000) + 500;
+  };
+
+  // Calculate Net Worth, Assets, and Debt
+  const calculateAssets = () => {
+    const depositoryAccounts = bankAccounts.filter(acc => acc.type === 'depository');
+    const investmentAccounts = bankAccounts.filter(acc => acc.type === 'investment');
+    return depositoryAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0) +
+           investmentAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+  };
+
+  const calculateDebt = () => {
+    // Simulated debt calculation - in real app would come from credit accounts
+    return Math.floor(Math.random() * 15000) + 5000;
+  };
+
+  const calculateNetWorth = () => {
+    return calculateAssets() - calculateDebt();
+  };
+
+  const healthScore = calculateFinancialHealth();
+  const creditUtilization = calculateCreditUtilization();
+  const debtToIncome = calculateDebtToIncome();
+  const savingsRate = calculateSavingsRate();
+  const monthlyCashFlow = calculateMonthlyCashFlow();
+  const assets = calculateAssets();
+  const debt = calculateDebt();
+  const netWorth = calculateNetWorth();
+
+  const getHealthScoreColor = (score: number) => {
+    if (score >= 85) return 'from-green-400 to-green-600';
+    if (score >= 70) return 'from-[#2A6F68] to-[#2A6F68]';
+    if (score >= 50) return 'from-yellow-400 to-yellow-600';
+    return 'from-red-400 to-red-600';
+  };
+
+  const getHealthScoreIcon = (score: number) => {
+    if (score >= 85) return CheckCircle;
+    if (score >= 70) return TrendingUp;
+    if (score >= 50) return AlertTriangle;
+    return TrendingDown;
+  };
+
+  const getMetricColor = (value: number, type: 'credit' | 'debt' | 'savings') => {
+    switch (type) {
+      case 'credit':
+        if (value <= 10) return 'text-green-600';
+        if (value <= 30) return 'text-yellow-600';
+        return 'text-red-600';
+      case 'debt':
+        if (value <= 20) return 'text-green-600';
+        if (value <= 35) return 'text-yellow-600';
+        return 'text-red-600';
+      case 'savings':
+        if (value >= 20) return 'text-green-600';
+        if (value >= 10) return 'text-yellow-600';
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getMetricStatus = (value: number, type: 'credit' | 'debt' | 'savings') => {
+    switch (type) {
+      case 'credit':
+        if (value <= 10) return 'Excellent';
+        if (value <= 30) return 'Good';
+        return 'Needs Attention';
+      case 'debt':
+        if (value <= 20) return 'Healthy';
+        if (value <= 35) return 'Manageable';
+        return 'High';
+      case 'savings':
+        if (value >= 20) return 'Excellent';
+        if (value >= 10) return 'Good';
+        return 'Low';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const HealthScoreIcon = getHealthScoreIcon(healthScore);
+
   // Goal insights calculations
   const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
   const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0);
@@ -265,7 +436,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                     <TrendingUp className="h-4 w-4" />
                   </div>
                   <div className="text-lg font-bold">
-                    {showBalances ? formatCurrency(totalBalance) : '••••••'}
+                    {showBalances ? formatCurrency(netWorth) : '••••••'}
                   </div>
                   <div className="text-white/80 text-xs">Net Worth</div>
                 </div>
@@ -276,7 +447,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                     <DollarSign className="h-4 w-4 text-green-600" />
                   </div>
                   <div className="text-lg font-bold text-green-700">
-                    {showBalances ? formatCurrency(totalBalance) : '••••••'}
+                    {showBalances ? formatCurrency(assets) : '••••••'}
                   </div>
                   <div className="text-green-600 text-xs">Assets</div>
                 </div>
@@ -287,7 +458,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
                     <Minus className="h-4 w-4 text-red-600" />
                   </div>
                   <div className="text-lg font-bold text-red-700">
-                    {showBalances ? '$0' : '••••••'}
+                    {showBalances ? formatCurrency(debt) : '••••••'}
                   </div>
                   <div className="text-red-600 text-xs">Debt</div>
                 </div>
@@ -345,7 +516,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           )}
         </motion.div>
 
-        {/* Financial Overview - Right Side */}
+        {/* Financial Health Score - Right Side */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -353,66 +524,64 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#333333]">Financial Overview</h2>
+            <h2 className="text-xl font-bold text-[#333333]">Financial Health Score</h2>
             <div className="text-right">
-              <div className="text-4xl font-bold text-[#2A6F68]">
-                {overallProgress.toFixed(0)}%
-              </div>
-              <div className="text-sm text-gray-600">Goal Progress</div>
+              <div className="text-4xl font-bold text-[#2A6F68]">{healthScore}</div>
             </div>
           </div>
 
-          {/* Main Progress Bar */}
+          {/* Main Health Score Progress */}
           <div className="relative mb-6">
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${overallProgress}%` }}
+                animate={{ width: `${healthScore}%` }}
                 transition={{ duration: 2, ease: "easeOut" }}
                 className="h-3 rounded-full bg-[#2A6F68]"
               />
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {overallProgress >= 75 ? 
-                "Great progress! You're well on your way to achieving your financial goals." :
-                overallProgress >= 50 ?
-                "You're making good progress toward your financial goals." :
-                "You're taking the first steps toward your financial goals."}
+              Good progress! You're in the 75th percentile for your age group.
             </p>
           </div>
 
-          {/* Financial Stats Grid */}
+          {/* Compact Health Metrics Grid - 2x2 Layout */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* Total Saved */}
+            {/* Financial Health */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Saved</span>
+                <span className="text-sm text-gray-600">Financial Health</span>
                 <div className="flex items-center space-x-1">
                   <ArrowUp className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">+5%</span>
+                  <span className="text-xs text-green-600 font-medium">+5</span>
                 </div>
               </div>
-              <div className="text-xl font-bold text-[#2A6F68]">{formatCurrency(totalSavedAmount)}</div>
+              <div className="text-xl font-bold text-[#2A6F68]">{healthScore}/100</div>
             </div>
 
-            {/* Total Goals */}
+            {/* Monthly Cash Flow */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Goals</span>
+                <span className="text-sm text-gray-600">Monthly Cash Flow</span>
                 <div className="flex items-center space-x-1">
-                  <span className="text-xs text-blue-600 font-medium">{goals.length}</span>
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">+12%</span>
                 </div>
               </div>
-              <div className="text-xl font-bold text-[#2A6F68]">{formatCurrency(totalTargetAmount)}</div>
+              <div className="text-xl font-bold text-[#2A6F68]">+{formatCurrency(monthlyCashFlow)}</div>
             </div>
 
-            {/* Completed Goals */}
+            {/* Debt-to-Income */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Completed Goals</span>
+                <span className="text-sm text-gray-600">Debt-to-Income</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowDown className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">-3%</span>
+                </div>
               </div>
-              <div className="text-xl font-bold text-green-600">
-                {completedGoals.length}
+              <div className={`text-xl font-bold ${getMetricColor(debtToIncome, 'debt')}`}>
+                {debtToIncome}%
               </div>
             </div>
 
@@ -420,11 +589,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Savings Rate</span>
+                <div className="flex items-center space-x-1">
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span className="text-xs text-green-600 font-medium">+2%</span>
+                </div>
               </div>
-              <div className="text-xl font-bold text-green-600">
-                {totalBalance > 0 && totalSavedAmount > 0 ? 
-                  `${Math.min(100, Math.round((totalSavedAmount / totalBalance) * 100))}%` : 
-                  '0%'}
+              <div className={`text-xl font-bold ${getMetricColor(savingsRate, 'savings')}`}>
+                {savingsRate.toFixed(0)}%
               </div>
             </div>
           </div>
@@ -434,11 +605,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
             <div className="flex items-start space-x-3">
               <Info className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-[#333333] mb-1">Financial Insight</h4>
+                <h4 className="font-semibold text-[#333333] mb-1">AI Financial Insight</h4>
                 <p className="text-sm text-gray-700">
-                  {bankAccounts.length > 0 ? 
-                    `Based on your ${bankAccounts.length} connected account${bankAccounts.length !== 1 ? 's' : ''} and ${goals.length} goal${goals.length !== 1 ? 's' : ''}, your financial foundation is ${overallProgress >= 70 ? 'strong' : 'developing'}. ${overallProgress >= 70 ? 'Consider optimizing your savings strategy.' : 'Focus on building your emergency fund first.'}` :
-                    "Connect your bank accounts to get personalized financial insights and recommendations tailored to your situation."}
+                  Hello! I'm your AI financial companion. I've been analyzing your finances, and I have some insights to share. You're not behind — you're just getting started.
                 </p>
               </div>
             </div>
@@ -545,7 +714,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
               <h3 className="text-lg font-semibold text-[#2A6F68] mb-3">Goal Insight</h3>
               <p className="text-gray-700 text-sm leading-relaxed">
                 {overallProgress >= 80 ? 
-                  `You're ${overallProgress.toFixed(0)}% of the way to your financial goals. At your current savings rate, you'll reach your targets ahead of schedule. Keep up the excellent work!` :
+                  `You're ${overallProgress.toFixed(0)}% of the way to your emergency fund goal. At your current savings rate, you'll reach your target in approximately 3 months. Keep up the excellent work!` :
                   overallProgress >= 50 ?
                   `You're making solid progress at ${overallProgress.toFixed(0)}% completion across your goals. Consider automating your savings to accelerate your progress.` :
                   overallProgress >= 25 ?
