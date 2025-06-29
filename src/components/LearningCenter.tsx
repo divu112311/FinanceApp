@@ -307,41 +307,109 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </div>
 
-        {/* Featured Learning Module */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Featured Learning Module */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
+            </div>
+            
+            <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-6 text-white">
+              <div className="flex items-center space-x-2 mb-1">
+                <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
+                <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
+              <p className="text-white/80 text-sm mb-4">
+                Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
+              </p>
+              
+              <div className="flex items-center space-x-4 mb-4 text-sm">
+                <div className="flex items-center space-x-1">
+                  <Clock className="h-4 w-4" />
+                  <span>45 min</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Zap className="h-4 w-4 text-yellow-300" />
+                  <span>+100 XP</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>Financial Basics</span>
+                </div>
+              </div>
+              
+              <div className="bg-white/10 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium">Completed</div>
+                  <CheckCircle className="h-5 w-5 text-green-300" />
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-6 text-white">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
-              <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
-            <p className="text-white/80 text-sm mb-4">
-              Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
-            </p>
-            
-            <div className="flex items-center space-x-4 mb-4 text-sm">
-              <div className="flex items-center space-x-1">
-                <Clock className="h-4 w-4" />
-                <span>45 min</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Zap className="h-4 w-4 text-yellow-300" />
-                <span>+100 XP</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <BookOpen className="h-4 w-4" />
-                <span>Financial Basics</span>
-              </div>
+
+          {/* Explore More Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#333333]">Explore More</h2>
             </div>
             
-            <div className="bg-white/10 rounded-lg p-3 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Completed</div>
-                <CheckCircle className="h-5 w-5 text-green-300" />
+            <div className="space-y-3">
+              {/* Debt Avalanche vs. Debt Snowball */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <TrendingDown className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">Intermediate</span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIDEO</span>
+                      </div>
+                      <h3 className="font-medium text-gray-900">Debt Avalanche vs. Debt Snowball</h3>
+                      <div className="text-xs text-gray-500">ARTICLE • INTERMEDIATE • 8 MIN</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Investment Basics for Beginners */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">Advanced</span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIEW</span>
+                      </div>
+                      <h3 className="font-medium text-gray-900">Investment Basics for Beginners</h3>
+                      <div className="text-xs text-gray-500">ARTICLE • ADVANCED • 15 MIN</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tax Optimization Strategies */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">Intermediate</span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIEW</span>
+                      </div>
+                      <h3 className="font-medium text-gray-900">Tax Optimization Strategies</h3>
+                      <div className="text-xs text-gray-500">VIDEO • INTERMEDIATE • 12 MIN</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -474,7 +542,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             <div className="mt-2 text-xs text-amber-600 font-medium">
               Today's Tip:
               <p className="mt-1">
-                "The way of the warrior is to stop trouble before it starts" - the same holds true of saving for unexpected expenses in the future.
+                "Track one small expense you usually ignore - like coffee or snacks. Awareness is the first step to mastery."
               </p>
             </div>
           </div>
