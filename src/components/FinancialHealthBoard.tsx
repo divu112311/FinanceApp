@@ -15,184 +15,31 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { useGoals } from '../hooks/useGoals';
+import { useFinancialHealth } from '../hooks/useFinancialHealth';
+import { useUserProfile } from '../hooks/useUserProfile';
 
 interface FinancialHealthBoardProps {
   user: User;
   xp: { points: number | null; badges: string[] | null } | null;
 }
 
-interface HealthMetric {
-  name: string;
-  score: number;
-  status: 'excellent' | 'good' | 'fair' | 'poor';
-  description: string;
-  recommendation: string;
-  icon: React.ComponentType<any>;
-}
-
 const FinancialHealthBoard: React.FC<FinancialHealthBoardProps> = ({ user, xp }) => {
-  const { bankAccounts, totalBalance, loading: accountsLoading } = useBankAccounts(user);
+  const { bankAccounts, totalBalance } = useBankAccounts(user);
   const { goals } = useGoals(user);
-  const [healthScore, setHealthScore] = useState(0);
-  const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
+  const { healthScore, healthMetrics, insights, loading: healthLoading } = useFinancialHealth(user);
+  const { profile, extendedProfile } = useUserProfile(user);
 
-  useEffect(() => {
-    calculateFinancialHealth();
-  }, [bankAccounts, goals, totalBalance]);
-
-  const calculateFinancialHealth = () => {
-    const metrics: HealthMetric[] = [];
-    let totalScore = 0;
-
-    // Emergency Fund Score (25% weight)
-    const emergencyFundScore = calculateEmergencyFundScore();
-    metrics.push({
-      name: 'Emergency Fund',
-      score: emergencyFundScore,
-      status: getScoreStatus(emergencyFundScore),
-      description: 'Your financial safety net for unexpected expenses',
-      recommendation: emergencyFundScore < 70 ? 
-        'Build an emergency fund covering 3-6 months of expenses' :
-        'Great job! Your emergency fund provides excellent protection',
-      icon: PiggyBank
-    });
-    totalScore += emergencyFundScore * 0.25;
-
-    // Savings Rate Score (20% weight)
-    const savingsScore = calculateSavingsScore();
-    metrics.push({
-      name: 'Savings Progress',
-      score: savingsScore,
-      status: getScoreStatus(savingsScore),
-      description: 'How well you\'re progressing toward your financial goals',
-      recommendation: savingsScore < 70 ?
-        'Increase your savings rate to 20% of income for better financial health' :
-        'Excellent savings discipline! You\'re on track for financial success',
-      icon: Target
-    });
-    totalScore += savingsScore * 0.20;
-
-    // Account Diversity Score (15% weight)
-    const diversityScore = calculateAccountDiversityScore();
-    metrics.push({
-      name: 'Account Diversity',
-      score: diversityScore,
-      status: getScoreStatus(diversityScore),
-      description: 'Variety of account types for different financial needs',
-      recommendation: diversityScore < 70 ?
-        'Consider opening different account types (checking, savings, investment)' :
-        'Good account diversity supports your financial flexibility',
-      icon: Activity
-    });
-    totalScore += diversityScore * 0.15;
-
-    // Financial Engagement Score (20% weight)
-    const engagementScore = calculateEngagementScore();
-    metrics.push({
-      name: 'Financial Engagement',
-      score: engagementScore,
-      status: getScoreStatus(engagementScore),
-      description: 'Your active participation in managing your finances',
-      recommendation: engagementScore < 70 ?
-        'Increase your financial engagement by setting goals and tracking progress' :
-        'Excellent financial engagement! Keep up the great work',
-      icon: TrendingUp
-    });
-    totalScore += engagementScore * 0.20;
-
-    // Goal Achievement Score (20% weight)
-    const goalScore = calculateGoalAchievementScore();
-    metrics.push({
-      name: 'Goal Achievement',
-      score: goalScore,
-      status: getScoreStatus(goalScore),
-      description: 'Progress toward your financial objectives',
-      recommendation: goalScore < 70 ?
-        'Set specific, measurable financial goals and track your progress' :
-        'Outstanding goal achievement! You\'re building wealth effectively',
-      icon: CheckCircle
-    });
-    totalScore += goalScore * 0.20;
-
-    setHealthMetrics(metrics);
-    setHealthScore(Math.round(totalScore));
-  };
-
-  const calculateEmergencyFundScore = (): number => {
-    if (!bankAccounts.length) return 30;
-    
-    const savingsAccounts = bankAccounts.filter(acc => 
-      acc.type === 'depository' && acc.subtype === 'savings'
+  if (healthLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-8 h-8 border-2 border-[#2A6F68] border-t-transparent rounded-full"
+        />
+      </div>
     );
-    
-    if (savingsAccounts.length === 0) return 40;
-    
-    const totalSavings = savingsAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
-    
-    // Assume monthly expenses of $3000 for calculation (this would ideally come from spending data)
-    const monthlyExpenses = 3000;
-    const monthsCovered = totalSavings / monthlyExpenses;
-    
-    if (monthsCovered >= 6) return 100;
-    if (monthsCovered >= 3) return 80;
-    if (monthsCovered >= 1) return 60;
-    return Math.max(30, monthsCovered * 30);
-  };
-
-  const calculateSavingsScore = (): number => {
-    if (!goals.length) return 40;
-    
-    const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
-    const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || 0), 0);
-    
-    if (totalTargetAmount === 0) return 50;
-    
-    const progressPercentage = (totalSavedAmount / totalTargetAmount) * 100;
-    return Math.min(100, Math.max(20, progressPercentage));
-  };
-
-  const calculateAccountDiversityScore = (): number => {
-    if (!bankAccounts.length) return 20;
-    
-    const accountTypes = new Set(bankAccounts.map(acc => acc.subtype));
-    const typeCount = accountTypes.size;
-    
-    if (typeCount >= 4) return 100;
-    if (typeCount === 3) return 80;
-    if (typeCount === 2) return 60;
-    return 40;
-  };
-
-  const calculateEngagementScore = (): number => {
-    const level = Math.floor((xp?.points || 0) / 100) + 1;
-    const baseScore = Math.min(100, level * 10);
-    
-    // Bonus for having connected accounts
-    const accountBonus = bankAccounts.length > 0 ? 20 : 0;
-    
-    // Bonus for having goals
-    const goalBonus = goals.length > 0 ? 15 : 0;
-    
-    return Math.min(100, baseScore + accountBonus + goalBonus);
-  };
-
-  const calculateGoalAchievementScore = (): number => {
-    if (!goals.length) return 30;
-    
-    const completedGoals = goals.filter(goal => {
-      const progress = goal.target_amount ? 
-        ((goal.saved_amount || 0) / goal.target_amount) * 100 : 0;
-      return progress >= 100;
-    });
-    
-    const averageProgress = goals.reduce((sum, goal) => {
-      const progress = goal.target_amount ? 
-        ((goal.saved_amount || 0) / goal.target_amount) * 100 : 0;
-      return sum + Math.min(100, progress);
-    }, 0) / goals.length;
-    
-    return Math.round(averageProgress);
-  };
+  }
 
   const getScoreStatus = (score: number): 'excellent' | 'good' | 'fair' | 'poor' => {
     if (score >= 85) return 'excellent';
@@ -299,7 +146,11 @@ const FinancialHealthBoard: React.FC<FinancialHealthBoardProps> = ({ user, xp })
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getScoreColor(metric.status)}`}>
-                <metric.icon className="h-6 w-6" />
+                {metric.name === 'Emergency Fund' && <PiggyBank className="h-6 w-6" />}
+                {metric.name === 'Savings Progress' && <Target className="h-6 w-6" />}
+                {metric.name === 'Account Diversity' && <Activity className="h-6 w-6" />}
+                {metric.name === 'Debt Management' && <CreditCard className="h-6 w-6" />}
+                {metric.name === 'Goal Progress' && <CheckCircle className="h-6 w-6" />}
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold">{metric.score}</div>
@@ -374,8 +225,8 @@ const FinancialHealthBoard: React.FC<FinancialHealthBoardProps> = ({ user, xp })
           <p className="text-sm text-gray-600">Active Financial Goals</p>
           <p className="text-xs text-blue-600 mt-1">
             {goals.filter(g => {
-              const progress = g.target_amount ? ((g.saved_amount || 0) / g.target_amount) * 100 : 0;
-              return progress >= 100;
+              const progress = g.target_amount ? ((g.saved_amount || g.current_amount || 0) / g.target_amount) * 100 : 0;
+              return progress >= 100 || g.status === 'completed';
             }).length} completed
           </p>
         </motion.div>
