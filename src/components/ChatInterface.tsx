@@ -6,7 +6,6 @@ import { useChat } from '../hooks/useChat';
 import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { useUserProfile } from '../hooks/useUserProfile';
-import { useFinancialInsights } from '../hooks/useFinancialInsights';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface ChatInterfaceProps {
@@ -21,8 +20,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const { messages, loading, sendMessage } = useChat(user);
   const { goals } = useGoals(user);
   const { bankAccounts, totalBalance } = useBankAccounts(user);
-  const { getDisplayName, getFullName } = useUserProfile(user);
-  const { insights, getHighPriorityInsights } = useFinancialInsights(user);
+  const { getDisplayName } = useUserProfile(user);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || loading) return;
@@ -61,19 +59,76 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
     return progress >= 100;
   });
 
-  // Get high priority insights
-  const highPriorityInsights = getHighPriorityInsights(3);
-
-  // Scroll to bottom of chat when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  // Dynamic insights based on user's actual data
+  const generateDynamicInsights = () => {
+    const insights = [];
+    
+    // Emergency fund insight
+    const emergencyGoal = goals.find(g => g.name?.toLowerCase().includes('emergency'));
+    if (emergencyGoal) {
+      const progress = emergencyGoal.target_amount ? 
+        ((emergencyGoal.saved_amount || 0) / emergencyGoal.target_amount) * 100 : 0;
+      if (progress >= 80) {
+        insights.push({
+          type: 'success',
+          title: 'Emergency Fund Progress',
+          message: `Excellent! You're ${progress.toFixed(1)}% towards your emergency fund goal. Just $${((emergencyGoal.target_amount || 0) - (emergencyGoal.saved_amount || 0)).toLocaleString()} more to go!`,
+          icon: TrendingUp,
+          color: 'text-green-600'
+        });
+      } else if (progress >= 50) {
+        insights.push({
+          type: 'progress',
+          title: 'Emergency Fund Building',
+          message: `Good progress on your emergency fund! You're ${progress.toFixed(1)}% there. Consider automating $${Math.ceil(((emergencyGoal.target_amount || 0) - (emergencyGoal.saved_amount || 0)) / 12)} monthly to reach your goal in a year.`,
+          icon: PiggyBank,
+          color: 'text-blue-600'
+        });
+      }
     }
-  }, [messages]);
 
-  // Get user's display name
-  const displayName = getDisplayName();
-  const fullName = getFullName();
+    // Savings rate insight
+    if (totalBalance > 0 && totalSavedAmount > 0) {
+      const savingsRate = (totalSavedAmount / totalBalance) * 100;
+      if (savingsRate >= 20) {
+        insights.push({
+          type: 'success',
+          title: 'Excellent Savings Rate',
+          message: `Your savings rate of ${savingsRate.toFixed(1)}% is above the recommended 20%. You're building wealth effectively!`,
+          icon: CheckCircle,
+          color: 'text-green-600'
+        });
+      }
+    }
+
+    // Goal completion insight
+    if (completedGoals.length > 0) {
+      insights.push({
+        type: 'achievement',
+        title: 'Goal Achievement',
+        message: `Congratulations! You've completed ${completedGoals.length} financial goal${completedGoals.length > 1 ? 's' : ''}. This shows great financial discipline!`,
+        icon: Award,
+        color: 'text-purple-600'
+      });
+    }
+
+    // Investment opportunity
+    const checkingAccounts = bankAccounts.filter(acc => acc.account_subtype === 'checking');
+    const totalChecking = checkingAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    if (totalChecking > 5000) {
+      insights.push({
+        type: 'opportunity',
+        title: 'Investment Opportunity',
+        message: `You have $${totalChecking.toLocaleString()} in checking accounts. Consider moving excess funds to high-yield savings or investments for better returns.`,
+        icon: DollarSign,
+        color: 'text-orange-600'
+      });
+    }
+
+    return insights.slice(0, 3); // Show max 3 insights
+  };
+
+  const dynamicInsights = generateDynamicInsights();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -263,7 +318,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     <div className="text-center py-6">
                       <div className="mb-4">
                         <h4 className="font-semibold text-gray-900 mb-2">
-                          Let's Optimize Your Finances, {displayName}
+                          Let's Optimize Your Finances, {getDisplayName()}
                         </h4>
                         <p className="text-gray-600 text-sm max-w-md mx-auto">
                           I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
@@ -396,43 +451,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
             {/* Right Column - Insights & Wisdom (5 columns) */}
             <div className="col-span-5 space-y-6">
-              {/* AI Insights - Seamless Design */}
+              {/* AI Learning Insights - Seamless Design */}
               <div className="bg-gradient-to-br from-[#B76E79]/5 to-[#B76E79]/10 rounded-2xl p-6 border border-[#B76E79]/20">
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="w-8 h-8 bg-[#B76E79] rounded-lg flex items-center justify-center">
                     <Brain className="h-4 w-4 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-[#B76E79]">AI Financial Insights</h3>
+                  <h3 className="text-lg font-semibold text-[#B76E79]">AI Learning Insights</h3>
                 </div>
 
                 <div className="space-y-4">
-                  {highPriorityInsights.length > 0 ? (
-                    highPriorityInsights.map((insight, index) => {
-                      const InsightIcon = getInsightIcon(insight.insight_type);
-                      
-                      return (
-                        <motion.div 
-                          key={insight.insight_id}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="bg-white/60 rounded-xl p-4 border border-white/40"
-                        >
-                          <div className="flex items-start space-x-3">
-                            <InsightIcon className="h-5 w-5 text-[#B76E79] mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-1 text-sm">{insight.title}</h4>
-                              <p className="text-xs text-gray-700 leading-relaxed">{insight.description}</p>
-                              <div className="mt-2">
-                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                                  {insight.insight_type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                </span>
-                              </div>
+                  {dynamicInsights.length > 0 ? (
+                    dynamicInsights.map((insight, index) => (
+                      <motion.div 
+                        key={index}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="bg-white/60 rounded-xl p-4 border border-white/40"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <insight.icon className={`h-5 w-5 ${insight.color} mt-0.5 flex-shrink-0`} />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 mb-1 text-sm">{insight.title}</h4>
+                            <p className="text-xs text-gray-700 leading-relaxed">{insight.message}</p>
+                            <div className="mt-2">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                {insight.type}
+                              </span>
                             </div>
                           </div>
-                        </motion.div>
-                      );
-                    })
+                        </div>
+                      </motion.div>
+                    ))
                   ) : (
                     // Default insights when no dynamic data available
                     <>
@@ -483,9 +534,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   <div className="bg-white/60 rounded-xl p-4 border border-white/40">
                     <p className="text-sm text-[#2A6F68] mb-3 font-medium">
                       {totalBalance > 0 ? (
-                        `Great progress, ${displayName}! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
+                        `Great progress, ${getDisplayName()}! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
                       ) : (
-                        `Welcome to your financial journey, ${displayName}! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
+                        `Welcome to your financial journey, ${getDisplayName()}! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
                       )}
                     </p>
                     
