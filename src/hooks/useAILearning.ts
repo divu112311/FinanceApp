@@ -69,7 +69,7 @@ export const useAILearning = (user: User | null) => {
       const { data: modulesData, error: modulesError } = await supabase
         .from('learning_modules')
         .select('*, user_learning_progress(*)')
-        .eq('content_data->generated_by', 'ai')
+        .eq('content_data->generated_by', '"ai"')
         .order('created_at', { ascending: false });
       
       if (modulesError) {
@@ -101,7 +101,7 @@ export const useAILearning = (user: User | null) => {
         const { data: newModulesData } = await supabase
           .from('learning_modules')
           .select('*, user_learning_progress(*)')
-          .eq('content_data->generated_by', 'ai')
+          .eq('content_data->generated_by', '"ai"')
           .order('created_at', { ascending: false });
         
         const newFormattedModules = newModulesData?.map(module => {
