@@ -210,7 +210,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   };
 
   const calculateMonthlyCashFlow = () => {
-    // Simulated positive cash flow
+    // Return 0 if no accounts are connected
+    if (bankAccounts.length === 0) return 0;
+    
+    // Simulated positive cash flow when accounts exist
     return Math.floor(Math.random() * 2000) + 500;
   };
 
