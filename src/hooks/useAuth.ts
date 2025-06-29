@@ -99,7 +99,7 @@ export const useAuth = () => {
         console.log('Could not create user_xp record, falling back to xp table');
         
         // Fallback to original xp table
-        const { error: xpError } = await supabase
+        const { error: fallbackXpError } = await supabase
           .from('xp')
           .insert({
             user_id: data.user.id,
@@ -107,7 +107,7 @@ export const useAuth = () => {
             badges: ['Welcome'],
           });
 
-        if (xpError) throw xpError;
+        if (fallbackXpError) throw fallbackXpError;
       }
     }
 
