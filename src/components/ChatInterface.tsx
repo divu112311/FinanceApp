@@ -7,6 +7,7 @@ import { useGoals } from '../hooks/useGoals';
 import { useBankAccounts } from '../hooks/useBankAccounts';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useFinancialInsights } from '../hooks/useFinancialInsights';
+import SmartWinsWidget from './SmartWinsWidget';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface ChatInterfaceProps {
@@ -23,13 +24,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const { bankAccounts, totalBalance } = useBankAccounts(user);
   const { getDisplayName } = useUserProfile(user);
   const { insights, loading: insightsLoading, generateInsights } = useFinancialInsights(user);
-
-  useEffect(() => {
-    // Scroll to bottom when messages change
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
 
   useEffect(() => {
     // Generate insights if none exist
@@ -172,40 +166,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           <div className="grid grid-cols-12 gap-8">
             {/* Left Column - Actions & Chat (7 columns) */}
             <div className="col-span-7 space-y-6">
-              {/* Easy Wins - Integrated Design */}
-              <div className="bg-gradient-to-br from-[#2A6F68]/5 to-[#2A6F68]/10 rounded-2xl p-6 border border-[#2A6F68]/20">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
-                    <Lightbulb className="h-4 w-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-[#2A6F68]">Smart Wins This Week</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  {/* Dynamic easy wins based on user data */}
-                  {totalBalance > 10000 && (
-                    <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
-                      <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
-                      <p className="text-sm text-[#2A6F68] font-medium">
-                        Move excess checking funds (${(totalBalance * 0.3).toLocaleString()}) to high-yield savings for better returns
-                      </p>
-                    </div>
-                  )}
-                  
-                  {goalProgress < 50 && goals.length > 0 && (
-                    <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
-                      <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
-                      <p className="text-sm text-[#2A6F68] font-medium">
-                        Automate ${Math.ceil((totalGoalAmount - totalSavedAmount) / 24)} monthly to reach goals faster
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
-                    <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
-                    <p className="text-sm text-[#2A6F68] font-medium">Review subscriptions - most people save $40-80/month</p>
-                  </div>
-                </div>
-              </div>
+              {/* Smart Wins This Week - Using the new component */}
+              <SmartWinsWidget user={user} />
 
               {/* Quick Actions - Streamlined */}
               <div className="grid grid-cols-3 gap-4">

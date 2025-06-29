@@ -7,6 +7,7 @@ import { useTransactions } from './useTransactions';
 
 interface SmartWin {
   id: string;
+  user_id?: string;
   title: string;
   description: string;
   type: 'savings' | 'spending' | 'investment' | 'goal' | 'opportunity';

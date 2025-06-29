@@ -6,8 +6,7 @@ import {
   PiggyBank, 
   Target, 
   DollarSign,
-  Zap,
-  ArrowRight
+  Zap
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useSmartWins } from '../hooks/useSmartWins';
