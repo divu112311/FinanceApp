@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, UserPlus, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { isSupabaseConfigured } from '../lib/supabase';
 import doughjoMascot from '../assets/doughjo-mascot.png';
 
 const LoginForm: React.FC = () => {
@@ -13,11 +14,24 @@ const LoginForm: React.FC = () => {
     lastName: ''
   });
   const [error, setError] = useState('');
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp, loading, authError } = useAuth();
+
+  // Set error from auth hook
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured) {
+      setError('Supabase is not configured. Please set up your environment variables.');
+      return;
+    }
 
     try {
       if (isLogin) {
@@ -30,7 +44,7 @@ const LoginForm: React.FC = () => {
         await signUp(formState.email, formState.password, formState.firstName.trim(), formState.lastName.trim());
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      // Error is already set by the auth hook
     }
   };
 
@@ -77,6 +91,28 @@ const LoginForm: React.FC = () => {
           <p className="text-[#666666] text-lg">Your AI Financial Sensei</p>
           <p className="text-[#888888] text-sm mt-2">Master your money with ancient wisdom and modern AI</p>
         </motion.div>
+
+        {/* Supabase Configuration Warning */}
+        {!isSupabaseConfigured && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"
+          >
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-yellow-900 mb-1">Supabase Not Configured</h4>
+                <p className="text-sm text-yellow-800">
+                  Your Supabase environment variables are not properly set up. Please check your .env file and make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are correctly configured.
+                </p>
+                <p className="text-sm text-yellow-800 mt-2">
+                  You can use the "Connect to Supabase" button in the top right of the editor to set up your project.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Form Card */}
         <motion.div
@@ -192,7 +228,7 @@ const LoginForm: React.FC = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured}
               className="w-full bg-[#2A6F68] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#235A54] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
