@@ -208,7 +208,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
             <span className="text-white font-medium">White Belt</span>
             <span className="mx-2 text-white/60">•</span>
-            <span className="text-white/90">5/28 Complete</span>
+            <span className="text-white/90">{overallProgress.completed}/{overallProgress.total} Complete</span>
           </div>
         </div>
 
@@ -383,44 +383,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* For You Section */}
-            <div className="space-y-4">
-              <div className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
-                FOR YOU
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Target className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">Budgeting Strategies That Actually Work</h3>
-                    <p className="text-sm text-gray-600">Practical methods – 50/30/20 rule, zero-based budgeting</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4 text-xs text-gray-500 mb-4">
-                  <div className="flex items-center space-x-1">
-                    <Video className="h-3 w-3" />
-                    <span>VIDEO</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Bookmark className="h-3 w-3" />
-                    <span>BEGINNER</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-3 w-3" />
-                    <span>19 MIN</span>
-                  </div>
-                </div>
-                
-                <button className="w-full bg-teal-500 text-white py-2 rounded-lg font-medium hover:bg-teal-600 transition-colors">
-                  START LEARNING
-                </button>
               </div>
             </div>
           </div>
