@@ -185,6 +185,17 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'video': return 'VIDEO';
+      case 'article': return 'ARTICLE';
+      case 'course': return 'COURSE';
+      case 'quiz': return 'QUIZ';
+      case 'interactive': return 'INTERACTIVE';
+      default: return 'LESSON';
+    }
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Beginner': return 'bg-green-100 text-green-800 border-green-200';
@@ -246,15 +257,21 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                   
                   <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">
+                        Beginner
+                      </span>
+                      <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        QUIZ
+                      </span>
+                    </div>
+                    
                     <h3 className="text-lg font-bold text-gray-900 mb-2">Budgeting Mastery</h3>
                     <p className="text-gray-600 text-sm mb-4">
                       Learn practical budgeting methods that fit real life, including the 50/30/20 rule and zero-based budgeting techniques.
                     </p>
                     
                     <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <div className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                        Beginner
-                      </div>
                       <div className="flex items-center space-x-1 text-gray-500 text-xs">
                         <Clock className="h-3 w-3" />
                         <span>18 min practice</span>
@@ -291,8 +308,23 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         <Shield className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            ARTICLE
+                          </span>
+                        </div>
                         <h3 className="font-medium text-gray-900">Emergency Fund Basics</h3>
-                        <div className="text-xs text-gray-500">+15 XP</div>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>15 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +15 XP
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -314,8 +346,23 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         <BarChart3 className="h-5 w-5 text-blue-600" />
                       </div>
                       <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-medium">
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            INTERACTIVE
+                          </span>
+                        </div>
                         <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
-                        <div className="text-xs text-gray-500">+15 XP</div>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>20 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +15 XP
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -337,8 +384,56 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         <TrendingUp className="h-5 w-5 text-purple-600" />
                       </div>
                       <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            Intermediate
+                          </span>
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                            COURSE
+                          </span>
+                        </div>
                         <h3 className="font-medium text-gray-900">Investment 101</h3>
-                        <div className="text-xs text-gray-500">+20 XP</div>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>45 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +20 XP
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
+                      START
+                    </div>
+                  </div>
+                </div>
+
+                {/* Debt Payoff Strategies */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                        <TrendingDown className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                            Intermediate
+                          </span>
+                          <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-medium">
+                            VIDEO
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Debt Payoff Strategies</h3>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>30 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +18 XP
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
@@ -367,10 +462,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">Intermediate</span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIDEO</span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">ARTICLE</span>
                         </div>
                         <h3 className="font-medium text-gray-900">Debt Avalanche vs. Debt Snowball</h3>
-                        <div className="text-xs text-gray-500">ARTICLE • INTERMEDIATE • 8 MIN</div>
+                        <div className="text-xs text-gray-500">8 MIN READ</div>
                       </div>
                     </div>
                   </div>
@@ -386,10 +481,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">Advanced</span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIEW</span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIDEO</span>
                         </div>
                         <h3 className="font-medium text-gray-900">Investment Basics for Beginners</h3>
-                        <div className="text-xs text-gray-500">ARTICLE • ADVANCED • 15 MIN</div>
+                        <div className="text-xs text-gray-500">15 MIN WATCH</div>
                       </div>
                     </div>
                   </div>
@@ -405,10 +500,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">Intermediate</span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">VIEW</span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">COURSE</span>
                         </div>
                         <h3 className="font-medium text-gray-900">Tax Optimization Strategies</h3>
-                        <div className="text-xs text-gray-500">VIDEO • INTERMEDIATE • 12 MIN</div>
+                        <div className="text-xs text-gray-500">12 MIN LESSON</div>
                       </div>
                     </div>
                   </div>
