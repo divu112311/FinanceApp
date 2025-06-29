@@ -359,6 +359,18 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
+  // Get button label based on content type
+  const getButtonLabel = (contentType: string) => {
+    switch (contentType) {
+      case 'video': return 'WATCH';
+      case 'article': return 'VIEW';
+      case 'quiz': return 'START';
+      case 'course': return 'START';
+      case 'interactive': return 'START';
+      default: return 'START';
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'video': return Video;
@@ -387,18 +399,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
       case 'Intermediate': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Advanced': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // Get button label based on content type
-  const getButtonLabel = (contentType: string) => {
-    switch (contentType) {
-      case 'video': return 'WATCH';
-      case 'article': return 'VIEW';
-      case 'quiz': return 'START';
-      case 'course': return 'START';
-      case 'interactive': return 'START';
-      default: return 'START';
     }
   };
 
@@ -655,7 +655,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               )}
             </div>
 
-            {/* Featured Learning Module */}
+            {/* Featured Learning Section */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Star className="h-5 w-5 text-yellow-500" />
