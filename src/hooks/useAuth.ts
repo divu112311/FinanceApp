@@ -84,16 +84,31 @@ export const useAuth = () => {
 
       if (userProfileError) throw userProfileError;
 
-      // Create initial XP record
-      const { error: xpError } = await supabase
-        .from('xp')
-        .insert({
-          user_id: data.user.id,
-          points: 100, // Welcome bonus
-          badges: ['Welcome'],
-        });
+      // Try to create user_xp record first (new schema)
+      try {
+        await supabase
+          .from('user_xp')
+          .insert({
+            user_id: data.user.id,
+            total_xp: 100,
+            current_level: 1,
+            xp_to_next_level: 0,
+            last_xp_earned_at: new Date().toISOString()
+          });
+      } catch (xpError) {
+        console.log('Could not create user_xp record, falling back to xp table');
+        
+        // Fallback to original xp table
+        const { error: xpError } = await supabase
+          .from('xp')
+          .insert({
+            user_id: data.user.id,
+            points: 100, // Welcome bonus
+            badges: ['Welcome'],
+          });
 
-      if (xpError) throw xpError;
+        if (xpError) throw xpError;
+      }
     }
 
     return data;
