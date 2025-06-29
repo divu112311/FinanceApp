@@ -25,7 +25,8 @@ import {
   FileText,
   Bookmark,
   Flame,
-  TrendingDown
+  TrendingDown,
+  X
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
@@ -472,7 +473,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             onClick={handleCloseContent}
             className="p-1 hover:bg-white/20 rounded transition-colors"
           >
-            <CheckCircle className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
         
@@ -819,77 +820,101 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               
               <div className="space-y-3">
                 {/* Debt Avalanche vs. Debt Snowball */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-blue-600" />
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
+                      <TrendingDown className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                          Beginner
+                        </span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                          ARTICLE
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
-                            Beginner
-                          </span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                            ARTICLE
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-gray-900">Debt Avalanche vs. Debt Snowball</h3>
-                        <div className="text-xs text-gray-500">
-                          15 MIN ARTICLE
-                        </div>
+                      <h3 className="font-medium text-gray-900">Debt Avalanche vs. Debt Snowball</h3>
+                      <div className="text-xs text-gray-500 flex items-center space-x-2">
+                        <span>15 min</span>
+                        <span>•</span>
+                        <span className="text-yellow-500 flex items-center">
+                          <Zap className="h-3 w-3 mr-0.5" />
+                          +25 XP
+                        </span>
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
+                      VIEW
+                    </button>
                   </div>
                 </div>
 
                 {/* Investment Basics for Beginners */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Video className="h-5 w-5 text-blue-600" />
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                      <Video className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                          Beginner
+                        </span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                          VIDEO
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
-                            Beginner
-                          </span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                            VIDEO
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-gray-900">Investment Basics for Beginners</h3>
-                        <div className="text-xs text-gray-500">
-                          22 MIN VIDEO
-                        </div>
+                      <h3 className="font-medium text-gray-900">Investment Basics for Beginners</h3>
+                      <div className="text-xs text-gray-500 flex items-center space-x-2">
+                        <span>22 min</span>
+                        <span>•</span>
+                        <span className="text-yellow-500 flex items-center">
+                          <Zap className="h-3 w-3 mr-0.5" />
+                          +40 XP
+                        </span>
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
+                      WATCH
+                    </button>
                   </div>
                 </div>
 
                 {/* Investment 101 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-blue-600" />
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                          Beginner
+                        </span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                          COURSE
+                        </span>
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
-                            Beginner
-                          </span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                            COURSE
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-gray-900">Investment 101</h3>
-                        <div className="text-xs text-gray-500">
-                          45 MIN COURSE
-                        </div>
+                      <h3 className="font-medium text-gray-900">Investment 101</h3>
+                      <div className="text-xs text-gray-500 flex items-center space-x-2">
+                        <span>45 min</span>
+                        <span>•</span>
+                        <span className="text-yellow-500 flex items-center">
+                          <Zap className="h-3 w-3 mr-0.5" />
+                          +75 XP
+                        </span>
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium">
+                      START
+                    </button>
                   </div>
                 </div>
               </div>
