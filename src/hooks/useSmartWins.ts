@@ -20,7 +20,7 @@ interface SmartWin {
 
 export const useSmartWins = (user: User | null) => {
   const [smartWins, setSmartWins] = useState<SmartWin[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
