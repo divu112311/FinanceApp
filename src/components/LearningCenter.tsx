@@ -64,6 +64,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   const [showArticle, setShowArticle] = useState(false);
   const [selectedModule, setSelectedModule] = useState<any>(null);
   const [currentView, setCurrentView] = useState<'quiz' | 'article' | null>(null);
+  const [showVideo, setShowVideo] = useState(false);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -178,6 +179,24 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         return;
       }
 
+      // If it's a video module, show the video player
+      if (module.content_type === 'video' && module.title === 'Credit Score Fundamentals') {
+        console.log('Opening video player for:', module.title);
+        
+        // Start the module first if not started
+        if (module.progress?.status === 'not_started' || !module.progress) {
+          console.log('Starting video module...');
+          if (isAIModule) {
+            await startAIModule(moduleId);
+          } else {
+            await startModule(moduleId);
+          }
+        }
+        
+        setShowVideo(true);
+        return;
+      }
+
       // For other non-quiz modules, start and complete immediately
       console.log('Processing non-quiz module:', module.title);
       
@@ -264,6 +283,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     console.log('Content closed by user');
     setShowQuiz(false);
     setShowArticle(false);
+    setShowVideo(false);
     setSelectedModule(null);
     setCurrentView(null);
   };
@@ -354,6 +374,95 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
       />
     );
   }
+
+  // Video player modal
+  const VideoPlayerModal = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
+      >
+        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] p-4 text-white flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+              <Video className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Credit Score Fundamentals</h2>
+              <p className="text-white/80 text-xs">Video Lesson</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCloseContent}
+            className="p-1 hover:bg-white/20 rounded transition-colors"
+          >
+            <CheckCircle className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="p-4">
+          <div className="aspect-video bg-black rounded-lg overflow-hidden">
+            <video 
+              controls 
+              className="w-full h-full"
+              poster="https://images.pexels.com/photos/4386372/pexels-photo-4386372.jpeg"
+              onEnded={() => {
+                // Award XP when video completes
+                onXPUpdate(35);
+                setTimeout(() => {
+                  handleCloseContent();
+                }, 1000);
+              }}
+            >
+              <source src="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1 text-gray-500 text-sm">
+                <Clock className="h-4 w-4" />
+                <span>18 minutes</span>
+              </div>
+              <div className="flex items-center space-x-1 text-yellow-500 text-sm">
+                <Zap className="h-4 w-4" />
+                <span>+35 XP on completion</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button className="flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                <Bookmark className="h-3 w-3" />
+                <span>Save</span>
+              </button>
+              <button 
+                onClick={handleCloseContent}
+                className="flex items-center space-x-1 px-3 py-1 bg-[#2A6F68] text-white rounded-lg hover:bg-[#235A54] transition-colors text-sm"
+              >
+                <CheckCircle className="h-3 w-3" />
+                <span>Mark Complete</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <h3 className="font-semibold text-gray-900 mb-2">About This Lesson</h3>
+            <p className="text-sm text-gray-700">
+              Learn what affects your credit score and how to improve it. This video covers credit reports, payment history, credit utilization, and practical strategies to build and maintain excellent credit.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 
   return (
     <>
@@ -510,7 +619,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                     </div>
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => {}}
+                        onClick={() => setShowVideo(true)}
                         className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
                       >
                         START
@@ -746,6 +855,11 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </div>
       </div>
+
+      {/* Video Player Modal */}
+      <AnimatePresence>
+        {showVideo && <VideoPlayerModal />}
+      </AnimatePresence>
     </>
   );
 };
