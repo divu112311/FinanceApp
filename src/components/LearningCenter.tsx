@@ -228,10 +228,10 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </div>
 
-        {/* Main Content Grid - 2 columns */}
-        <div className="grid grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
+        {/* Main Content Grid - 2 columns with 2/3 and 1/3 split */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Left Column - Today's Practice (2/3 width) */}
+          <div className="col-span-2 space-y-6">
             {/* Today's Practice */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -350,7 +350,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right Column - Explore More (1/3 width) */}
           <div className="space-y-6">
             {/* Explore More Section */}
             <div className="space-y-4">
