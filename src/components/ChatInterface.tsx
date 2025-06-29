@@ -75,8 +75,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
     return progress >= 100;
   });
 
-  // Get AI insights for display
-  const aiInsights = insights.slice(0, 3);
+  // Get AI insights for display - limit to 2 as requested
+  const aiInsights = insights.slice(0, 2);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
