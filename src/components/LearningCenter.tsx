@@ -24,7 +24,8 @@ import {
   Sparkles,
   Video,
   FileText,
-  Bookmark
+  Bookmark,
+  Flame
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
@@ -448,6 +449,52 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
           {/* Right Column - Explore More (1/3 width) */}
           <div className="space-y-6">
+            {/* Recent Achievements Section */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-[#333333]">Recent Achievements</h2>
+              
+              <div className="space-y-3">
+                {/* 7-Day Streak */}
+                <div className="bg-amber-50 rounded-xl p-4 shadow-sm border border-amber-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Flame className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-amber-900">7-Day Streak</h3>
+                      <p className="text-xs text-amber-700">Keep it up!</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Budget Master */}
+                <div className="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-green-900">Budget Master</h3>
+                      <p className="text-xs text-green-700">3 categories on track</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Learning Ninja */}
+                <div className="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-blue-900">Learning Ninja</h3>
+                      <p className="text-xs text-blue-700">2/5 completed</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Explore More Section */}
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-[#333333]">Explore More</h2>
