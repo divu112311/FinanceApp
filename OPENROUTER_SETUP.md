@@ -12,7 +12,7 @@ OpenRouter provides access to multiple AI models at competitive prices, includin
 
 1. Once logged in, go to [openrouter.ai/keys](https://openrouter.ai/keys)
 2. Click **Create Key**
-3. Give it a name like "LuxeFi App"
+3. Give it a name like "DoughJo App"
 4. Copy the API key (starts with `sk-or-v1-`)
 
 ## Step 3: Add Credits (Optional)
@@ -55,15 +55,15 @@ supabase functions deploy chat-ai
 
 ## Step 6: Test the Integration
 
-1. Go back to your LuxeFi app
+1. Go back to your DoughJo app
 2. Send a message in the chat
 3. You should now get intelligent AI responses!
 
 ## Model Information
 
-The function is configured to use `anthropic/claude-3.5-haiku` which is:
+The function is configured to use `meta-llama/llama-3.1-8b-instruct:free` which is:
 - ✅ Fast and responsive
-- ✅ Cost-effective (~$0.25 per 1M input tokens)
+- ✅ Completely free to use
 - ✅ Great for conversational AI
 - ✅ Excellent at following instructions
 
@@ -71,12 +71,12 @@ The function is configured to use `anthropic/claude-3.5-haiku` which is:
 
 You can change the model in the Edge Function if needed:
 
-### Budget-friendly options:
-- `anthropic/claude-3.5-haiku` (current choice)
-- `meta-llama/llama-3.1-8b-instruct:free` (free!)
-- `microsoft/wizardlm-2-8x22b:nitro`
+### Free options:
+- `meta-llama/llama-3.1-8b-instruct:free` (current choice)
+- `google/gemma-2-9b-it:free` (backup model)
+- `microsoft/phi-3-mini-128k-instruct:free`
 
-### Premium options:
+### Premium options (require credits):
 - `anthropic/claude-3.5-sonnet`
 - `openai/gpt-4o`
 - `google/gemini-pro-1.5`
@@ -85,7 +85,7 @@ You can change the model in the Edge Function if needed:
 
 OpenRouter is typically much cheaper than direct OpenAI:
 - **OpenAI GPT-4**: ~$30 per 1M tokens
-- **Claude 3.5 Haiku**: ~$0.25 per 1M tokens
+- **Claude 3.5 Sonnet**: ~$3 per 1M tokens
 - **Free models**: $0 (with rate limits)
 
 ## Troubleshooting
@@ -113,6 +113,6 @@ OpenRouter is typically much cheaper than direct OpenAI:
 
 ## Next Steps
 
-Once configured, your LuxeBot will provide intelligent, personalized financial advice using the power of Claude 3.5 Haiku at a fraction of the cost of GPT-4!
+Once configured, your DoughJo chatbot will provide intelligent, personalized financial advice using the power of Llama 3.1 completely free!
 
 The AI will have full context of your user profile, goals, XP level, and conversation history for truly personalized responses.

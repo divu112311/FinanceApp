@@ -13,7 +13,7 @@ OpenRouter provides FREE access to powerful AI models! Perfect for getting start
 
 1. Once logged in, go to [openrouter.ai/keys](https://openrouter.ai/keys)
 2. Click **Create Key**
-3. Give it a name like "LuxeFi App"
+3. Give it a name like "DoughJo App"
 4. Copy the API key (starts with `sk-or-v1-`)
 
 ## Step 3: Free Models Available
@@ -61,7 +61,7 @@ supabase functions deploy chat-ai
 
 ## Step 6: Test Your Free AI!
 
-1. Go back to your LuxeFi app
+1. Go back to your DoughJo app
 2. Send a message in the chat
 3. You should get intelligent AI responses - completely free!
 
@@ -116,4 +116,4 @@ You're getting access to:
 - **Completely free** - No hidden costs or trials
 - **Production-ready** - Reliable for your app
 
-Your LuxeBot will now provide intelligent, personalized financial advice using state-of-the-art AI models - all for free!
+Your DoughJo chatbot will now provide intelligent, personalized financial advice using state-of-the-art AI models - all for free!
