@@ -270,67 +270,47 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               </div>
             </div>
           </div>
-
-          {/* Recent Badges */}
-          <div className="mt-4 flex justify-between items-center">
-            <h3 className="text-sm font-medium text-gray-700">Recent Badges</h3>
-            <button className="text-xs text-blue-600 hover:text-blue-800">
-              View All
-            </button>
-          </div>
-          <div className="mt-2 flex space-x-4">
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mb-1">
-                <Zap className="h-5 w-5 text-amber-600" />
-              </div>
-              <span className="text-xs text-gray-600">7-DAY STREAK</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-1">
-                <Target className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="text-xs text-gray-600">BUDGET MASTER</span>
-            </div>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Featured Learning Module */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
-            </div>
-            
-            <div className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 text-white">
-              <div className="flex items-center space-x-2 mb-1">
-                <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
-                <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
-              <p className="text-white/80 text-sm mb-4">
-                Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
-              </p>
-              
-              <div className="flex items-center space-x-4 mb-4 text-sm">
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>45 min</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Zap className="h-4 w-4 text-yellow-300" />
-                  <span>+100 XP</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Financial Basics</span>
-                </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {/* Featured Learning Module */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
               </div>
               
-              <div className="bg-white/10 rounded-lg p-3 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium">Completed</div>
-                  <CheckCircle className="h-5 w-5 text-green-300" />
+              <div className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 text-white">
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
+                  <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
+                <p className="text-white/80 text-sm mb-4">
+                  Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
+                </p>
+                
+                <div className="flex items-center space-x-4 mb-4 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-4 w-4" />
+                    <span>45 min</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Zap className="h-4 w-4 text-yellow-300" />
+                    <span>+100 XP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Financial Basics</span>
+                  </div>
+                </div>
+                
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">Completed</div>
+                    <CheckCircle className="h-5 w-5 text-green-300" />
+                  </div>
                 </div>
               </div>
             </div>
