@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useBankAccounts } from './useBankAccounts';
 import { useGoals } from './useGoals';
 import { useTransactions } from './useTransactions';
@@ -39,17 +39,13 @@ export const useSmartWins = (user: User | null) => {
 
     setLoading(true);
     setError(null);
+    
     try {
       console.log('Fetching smart wins for user:', user.id);
       
-      // Check if smart_wins table exists
-      const { count, error: tableCheckError } = await supabase
-        .from('smart_wins')
-        .select('*', { count: 'exact', head: true });
-      
-      // If table doesn't exist, generate wins algorithmically
-      if (tableCheckError) {
-        console.log('Smart wins table not found, generating algorithmically');
+      // If Supabase is not properly configured, skip database operations
+      if (!isSupabaseConfigured) {
+        console.log('Supabase not configured, generating smart wins algorithmically');
         const generatedWins = generateSmartWins();
         setSmartWins(generatedWins);
         setLastUpdated(new Date());
@@ -57,30 +53,29 @@ export const useSmartWins = (user: User | null) => {
         return;
       }
 
-      // Table exists, fetch from database
-      const { data, error } = await supabase
-        .from('smart_wins')
-        .select('*')
-        .eq('user_id', user.id)
-        .is('expires_at', null)
-        .order('created_at', { ascending: false });
+      // Try to check if smart_wins table exists and fetch data
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('smart_wins')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('expires_at', null)
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching smart wins:', error);
-        setError(error.message);
-        // Fall back to algorithmic generation
-        const generatedWins = generateSmartWins();
-        setSmartWins(generatedWins);
-      } else {
-        console.log(`Fetched ${data?.length || 0} smart wins`);
+        if (fetchError) {
+          console.log('Error fetching from smart_wins table (table may not exist):', fetchError.message);
+          throw fetchError;
+        }
+
+        console.log(`Fetched ${data?.length || 0} smart wins from database`);
         
         // If no wins in database or wins are outdated, generate new ones
         if (!data || data.length === 0) {
-          console.log('No smart wins found, generating new ones');
+          console.log('No smart wins found in database, generating new ones');
           const generatedWins = generateSmartWins();
           setSmartWins(generatedWins);
           
-          // Try to store generated wins if table exists
+          // Try to store generated wins in database
           try {
             const winsToInsert = generatedWins.map(win => ({
               ...win,
@@ -90,8 +85,10 @@ export const useSmartWins = (user: User | null) => {
             await supabase
               .from('smart_wins')
               .insert(winsToInsert);
+            
+            console.log('Successfully stored generated wins in database');
           } catch (insertError) {
-            console.error('Error storing generated wins:', insertError);
+            console.log('Could not store wins in database, continuing with generated wins:', insertError);
           }
         } else {
           // Check if wins need to be refreshed (Monday 8am)
@@ -102,7 +99,7 @@ export const useSmartWins = (user: User | null) => {
             const generatedWins = generateSmartWins();
             setSmartWins(generatedWins);
             
-            // Update database with new wins
+            // Try to update database with new wins
             try {
               // First expire old wins
               await supabase
@@ -120,22 +117,29 @@ export const useSmartWins = (user: User | null) => {
               await supabase
                 .from('smart_wins')
                 .insert(winsToInsert);
+              
+              console.log('Successfully updated wins in database');
             } catch (updateError) {
-              console.error('Error updating smart wins:', updateError);
+              console.log('Could not update wins in database, continuing with generated wins:', updateError);
             }
           } else {
             setSmartWins(data);
           }
         }
+      } catch (dbError) {
+        console.log('Database operation failed, falling back to algorithmic generation:', dbError);
+        // Fall back to algorithmic generation
+        const generatedWins = generateSmartWins();
+        setSmartWins(generatedWins);
       }
       
       setLastUpdated(new Date());
     } catch (err: any) {
-      console.error('Error in fetchSmartWins:', err);
-      setError(err.message);
-      // Fall back to algorithmic generation
+      console.log('Error in fetchSmartWins, using algorithmic fallback:', err.message);
+      // Always fall back to algorithmic generation on any error
       const generatedWins = generateSmartWins();
       setSmartWins(generatedWins);
+      setLastUpdated(new Date());
     } finally {
       setLoading(false);
     }
@@ -184,7 +188,7 @@ export const useSmartWins = (user: User | null) => {
     
     if (totalChecking > 5000) {
       wins.push({
-        id: crypto.randomUUID(), // Generate UUID client-side
+        id: crypto.randomUUID(),
         title: "Optimize Excess Cash",
         description: `Move $${Math.floor((totalChecking - 3000) / 100) * 100} from checking to high-yield savings for better returns`,
         type: 'opportunity',
@@ -221,7 +225,7 @@ export const useSmartWins = (user: User | null) => {
         
         if (potentialSavings > 20) {
           wins.push({
-            id: crypto.randomUUID(), // Generate UUID client-side
+            id: crypto.randomUUID(),
             title: "Review Subscriptions",
             description: `Most people save $${Math.floor(potentialSavings)}-${Math.floor(potentialSavings * 1.5)}/month by auditing recurring subscriptions`,
             type: 'spending',
@@ -241,7 +245,7 @@ export const useSmartWins = (user: User | null) => {
         
         if (topCategory.amount > monthlyIncome * 0.2) {
           wins.push({
-            id: crypto.randomUUID(), // Generate UUID client-side
+            id: crypto.randomUUID(),
             title: `Reduce ${topCategory.category} Spending`,
             description: `Cutting ${topCategory.category} spending by 15% would save you $${Math.floor(topCategory.amount * 0.15)} monthly`,
             type: 'spending',
@@ -270,7 +274,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (totalMonthlyGoalAmount > 100) {
         wins.push({
-          id: crypto.randomUUID(), // Generate UUID client-side
+          id: crypto.randomUUID(),
           title: "Automate Goal Contributions",
           description: `Automatically save $${Math.ceil(totalMonthlyGoalAmount / 100) * 100} monthly to reach your goals faster`,
           type: 'goal',
@@ -295,7 +299,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (additionalSavingsNeeded > 100) {
         wins.push({
-          id: crypto.randomUUID(), // Generate UUID client-side
+          id: crypto.randomUUID(),
           title: "Boost Your Savings Rate",
           description: `Saving an additional $${Math.ceil(additionalSavingsNeeded / 50) * 50}/month would get you to the recommended 20% savings rate`,
           type: 'savings',
@@ -311,7 +315,7 @@ export const useSmartWins = (user: User | null) => {
     // 5. Check for investment opportunity
     if (totalBalance > 10000 && !bankAccounts.some(acc => acc.type === 'investment')) {
       wins.push({
-        id: crypto.randomUUID(), // Generate UUID client-side
+        id: crypto.randomUUID(),
         title: "Start Investing",
         description: `Investing just 10% of your balance ($${Math.floor(totalBalance * 0.1)}) could yield $${Math.floor(totalBalance * 0.1 * 0.07)} annually at 7% average return`,
         type: 'investment',
@@ -327,7 +331,7 @@ export const useSmartWins = (user: User | null) => {
     if (wins.length < 3) {
       if (wins.length < 1) {
         wins.push({
-          id: crypto.randomUUID(), // Generate UUID client-side
+          id: crypto.randomUUID(),
           title: "Track Your Spending",
           description: "Most people find 10-15% in savings just by tracking expenses for 30 days",
           type: 'spending',
@@ -341,7 +345,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (wins.length < 2) {
         wins.push({
-          id: crypto.randomUUID(), // Generate UUID client-side
+          id: crypto.randomUUID(),
           title: "Set Up Automatic Savings",
           description: "Automating your savings can increase your savings rate by up to 20%",
           type: 'savings',
@@ -355,7 +359,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (wins.length < 3) {
         wins.push({
-          id: crypto.randomUUID(), // Generate UUID client-side
+          id: crypto.randomUUID(),
           title: "Create an Emergency Fund",
           description: "Start with $500 as a mini emergency fund to handle unexpected expenses",
           type: 'savings',
