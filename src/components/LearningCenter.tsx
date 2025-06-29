@@ -62,9 +62,9 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
   const [showQuiz, setShowQuiz] = useState(false);
   const [showArticle, setShowArticle] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const [selectedModule, setSelectedModule] = useState<any>(null);
   const [currentView, setCurrentView] = useState<'quiz' | 'article' | null>(null);
-  const [showVideo, setShowVideo] = useState(false);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -334,6 +334,18 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
+  // Get button label based on content type
+  const getButtonLabel = (contentType: string) => {
+    switch (contentType) {
+      case 'video': return 'Watch';
+      case 'article': return 'View';
+      case 'quiz': return 'Start';
+      case 'course': return 'Start';
+      case 'interactive': return 'Start';
+      default: return 'Start';
+    }
+  };
+
   if (regularLoading && aiLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -558,7 +570,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                           ? 'Completed' 
                           : todaysPractice.progress?.status === 'in_progress'
                           ? 'Continue Practice'
-                          : 'Start Practice'}
+                          : getButtonLabel(todaysPractice.content_type)}
                       </motion.button>
                     </div>
                   </div>
@@ -622,7 +634,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                         onClick={() => setShowVideo(true)}
                         className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
                       >
-                        START
+                        WATCH
                       </button>
                     </div>
                   </div>
@@ -684,7 +696,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                               onClick={() => handleStartModule(module.id, true)}
                               className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
                             >
-                              START
+                              {getButtonLabel(module.content_type).toUpperCase()}
                             </button>
                           )}
                         </div>
