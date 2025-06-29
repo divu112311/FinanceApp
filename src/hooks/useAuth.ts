@@ -59,9 +59,9 @@ export const useAuth = () => {
           user_id: data.user.id,
           age_range: null,
           income_range: null,
-          financial_experience: 'Beginner',
+          financial_experience: 'beginner',
           primary_goals: [],
-          learning_style: 'Visual',
+          learning_style: 'visual',
           time_availability: '30min',
           interests: [],
           notification_preferences: {
