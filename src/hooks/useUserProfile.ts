@@ -136,17 +136,81 @@ export const useUserProfile = (user: User | null) => {
         setExtendedProfile(extendedProfileData);
       }
 
-      // Fetch user XP
-      const { data: xpData, error: xpError } = await supabase
-        .from('xp')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Fetch user XP with better error handling
+      try {
+        const { data: xpData, error: xpError } = await supabase
+          .from('xp')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (xpError) {
-        console.error('XP fetch error:', xpError);
-      } else {
-        setXP(xpData);
+        if (xpError) {
+          console.error('XP fetch error:', xpError);
+          // If XP table doesn't exist or there's an error, create a default XP record
+          console.log('Attempting to create default XP record...');
+          
+          const { data: newXpData, error: createXpError } = await supabase
+            .from('xp')
+            .insert({
+              user_id: user.id,
+              points: 0,
+              badges: []
+            })
+            .select()
+            .single();
+
+          if (createXpError) {
+            console.error('Error creating XP record:', createXpError);
+            // Set a default XP object if we can't create one in the database
+            setXP({
+              id: 'default',
+              user_id: user.id,
+              points: 0,
+              badges: []
+            });
+          } else {
+            console.log('Created new XP record:', newXpData);
+            setXP(newXpData);
+          }
+        } else if (!xpData) {
+          // No XP record exists, create one
+          console.log('No XP record found, creating one...');
+          
+          const { data: newXpData, error: createXpError } = await supabase
+            .from('xp')
+            .insert({
+              user_id: user.id,
+              points: 0,
+              badges: []
+            })
+            .select()
+            .single();
+
+          if (createXpError) {
+            console.error('Error creating XP record:', createXpError);
+            // Set a default XP object if we can't create one in the database
+            setXP({
+              id: 'default',
+              user_id: user.id,
+              points: 0,
+              badges: []
+            });
+          } else {
+            console.log('Created new XP record:', newXpData);
+            setXP(newXpData);
+          }
+        } else {
+          setXP(xpData);
+        }
+      } catch (xpFetchError) {
+        console.error('XP fetch operation failed:', xpFetchError);
+        // Set a default XP object as fallback
+        setXP({
+          id: 'default',
+          user_id: user.id,
+          points: 0,
+          badges: []
+        });
       }
 
     } catch (error) {
@@ -237,6 +301,17 @@ export const useUserProfile = (user: User | null) => {
     const newBadges = newBadge 
       ? [...(xp.badges || []), newBadge]
       : xp.badges;
+
+    // If we have a default XP object (not in database), just update local state
+    if (xp.id === 'default') {
+      const updatedXP = {
+        ...xp,
+        points: newPoints,
+        badges: newBadges
+      };
+      setXP(updatedXP);
+      return updatedXP;
+    }
 
     const { data, error } = await supabase
       .from('xp')
