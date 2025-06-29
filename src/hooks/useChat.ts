@@ -10,38 +10,162 @@ interface ChatMessage {
   timestamp: string | null;
 }
 
+interface ChatSession {
+  session_id: string;
+  user_id: string;
+  title: string | null;
+  context_data: any | null;
+  started_at: string;
+  last_message_at: string;
+  is_active: boolean;
+}
+
+interface NewChatMessage {
+  message_id: string;
+  session_id: string;
+  user_id: string;
+  message_type: string;
+  content: string;
+  metadata: any | null;
+  ai_model_used: string | null;
+  response_time: number | null;
+  created_at: string;
+}
+
 export const useChat = (user: User | null) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user && isSupabaseConfigured) {
-      fetchChatHistory();
+      fetchChatSessions();
     }
   }, [user]);
 
-  const fetchChatHistory = async () => {
+  useEffect(() => {
+    if (currentSessionId) {
+      fetchChatMessages(currentSessionId);
+    }
+  }, [currentSessionId]);
+
+  const fetchChatSessions = async () => {
     if (!user || !isSupabaseConfigured) return;
 
     try {
-      console.log('=== FETCHING CHAT HISTORY ===');
+      console.log('=== FETCHING CHAT SESSIONS ===');
       console.log('User ID:', user.id);
 
       const { data, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('last_message_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching chat sessions:', error);
+        return;
+      }
+
+      console.log('Chat sessions fetched:', data?.length || 0, 'sessions');
+      setSessions(data || []);
+
+      // Set current session to the most recent active one, or create a new one
+      if (data && data.length > 0) {
+        const activeSession = data.find(session => session.is_active);
+        if (activeSession) {
+          setCurrentSessionId(activeSession.session_id);
+        } else {
+          createNewSession();
+        }
+      } else {
+        createNewSession();
+      }
+    } catch (error) {
+      console.error('Error fetching chat sessions:', error);
+    }
+  };
+
+  const fetchChatMessages = async (sessionId: string) => {
+    if (!user || !isSupabaseConfigured) return;
+
+    try {
+      console.log('=== FETCHING CHAT MESSAGES ===');
+      console.log('Session ID:', sessionId);
+
+      // Try to fetch from new chat_messages table first
+      const { data: newMessages, error: newMessagesError } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+
+      if (newMessagesError) {
+        console.error('Error fetching new chat messages:', newMessagesError);
+      }
+
+      if (newMessages && newMessages.length > 0) {
+        // Convert new message format to old format for compatibility
+        const convertedMessages = newMessages.map(msg => ({
+          id: msg.message_id,
+          user_id: msg.user_id,
+          message: msg.content,
+          sender: msg.message_type === 'user_message' ? 'user' : 'assistant',
+          timestamp: msg.created_at
+        }));
+        
+        setMessages(convertedMessages);
+        return;
+      }
+
+      // Fallback to old chat_logs table
+      const { data: oldMessages, error: oldMessagesError } = await supabase
         .from('chat_logs')
         .select('*')
         .eq('user_id', user.id)
         .order('timestamp', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching chat history:', error);
+      if (oldMessagesError) {
+        console.error('Error fetching old chat messages:', oldMessagesError);
         return;
       }
 
-      console.log('Chat history fetched:', data?.length || 0, 'messages');
-      setMessages(data || []);
+      console.log('Chat messages fetched:', oldMessages?.length || 0, 'messages');
+      setMessages(oldMessages || []);
     } catch (error) {
-      console.error('Error fetching chat history:', error);
+      console.error('Error fetching chat messages:', error);
+    }
+  };
+
+  const createNewSession = async () => {
+    if (!user || !isSupabaseConfigured) return;
+
+    try {
+      console.log('=== CREATING NEW CHAT SESSION ===');
+      
+      const { data, error } = await supabase
+        .from('chat_sessions')
+        .insert({
+          user_id: user.id,
+          title: 'New Conversation',
+          context_data: {},
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating chat session:', error);
+        return;
+      }
+
+      console.log('New chat session created:', data.session_id);
+      setSessions(prev => [data, ...prev]);
+      setCurrentSessionId(data.session_id);
+      setMessages([]);
+    } catch (error) {
+      console.error('Error creating chat session:', error);
     }
   };
 
@@ -51,102 +175,194 @@ export const useChat = (user: User | null) => {
     console.log('=== SENDING MESSAGE ===');
     console.log('Message:', message);
     console.log('User ID:', user.id);
+    console.log('Session ID:', currentSessionId);
 
     setLoading(true);
 
     try {
-      if (!isSupabaseConfigured) {
-        console.log('Supabase not configured, using mock responses');
-        // Handle offline mode with mock responses
-        const mockUserMessage: ChatMessage = {
-          id: Date.now().toString(),
-          user_id: user.id,
-          message: message.trim(),
-          sender: 'user',
-          timestamp: new Date().toISOString(),
-        };
-
-        const mockAiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          user_id: user.id,
-          message: generateContextualResponse(message),
-          sender: 'assistant',
-          timestamp: new Date().toISOString(),
-        };
-
-        setMessages(prev => [...prev, mockUserMessage, mockAiMessage]);
-        
-        if (onXPUpdate) {
-          onXPUpdate(5);
+      // Create a session if none exists
+      if (!currentSessionId) {
+        await createNewSession();
+        if (!currentSessionId) {
+          throw new Error('Failed to create chat session');
         }
-        return;
       }
 
-      // Add user message to database
-      console.log('Adding user message to database...');
-      const { data: userMessage, error: userError } = await supabase
-        .from('chat_logs')
-        .insert({
-          user_id: user.id,
-          message: message.trim(),
+      // Determine which table to use based on availability
+      const useNewMessageFormat = await checkTableExists('chat_messages');
+      
+      if (useNewMessageFormat && currentSessionId) {
+        // Add user message to new chat_messages table
+        console.log('Adding user message to chat_messages table...');
+        const { data: userMessage, error: userError } = await supabase
+          .from('chat_messages')
+          .insert({
+            session_id: currentSessionId,
+            user_id: user.id,
+            message_type: 'user_message',
+            content: message.trim(),
+            metadata: {}
+          })
+          .select()
+          .single();
+
+        if (userError) {
+          console.error('Error saving user message:', userError);
+          throw userError;
+        }
+
+        console.log('User message saved:', userMessage.message_id);
+
+        // Update local state with converted format for compatibility
+        const convertedUserMessage: ChatMessage = {
+          id: userMessage.message_id,
+          user_id: userMessage.user_id,
+          message: userMessage.content,
           sender: 'user',
-        })
-        .select()
-        .single();
+          timestamp: userMessage.created_at
+        };
+        
+        setMessages(prev => [...prev, convertedUserMessage]);
 
-      if (userError) {
-        console.error('Error saving user message:', userError);
-        throw userError;
-      }
+        // Update session last_message_at
+        await supabase
+          .from('chat_sessions')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('session_id', currentSessionId);
 
-      console.log('User message saved:', userMessage.id);
+        // Call AI API through Supabase Edge Function
+        console.log('Calling AI Edge Function...');
+        const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
+          body: {
+            message: message.trim(),
+            userId: user.id,
+            sessionId: currentSessionId
+          },
+        });
 
-      // Update local state immediately
-      setMessages(prev => [...prev, userMessage]);
+        console.log('AI Response received:', {
+          hasData: !!aiResponseData,
+          hasError: !!aiError,
+          response: aiResponseData?.response?.substring(0, 100) + '...'
+        });
 
-      // Call AI API through Supabase Edge Function
-      console.log('Calling AI Edge Function...');
-      const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
-        body: {
-          message: message.trim(),
-          userId: user.id,
-        },
-      });
+        if (aiError) {
+          console.error('AI API Error:', aiError);
+          throw aiError;
+        }
 
-      console.log('AI Response received:', {
-        hasData: !!aiResponseData,
-        hasError: !!aiError,
-        response: aiResponseData?.response?.substring(0, 100) + '...'
-      });
+        const aiResponse = aiResponseData?.response || generateContextualResponse(message);
 
-      if (aiError) {
-        console.error('AI API Error:', aiError);
-        throw aiError;
-      }
+        // Add AI response to chat_messages table
+        console.log('Saving AI response to chat_messages table...');
+        const { data: aiMessage, error: aiMessageError } = await supabase
+          .from('chat_messages')
+          .insert({
+            session_id: currentSessionId,
+            user_id: user.id,
+            message_type: 'ai_response',
+            content: aiResponse,
+            metadata: {
+              model: aiResponseData?.model || 'fallback',
+              tokens: aiResponseData?.tokens || 0,
+              response_time: aiResponseData?.response_time || 0
+            },
+            ai_model_used: aiResponseData?.model || 'fallback',
+            response_time: aiResponseData?.response_time || 0
+          })
+          .select()
+          .single();
 
-      const aiResponse = aiResponseData?.response || generateContextualResponse(message);
+        if (aiMessageError) {
+          console.error('Error saving AI message:', aiMessageError);
+          throw aiMessageError;
+        }
 
-      // Add AI response to database
-      console.log('Saving AI response to database...');
-      const { data: aiMessage, error: aiMessageError } = await supabase
-        .from('chat_logs')
-        .insert({
-          user_id: user.id,
-          message: aiResponse,
+        console.log('AI message saved:', aiMessage.message_id);
+
+        // Update local state with converted format for compatibility
+        const convertedAiMessage: ChatMessage = {
+          id: aiMessage.message_id,
+          user_id: aiMessage.user_id,
+          message: aiMessage.content,
           sender: 'assistant',
-        })
-        .select()
-        .single();
+          timestamp: aiMessage.created_at
+        };
+        
+        setMessages(prev => [...prev, convertedAiMessage]);
+      } else {
+        // Fallback to old chat_logs table
+        // Add user message to database
+        console.log('Adding user message to chat_logs table...');
+        const { data: userMessage, error: userError } = await supabase
+          .from('chat_logs')
+          .insert({
+            user_id: user.id,
+            message: message.trim(),
+            sender: 'user',
+          })
+          .select()
+          .single();
 
-      if (aiMessageError) {
-        console.error('Error saving AI message:', aiMessageError);
-        throw aiMessageError;
+        if (userError) {
+          console.error('Error saving user message:', userError);
+          throw userError;
+        }
+
+        console.log('User message saved:', userMessage.id);
+
+        // Update local state immediately
+        setMessages(prev => [...prev, userMessage]);
+
+        // Call AI API through Supabase Edge Function
+        console.log('Calling AI Edge Function...');
+        const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
+          body: {
+            message: message.trim(),
+            userId: user.id,
+          },
+        });
+
+        console.log('AI Response received:', {
+          hasData: !!aiResponseData,
+          hasError: !!aiError,
+          response: aiResponseData?.response?.substring(0, 100) + '...'
+        });
+
+        if (aiError) {
+          console.error('AI API Error:', aiError);
+          throw aiError;
+        }
+
+        const aiResponse = aiResponseData?.response || generateContextualResponse(message);
+
+        // Add AI response to database
+        console.log('Saving AI response to chat_logs table...');
+        const { data: aiMessage, error: aiMessageError } = await supabase
+          .from('chat_logs')
+          .insert({
+            user_id: user.id,
+            message: aiResponse,
+            sender: 'assistant',
+          })
+          .select()
+          .single();
+
+        if (aiMessageError) {
+          console.error('Error saving AI message:', aiMessageError);
+          throw aiMessageError;
+        }
+
+        console.log('AI message saved:', aiMessage.id);
+
+        // Update local state with AI response
+        setMessages(prev => [...prev, aiMessage]);
       }
 
-      console.log('AI message saved:', aiMessage.id);
-
-      // Update local state with AI response
-      setMessages(prev => [...prev, aiMessage]);
+      // Generate financial insight if appropriate
+      if (shouldGenerateInsight(message)) {
+        generateFinancialInsight(message);
+      }
 
       // Award XP for chat interaction
       if (onXPUpdate) {
@@ -161,18 +377,44 @@ export const useChat = (user: User | null) => {
       
       if (isSupabaseConfigured) {
         try {
-          const { data: fallbackMessage } = await supabase
-            .from('chat_logs')
-            .insert({
-              user_id: user.id,
-              message: fallbackResponse,
-              sender: 'assistant',
-            })
-            .select()
-            .single();
+          if (currentSessionId && await checkTableExists('chat_messages')) {
+            const { data: fallbackMessage } = await supabase
+              .from('chat_messages')
+              .insert({
+                session_id: currentSessionId,
+                user_id: user.id,
+                message_type: 'ai_response',
+                content: fallbackResponse,
+                metadata: { fallback: true }
+              })
+              .select()
+              .single();
 
-          if (fallbackMessage) {
-            setMessages(prev => [...prev, fallbackMessage]);
+            if (fallbackMessage) {
+              const convertedMessage: ChatMessage = {
+                id: fallbackMessage.message_id,
+                user_id: fallbackMessage.user_id,
+                message: fallbackMessage.content,
+                sender: 'assistant',
+                timestamp: fallbackMessage.created_at
+              };
+              
+              setMessages(prev => [...prev, convertedMessage]);
+            }
+          } else {
+            const { data: fallbackMessage } = await supabase
+              .from('chat_logs')
+              .insert({
+                user_id: user.id,
+                message: fallbackResponse,
+                sender: 'assistant',
+              })
+              .select()
+              .single();
+
+            if (fallbackMessage) {
+              setMessages(prev => [...prev, fallbackMessage]);
+            }
           }
         } catch (dbError) {
           console.error('Error saving fallback message:', dbError);
@@ -190,6 +432,73 @@ export const useChat = (user: User | null) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const shouldGenerateInsight = (message: string): boolean => {
+    const insightTriggers = [
+      'analyze', 'insight', 'review', 'how am i doing', 'financial health',
+      'spending', 'budget', 'save more', 'investment', 'recommendation'
+    ];
+    
+    return insightTriggers.some(trigger => 
+      message.toLowerCase().includes(trigger)
+    );
+  };
+
+  const generateFinancialInsight = async (message: string) => {
+    if (!user || !isSupabaseConfigured || !currentSessionId) return;
+    
+    try {
+      // Check if financial_insights table exists
+      const hasInsightsTable = await checkTableExists('financial_insights');
+      if (!hasInsightsTable) return;
+      
+      // Generate insight type based on message content
+      let insightType = 'spending_pattern';
+      if (message.toLowerCase().includes('invest')) {
+        insightType = 'investment_tip';
+      } else if (message.toLowerCase().includes('goal')) {
+        insightType = 'goal_recommendation';
+      } else if (message.toLowerCase().includes('budget')) {
+        insightType = 'budget_advice';
+      }
+      
+      // Insert financial insight
+      await supabase
+        .from('financial_insights')
+        .insert({
+          user_id: user.id,
+          insight_type: insightType,
+          title: `AI-Generated ${insightType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+          description: `Based on your recent conversation, here's a personalized ${insightType.replace('_', ' ')} insight.`,
+          data_sources: { chat_session_id: currentSessionId },
+          confidence_score: 0.85,
+          priority_level: 'medium',
+          action_items: [
+            { action: 'review', description: 'Review this insight' },
+            { action: 'implement', description: 'Apply this recommendation' }
+          ],
+          created_at: new Date().toISOString()
+        });
+      
+      console.log('Financial insight generated for message:', message.substring(0, 30) + '...');
+    } catch (error) {
+      console.error('Error generating financial insight:', error);
+    }
+  };
+
+  const checkTableExists = async (tableName: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .limit(1);
+      
+      return !error;
+    } catch (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return false;
     }
   };
 
@@ -235,8 +544,11 @@ export const useChat = (user: User | null) => {
 
   return {
     messages,
+    sessions,
+    currentSessionId,
     loading,
     sendMessage,
-    refetch: fetchChatHistory,
+    createNewSession,
+    refetch: fetchChatSessions,
   };
 };

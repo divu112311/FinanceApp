@@ -7,11 +7,13 @@ import LearningCenter from './components/LearningCenter';
 import LandingPage from './components/LandingPage';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
+import { useXP } from './hooks/useXP'; // Updated import
 import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, xp, loading: profileLoading, updateXP } = useUserProfile(user);
+  const { profile, loading: profileLoading } = useUserProfile(user);
+  const { xp, enhancedXP, updateXP, getCurrentLevel, getTotalXP, loading: xpLoading } = useXP(user); // Updated hook
   const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
   const [showAuth, setShowAuth] = useState(false);
 
@@ -27,7 +29,7 @@ function App() {
     setShowAuth(true);
   };
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || xpLoading) {
     return (
       <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
         <motion.div
@@ -49,7 +51,9 @@ function App() {
     return <LoginForm />;
   }
 
-  const level = Math.floor((xp?.points || 0) / 100) + 1;
+  // Get level from enhanced XP if available, otherwise calculate from regular XP
+  const level = enhancedXP ? enhancedXP.current_level : getCurrentLevel();
+  const totalXP = getTotalXP();
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -80,7 +84,7 @@ function App() {
               <div className="flex items-center space-x-2 bg-[#2A6F68] text-white px-3 py-1 rounded-full text-sm">
                 <span>Level {level}</span>
                 <span className="text-[#B76E79]">•</span>
-                <span>{xp?.points || 0} XP</span>
+                <span>{totalXP} XP</span>
               </div>
             </div>
 
@@ -150,7 +154,7 @@ function App() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Dashboard user={user} xp={xp} />
+              <Dashboard user={user} xp={{ points: totalXP, badges: xp?.badges || [] }} />
             </motion.div>
           ) : (
             <motion.div
@@ -160,7 +164,7 @@ function App() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <LearningCenter user={user} xp={xp} onXPUpdate={handleXPUpdate} />
+              <LearningCenter user={user} xp={{ points: totalXP, badges: xp?.badges || [] }} onXPUpdate={handleXPUpdate} />
             </motion.div>
           )}
         </AnimatePresence>
