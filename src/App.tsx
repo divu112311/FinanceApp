@@ -83,7 +83,7 @@ function App() {
                     DoughJo
                   </h1>
                   <span className="text-gray-500">|</span>
-                  <span className="text-[#2A6F68] font-medium">{displayName}</span>
+                  <span className="text-[#2A6F68] font-medium">Hi {displayName}</span>
                 </div>
               </motion.div>
             </div>
