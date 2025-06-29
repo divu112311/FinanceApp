@@ -7,6 +7,7 @@ import {
   Award, 
   Target, 
   TrendingUp,
+  TrendingDown,
   CheckCircle,
   Lock,
   Zap,
