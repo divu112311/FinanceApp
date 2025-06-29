@@ -64,7 +64,8 @@ export const usePlaidLink = (user: User | null) => {
       console.log('Link token response:', { 
         hasData: !!linkTokenData, 
         hasError: !!linkTokenError,
-        errorMessage: linkTokenError?.message 
+        errorMessage: linkTokenError?.message,
+        data: linkTokenData
       });
 
       if (linkTokenError) {

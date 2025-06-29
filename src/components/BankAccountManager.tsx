@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Building2, CreditCard, PiggyBank, TrendingUp, Eye, EyeOff, RefreshCw, AlertCircle, CheckCircle, ExternalLink, Trash2, Edit3, FolderSync as Sync } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
@@ -21,6 +21,32 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
     error: plaidError,
     showCredentialsModal
   } = usePlaidLink(user);
+  const [plaidScriptLoaded, setPlaidScriptLoaded] = useState(false);
+
+  // Check if Plaid script is loaded
+  useEffect(() => {
+    const checkPlaidScript = () => {
+      if (window.Plaid) {
+        setPlaidScriptLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkPlaidScript()) return;
+
+    // If not loaded, add script
+    const script = document.createElement('script');
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+    script.async = true;
+    script.onload = () => setPlaidScriptLoaded(true);
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup if needed
+    };
+  }, []);
 
   const getAccountIcon = (type: string, subtype: string) => {
     if (type === 'depository') {
@@ -97,6 +123,18 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
     await syncAccount(accountId);
   };
 
+  const handleConnectAccount = () => {
+    console.log('Connect account clicked');
+    console.log('Plaid script loaded:', plaidScriptLoaded);
+    console.log('Environment variables:', {
+      VITE_PLAID_ENV: import.meta.env.VITE_PLAID_ENV,
+      hasPlaidClientId: !!import.meta.env.PLAID_CLIENT_ID,
+      hasPlaidSecret: !!import.meta.env.PLAID_SECRET
+    });
+    
+    openPlaidLink();
+  };
+
   return (
     <div className="space-y-6">
       {/* Plaid Credentials Modal */}
@@ -149,6 +187,10 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
             <div>
               <h4 className="font-medium text-red-900 mb-1">Connection Error</h4>
               <p className="text-sm text-red-800">{plaidError}</p>
+              <div className="mt-2 text-xs text-red-700">
+                <p>Debug info: Plaid script loaded: {plaidScriptLoaded ? 'Yes' : 'No'}</p>
+                <p>Environment: {import.meta.env.VITE_PLAID_ENV || 'Not set'}</p>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -196,7 +238,7 @@ const BankAccountManager: React.FC<BankAccountManagerProps> = ({ user }) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={openPlaidLink}
+            onClick={handleConnectAccount}
             disabled={plaidLoading}
             className="inline-flex items-center space-x-2 bg-[#2A6F68] text-white px-6 py-3 rounded-lg hover:bg-[#235A54] disabled:opacity-50 transition-colors"
           >

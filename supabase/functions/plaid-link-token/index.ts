@@ -120,9 +120,9 @@ serve(async (req) => {
         client_user_id: userId,
         email_address: testEmail
       },
-      products: ['transactions', 'investments'],
-      required_if_supported_products: ['identity'],
-      optional_products: ['auth', 'liabilities', 'assets'],
+      products: ['transactions'],
+      required_if_supported_products: [],
+      optional_products: ['auth', 'investments'],
       redirect_uri: null,
       webhook: `${supabaseUrl}/functions/v1/plaid-webhook`
     }
