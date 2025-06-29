@@ -27,13 +27,11 @@ A sophisticated AI-powered personal finance application featuring your friendly 
 - **Micro-interactions**: Smooth animations and hover states throughout
 - **Responsive Layout**: Mobile-first design that scales beautifully
 
-### 📚 Personalized Learning Path System
-- **AI-Generated Content**: Customized learning modules based on user profile and financial data
-- **Adaptive Learning**: Content difficulty adjusts based on user experience level
-- **Mixed Content Types**: Articles, quizzes, videos, and interactive exercises
-- **Progress Tracking**: Visual progress indicators and completion statistics
-- **Scheduled Generation**: Automatic creation of new content when users complete their path
-- **XP Rewards**: Earn experience points for completing learning modules
+### 🧠 AI Learning System
+- **Personalized Learning Path**: AI-generated lessons tailored to your financial situation
+- **Daily Practice**: New content generated daily based on your progress and needs
+- **Interactive Quizzes**: Test your knowledge with AI-generated quizzes
+- **Progress Tracking**: Track your learning journey with XP rewards and achievements
 
 ## Tech Stack
 
@@ -72,7 +70,6 @@ cp .env.example .env
 # Edit .env with your actual values:
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 4. Set up Supabase:
@@ -80,7 +77,7 @@ OPENROUTER_API_KEY=your_openrouter_api_key
    - Copy your project URL and anon key from Settings > API
    - The database migrations will run automatically
    - Deploy the Edge Functions (see below)
-   - Add your OpenRouter API key to Supabase secrets
+   - Add your OpenAI API key or OpenRouter API key to Supabase secrets
 
 5. Deploy the Edge Functions:
 ```bash
@@ -95,11 +92,13 @@ supabase link --project-ref YOUR_PROJECT_REF
 
 # Deploy the functions
 supabase functions deploy chat-ai
-supabase functions deploy generate-learning-path
-supabase functions deploy learning-progress
-supabase functions deploy schedule-learning-content
+supabase functions deploy generate-learning-content
+supabase functions deploy generate-quiz-questions
+supabase functions deploy generate-article-content
 
-# Set the OpenRouter API key as a secret
+# Set the API key as a secret (choose one)
+supabase secrets set OPENAI_API_KEY=your_openai_api_key_here
+# OR
 supabase secrets set OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
@@ -108,76 +107,96 @@ supabase secrets set OPENROUTER_API_KEY=your_openrouter_api_key_here
 npm run dev
 ```
 
-## Learning Path System Configuration
+## AI Learning System
 
-### Database Schema
+The AI Learning System is a core feature of DoughJo that provides personalized financial education:
 
-The learning system uses the following tables:
+### How It Works
 
-1. **learning_modules**: Stores all learning content
-   - `id`: Unique identifier
-   - `title`: Module title
-   - `description`: Module description
-   - `content_type`: Type of content (article, quiz, video, interactive)
-   - `difficulty`: Difficulty level (Beginner, Intermediate, Advanced)
-   - `category`: Content category (Budgeting, Investing, etc.)
-   - `duration_minutes`: Estimated time to complete
-   - `xp_reward`: XP points awarded for completion
-   - `content_data`: JSON data containing the actual content
+1. **Content Generation**: The system analyzes the user's financial data (accounts, transactions, goals) and generates personalized learning content using AI.
 
-2. **learning_paths_new**: Stores learning paths
-   - `path_id`: Unique identifier
-   - `name`: Path name
-   - `description`: Path description
-   - `target_audience`: Target audience (can be user experience level or user ID)
-   - `estimated_duration`: Total duration in minutes
-   - `is_featured`: Whether this is a featured path
+2. **Daily Practice**: Each user receives a daily practice module tailored to their financial situation and learning progress.
 
-3. **learning_path_modules**: Junction table connecting paths to modules
-   - `path_module_id`: Unique identifier
-   - `path_id`: Reference to learning_paths_new
-   - `module_id`: Reference to learning_modules
-   - `sequence_order`: Order of modules in the path
-   - `is_required`: Whether the module is required
+3. **Varied Content Types**: The system creates different types of content:
+   - Articles with practical financial advice
+   - Quizzes to test knowledge and reinforce learning
+   - Interactive exercises for hands-on practice
 
-4. **user_learning_progress**: Tracks user progress through modules
-   - `id`: Unique identifier
-   - `user_id`: Reference to users
-   - `module_id`: Reference to learning_modules
-   - `status`: Progress status (not_started, in_progress, completed)
-   - `progress_percentage`: Percentage complete (0-100)
-   - `time_spent_minutes`: Time spent on the module
-   - `completed_at`: When the module was completed
+4. **Progress Tracking**: The system tracks user progress, awards XP, and adapts future content based on performance.
 
-### Scheduling Content Generation
+### Technical Implementation
 
-The system includes a scheduler function that can be triggered in several ways:
+#### Database Schema
 
-1. **Manual Trigger**: Call the `schedule-learning-content` function with:
-   ```json
-   {
-     "manualTrigger": true,
-     "specificUserId": "optional-user-id"
-   }
-   ```
+- **learning_modules**: Stores all learning content
+  - `id`: Unique identifier
+  - `title`: Module title
+  - `description`: Brief description
+  - `content_type`: 'article', 'quiz', 'interactive', etc.
+  - `difficulty`: 'Beginner', 'Intermediate', 'Advanced'
+  - `category`: Topic category
+  - `duration_minutes`: Estimated completion time
+  - `xp_reward`: XP awarded for completion
+  - `content_data`: JSON containing the actual content
+  - `is_active`: Whether the module is active
+  - `created_at`: Creation timestamp
 
-2. **Cron Job**: Set up a cron job to call the function daily:
+- **user_learning_progress**: Tracks user progress through modules
+  - `id`: Unique identifier
+  - `user_id`: User ID
+  - `module_id`: Module ID
+  - `status`: 'not_started', 'in_progress', 'completed'
+  - `progress_percentage`: Completion percentage
+  - `time_spent_minutes`: Time spent on the module
+  - `completed_at`: Completion timestamp
+  - `started_at`: Start timestamp
+  - `updated_at`: Last update timestamp
+
+#### Edge Functions
+
+- **generate-learning-content**: Generates personalized learning modules based on user data
+- **generate-quiz-questions**: Creates quiz questions for a specific topic and difficulty
+- **generate-article-content**: Produces article content for a specific topic and difficulty
+
+#### Frontend Integration
+
+The system is integrated into the Finance Kata section of the app, where users can:
+- See their daily practice
+- Access all available lessons
+- Track their learning progress
+- Earn XP for completing modules
+
+### Configuring the AI Learning System
+
+1. **Set up API Keys**:
+   - OpenAI API key: `supabase secrets set OPENAI_API_KEY=your_key_here`
+   - OR OpenRouter API key: `supabase secrets set OPENROUTER_API_KEY=your_key_here`
+
+2. **Deploy Edge Functions**:
    ```bash
-   # Using Supabase CLI
-   supabase functions schedule schedule-learning-content --cron "0 0 * * *" --body '{"manualTrigger": false}'
+   supabase functions deploy generate-learning-content
+   supabase functions deploy generate-quiz-questions
+   supabase functions deploy generate-article-content
    ```
 
-3. **User-Triggered**: Users can request new content by clicking the "Refresh" button in the UI, which calls the `generate-learning-path` function.
-
-### AI Integration
-
-The system uses OpenRouter API to generate personalized learning content. To customize the AI integration:
-
-1. Edit the prompt in `generate-learning-path/index.ts` to adjust the content generation
-2. Modify the `generateDefaultModules` function to change the fallback content
-3. Update the model selection in the OpenRouter API call:
-   ```javascript
-   model: 'meta-llama/llama-3.1-8b-instruct:free', // Change to your preferred model
+3. **Schedule Content Generation** (optional):
+   - Set up a cron job to call the `generate-learning-content` function daily
+   - Example using GitHub Actions or similar CI/CD service:
+   ```yaml
+   name: Generate Learning Content
+   on:
+     schedule:
+       - cron: '0 4 * * *'  # Run at 4 AM UTC daily
+   jobs:
+     generate:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Call Generate Learning Content Function
+           run: |
+             curl -X POST "https://YOUR_PROJECT_REF.supabase.co/functions/v1/generate-learning-content" \
+             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+             -H "Content-Type: application/json" \
+             --data '{"userId": "system", "generateForAllUsers": true}'
    ```
 
 ## The DoughJo Way

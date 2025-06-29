@@ -44,7 +44,7 @@ serve(async (req) => {
         .order('date', { ascending: false })
         .limit(100),
       supabaseClient.from('user_profiles').select('*').eq('user_id', userId).single(),
-      supabaseClient.from('user_xp').select('*').eq('user_id', userId).single()
+      supabaseClient.from('xp').select('*').eq('user_id', userId).single()
     ])
 
     const userData = userResult.data
@@ -60,9 +60,15 @@ serve(async (req) => {
       accounts: accountsData.length,
       transactions: transactionsData.length,
       experience: profileData?.financial_experience || 'Unknown',
-      xp: xpData?.total_xp || 0,
-      level: xpData?.current_level || 1
+      xp: xpData?.points || 0
     })
+
+    // Calculate financial metrics
+    const totalBalance = accountsData.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+    const totalGoalAmount = goalsData.reduce((sum, goal) => sum + (goal.target_amount || 0), 0)
+    const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0)
+    const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0
+    const level = Math.floor((xpData?.points || 0) / 100) + 1
 
     // Check for OpenRouter API key to generate personalized content
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
@@ -71,69 +77,71 @@ serve(async (req) => {
       keyLength: openRouterKey?.length || 0
     })
     
-    // Prepare user context for AI
-    const userContext = {
-      name: userData?.first_name || userData?.full_name?.split(' ')[0] || 'User',
-      experience: profileData?.financial_experience || 'Beginner',
-      level: xpData?.current_level || Math.floor((xpData?.total_xp || 0) / 100) + 1,
-      goals: goalsData.map(g => ({
-        name: g.name,
-        target: g.target_amount,
-        saved: g.saved_amount || g.current_amount || 0,
-        progress: g.target_amount ? ((g.saved_amount || g.current_amount || 0) / g.target_amount) * 100 : 0,
-        category: g.goal_type || g.category || 'savings'
-      })),
-      accounts: {
-        count: accountsData.length,
-        types: [...new Set(accountsData.map(a => a.type))],
-        subtypes: [...new Set(accountsData.map(a => a.account_subtype || a.subtype))]
-      },
-      transactions: {
-        count: transactionsData.length,
-        categories: [...new Set(transactionsData.map(t => t.category).filter(Boolean))]
-      },
-      interests: profileData?.interests || [],
-      learning_style: profileData?.learning_style || 'Visual'
-    }
-
-    // Generate learning modules
+    // Generate learning modules based on user data
     let modules = []
     
     if (openRouterKey) {
       console.log('🤖 GENERATING AI LEARNING CONTENT...')
       
-      const prompt = `Generate a personalized learning path for a user with the following profile:
+      // Prepare user context for personalization
+      const userContext = {
+        name: userData?.first_name || userData?.full_name?.split(' ')[0] || 'User',
+        experience: profileData?.financial_experience || 'Beginner',
+        level: level,
+        xp: xpData?.points || 0,
+        goals: goalsData.map(g => ({
+          name: g.name,
+          target: g.target_amount,
+          saved: g.saved_amount || g.current_amount || 0,
+          progress: g.target_amount ? ((g.saved_amount || g.current_amount || 0) / g.target_amount) * 100 : 0,
+          category: g.category || g.goal_type
+        })),
+        accounts: {
+          count: accountsData.length,
+          types: [...new Set(accountsData.map(a => a.type))],
+          totalBalance: totalBalance
+        },
+        transactions: {
+          count: transactionsData.length,
+          categories: [...new Set(transactionsData.map(t => t.category).filter(Boolean))]
+        },
+        interests: profileData?.interests || []
+      }
+      
+      const prompt = `Generate a personalized learning path for a user with the following financial profile:
 
-USER PROFILE:
+USER CONTEXT:
 ${JSON.stringify(userContext, null, 2)}
 
-Create 5 learning modules that would be most beneficial for this user based on their financial situation, goals, and experience level.
+Create 5 learning modules that would be most beneficial for this user based on their financial situation, experience level, and goals.
 
 Each module should include:
-1. A title
-2. A description
+1. Title
+2. Description
 3. Content type (article, quiz, video, interactive)
 4. Difficulty level (Beginner, Intermediate, Advanced)
 5. Category (e.g., Budgeting, Investing, Savings, etc.)
 6. Duration in minutes
-7. XP reward
-8. For articles: 4-5 sections with titles and content
+7. XP reward for completion
+8. For articles: 3-4 sections with titles and content
 9. For quizzes: 5 multiple-choice questions with options, correct answers, and explanations
+
+The first module should be today's recommended practice, tailored specifically to their most pressing financial need.
 
 FORMAT YOUR RESPONSE AS A JSON ARRAY:
 [
   {
-    "title": "Module title",
+    "title": "Module Title",
     "description": "Module description",
     "content_type": "article|quiz|video|interactive",
     "difficulty": "Beginner|Intermediate|Advanced",
-    "category": "category name",
+    "category": "Category name",
     "duration_minutes": 15,
-    "xp_reward": 50,
+    "xp_reward": 30,
     "content_data": {
       // For articles:
       "sections": [
-        {"title": "Section title", "content": "Section content"}
+        {"title": "Section Title", "content": "Section content..."}
       ],
       // For quizzes:
       "questions": [
@@ -141,7 +149,7 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY:
           "question_text": "Question?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
           "correct_answer": "Option B",
-          "explanation": "Explanation why B is correct"
+          "explanation": "Explanation of why B is correct"
         }
       ]
     }
@@ -149,11 +157,11 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY:
 ]
 
 IMPORTANT GUIDELINES:
-1. Make content highly personalized to the user's specific situation
-2. Focus on their goals and financial experience level
-3. Include practical, actionable advice
-4. For beginners, focus on fundamentals
-5. For intermediate/advanced users, include more sophisticated concepts
+1. Make content practical and actionable
+2. Tailor difficulty to the user's experience level
+3. Focus on their specific financial situation and goals
+4. Include a mix of content types (articles, quizzes)
+5. Make sure quiz questions have exactly 4 options
 6. Return ONLY the JSON array with no additional text`
 
       try {
@@ -163,7 +171,7 @@ IMPORTANT GUIDELINES:
             'Authorization': `Bearer ${openRouterKey}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://doughjo.app',
-            'X-Title': 'DoughJo Learning Path Generator',
+            'X-Title': 'DoughJo Learning Content Generator',
           },
           body: JSON.stringify({
             model: 'meta-llama/llama-3.1-8b-instruct:free', // Free model with good performance
@@ -208,6 +216,7 @@ IMPORTANT GUIDELINES:
             }
             
             if (Array.isArray(parsedModules)) {
+              // Add generated_by and generated_at to each module's content_data
               modules = parsedModules.map(module => ({
                 ...module,
                 content_data: {
@@ -222,28 +231,35 @@ IMPORTANT GUIDELINES:
           } catch (parseError) {
             console.error('Error parsing AI modules:', parseError)
             console.log('Raw AI response:', aiContent)
-            // Fall back to rule-based generation
-            modules = generateDefaultModules(userContext)
+            // Fall back to local generation
+            modules = generateLocalModules(userContext)
           }
         } else {
           console.error('Error generating AI modules:', await aiResponse.text())
-          // Fall back to rule-based generation
-          modules = generateDefaultModules(userContext)
+          // Fall back to local generation
+          modules = generateLocalModules(userContext)
         }
       } catch (aiError) {
         console.error('Error calling AI service:', aiError)
-        // Fall back to rule-based generation
-        modules = generateDefaultModules(userContext)
+        // Fall back to local generation
+        modules = generateLocalModules(userContext)
       }
     } else {
-      console.log('No OpenRouter API key, using default modules')
-      modules = generateDefaultModules(userContext)
+      console.log('No OpenRouter API key, using local module generation')
+      modules = generateLocalModules({
+        name: userData?.first_name || userData?.full_name?.split(' ')[0] || 'User',
+        experience: profileData?.financial_experience || 'Beginner',
+        level: level,
+        xp: xpData?.points || 0,
+        goals: goalsData,
+        accounts: accountsData,
+        transactions: transactionsData
+      })
     }
-
-    console.log(`Generated ${modules.length} learning modules`)
 
     // Store modules in database
     console.log('💾 STORING MODULES IN DATABASE...')
+    console.log(`Generated ${modules.length} modules`)
     
     const modulesToInsert = modules.map(module => ({
       title: module.title,
@@ -255,7 +271,8 @@ IMPORTANT GUIDELINES:
       xp_reward: module.xp_reward,
       required_level: 1,
       content_data: module.content_data,
-      is_active: true
+      is_active: true,
+      tags: [module.category, module.difficulty.toLowerCase(), module.content_type]
     }))
     
     const { data: insertedModules, error: insertError } = await supabaseClient
@@ -269,58 +286,14 @@ IMPORTANT GUIDELINES:
     }
     
     console.log(`✅ Successfully stored ${insertedModules.length} modules`)
-
-    // Create a learning path
-    console.log('🛣️ CREATING LEARNING PATH...')
-    
-    const { data: learningPath, error: pathError } = await supabaseClient
-      .from('learning_paths_new')
-      .insert({
-        name: `${userContext.name}'s Personalized Learning Path`,
-        description: `Customized learning path for ${userContext.name} based on their financial goals and experience level`,
-        target_audience: userContext.experience,
-        estimated_duration: modules.reduce((sum, m) => sum + m.duration_minutes, 0),
-        is_featured: false
-      })
-      .select()
-      .single()
-    
-    if (pathError) {
-      console.error('Error creating learning path:', pathError)
-      throw new Error(`Failed to create learning path: ${pathError.message}`)
-    }
-    
-    console.log(`✅ Created learning path: ${learningPath.path_id}`)
-
-    // Add modules to learning path
-    console.log('🔄 ADDING MODULES TO LEARNING PATH...')
-    
-    const pathModulesToInsert = insertedModules.map((module, index) => ({
-      path_id: learningPath.path_id,
-      module_id: module.id,
-      sequence_order: index + 1,
-      is_required: true
-    }))
-    
-    const { data: pathModules, error: pathModulesError } = await supabaseClient
-      .from('learning_path_modules')
-      .insert(pathModulesToInsert)
-      .select()
-    
-    if (pathModulesError) {
-      console.error('Error adding modules to path:', pathModulesError)
-      throw new Error(`Failed to add modules to path: ${pathModulesError.message}`)
-    }
-    
-    console.log(`✅ Added ${pathModules.length} modules to learning path`)
     console.log('=== GENERATE LEARNING CONTENT FUNCTION SUCCESS ===')
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         modules: insertedModules,
-        path: learningPath,
-        pathModules: pathModules
+        generated: true,
+        count: insertedModules.length
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -351,16 +324,15 @@ IMPORTANT GUIDELINES:
   }
 })
 
-// Generate default modules based on user context
-function generateDefaultModules(userContext) {
+// Generate modules locally based on user context
+function generateLocalModules(userContext: any) {
   const modules = []
   const now = new Date().toISOString()
+  const experience = userContext.experience || 'Beginner'
   
   // Determine user's financial situation
-  const hasGoals = userContext.goals && userContext.goals.length > 0
-  const hasAccounts = userContext.accounts && userContext.accounts.count > 0
-  const financialExperience = userContext.experience || 'Beginner'
-  const userLevel = userContext.level || 1
+  const hasAccounts = userContext.accounts?.length > 0
+  const hasGoals = userContext.goals?.length > 0
   
   // 1. Always include a budgeting module
   modules.push({
@@ -386,10 +358,6 @@ function generateDefaultModules(userContext) {
         {
           title: "Tracking Your Spending",
           content: "The foundation of any budget is tracking your spending. Use categories that make sense for your lifestyle and review your spending weekly to stay on track."
-        },
-        {
-          title: "Making Your Budget Work",
-          content: "The best budget is one you'll actually use. Choose a method that fits your personality and lifestyle, whether that's an app, spreadsheet, or the envelope system."
         }
       ]
     }
@@ -420,10 +388,6 @@ function generateDefaultModules(userContext) {
           {
             title: "Setting Up Direct Deposit and Automatic Transfers",
             content: "Automate your finances by setting up direct deposit for your paycheck and automatic transfers to your savings accounts."
-          },
-          {
-            title: "Mobile Banking Features",
-            content: "Take advantage of mobile check deposit, account alerts, and budgeting tools offered by your bank's mobile app."
           }
         ]
       }
@@ -433,7 +397,7 @@ function generateDefaultModules(userContext) {
       title: "Optimizing Your Bank Accounts",
       description: "Learn strategies to maximize the benefits of your existing accounts and minimize fees.",
       content_type: "article",
-      difficulty: financialExperience === "Beginner" ? "Beginner" : "Intermediate",
+      difficulty: experience === "Beginner" ? "Beginner" : "Intermediate",
       category: "Banking",
       duration_minutes: 18,
       xp_reward: 30,
@@ -452,10 +416,6 @@ function generateDefaultModules(userContext) {
           {
             title: "Strategic Account Structure",
             content: "Consider using multiple accounts for different purposes: checking for daily expenses, high-yield savings for emergency funds, and separate savings accounts for specific goals."
-          },
-          {
-            title: "Banking Relationship Benefits",
-            content: "Many banks offer relationship benefits like fee waivers, higher interest rates, or better loan terms when you maintain certain balances or use multiple products."
           }
         ]
       }
@@ -487,10 +447,6 @@ function generateDefaultModules(userContext) {
           {
             title: "Tracking Progress and Staying Motivated",
             content: "Visual progress trackers, regular check-ins, and celebrating milestones are key to maintaining momentum toward your financial goals."
-          },
-          {
-            title: "Adjusting Goals When Life Changes",
-            content: "Life is unpredictable. Be prepared to adjust your goals when circumstances change, but don't abandon them completely."
           }
         ]
       }
@@ -500,7 +456,7 @@ function generateDefaultModules(userContext) {
       title: "Accelerating Your Financial Goals",
       description: "Advanced strategies to reach your financial goals faster and more efficiently.",
       content_type: "interactive",
-      difficulty: financialExperience === "Beginner" ? "Beginner" : "Intermediate",
+      difficulty: experience === "Beginner" ? "Beginner" : "Intermediate",
       category: "Goal Setting",
       duration_minutes: 25,
       xp_reward: 40,
@@ -519,10 +475,6 @@ function generateDefaultModules(userContext) {
           {
             title: "Using Windfalls Strategically",
             content: "Create a plan for how you'll allocate unexpected money like tax refunds, bonuses, or gifts. Consider the 50/30/20 rule: 50% toward goals, 30% to savings, and 20% for enjoyment."
-          },
-          {
-            title: "Stacking Financial Wins",
-            content: "As you complete smaller goals, roll that momentum into larger ones. This 'goal stacking' approach maintains motivation and accelerates progress on your bigger objectives."
           }
         ]
       }
@@ -576,99 +528,35 @@ function generateDefaultModules(userContext) {
     }
   })
   
-  // 5. Add a module based on experience level
-  if (financialExperience === 'Beginner') {
+  // 5. Add an investment module if they're beyond beginner
+  if (experience !== 'Beginner') {
     modules.push({
-      title: "Understanding Credit Scores",
-      description: "Learn what makes up your credit score and how to improve it over time.",
-      content_type: "article",
-      difficulty: "Beginner",
-      category: "Credit",
-      duration_minutes: 15,
-      xp_reward: 25,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "What Makes Up Your Credit Score",
-            content: "Your FICO credit score is determined by: Payment History (35%), Credit Utilization (30%), Length of Credit History (15%), New Credit (10%), and Credit Mix (10%)."
-          },
-          {
-            title: "Payment History: The Foundation",
-            content: "Always pay your bills on time. Set up automatic payments for at least the minimum due to avoid late payments, which can stay on your credit report for up to 7 years."
-          },
-          {
-            title: "Credit Utilization: Keep It Low",
-            content: "Try to use less than 30% of your available credit. For example, if your credit limit is $1,000, keep your balance below $300. Lower utilization (under 10%) is even better."
-          },
-          {
-            title: "Building Credit from Scratch",
-            content: "Start with a secured credit card or become an authorized user on someone else's account. Use the card for small purchases and pay it off in full each month."
-          }
-        ]
-      }
-    })
-  } else if (financialExperience === 'Intermediate') {
-    modules.push({
-      title: "Investment Portfolio Fundamentals",
-      description: "Learn how to build a diversified investment portfolio based on your goals and risk tolerance.",
+      title: "Investment Strategy Fundamentals",
+      description: "Learn the core principles of successful investing and how to build a portfolio aligned with your goals.",
       content_type: "article",
       difficulty: "Intermediate",
       category: "Investing",
-      duration_minutes: 25,
-      xp_reward: 40,
+      duration_minutes: 22,
+      xp_reward: 45,
       content_data: {
         generated_by: "ai",
         generated_at: now,
         sections: [
           {
             title: "Asset Allocation Basics",
-            content: "Your asset allocation—how you divide investments among stocks, bonds, and other assets—determines about 90% of your portfolio's volatility. A common starting point is subtracting your age from 110 to get your stock percentage."
+            content: "Asset allocation—how you divide your investments among stocks, bonds, and other asset classes—is responsible for about 90% of your portfolio's volatility. Your ideal allocation depends on your time horizon, risk tolerance, and financial goals."
           },
           {
-            title: "Diversification Within Asset Classes",
-            content: "Don't just diversify between stocks and bonds—diversify within them. For stocks, consider U.S. vs. international, large-cap vs. small-cap, growth vs. value. For bonds, consider government, municipal, and corporate bonds of varying durations."
+            title: "The Power of Index Funds",
+            content: "For most investors, low-cost index funds are the most efficient way to invest. Rather than trying to pick winning stocks or time the market (which even professionals struggle to do consistently), index funds give you broad market exposure with minimal fees."
           },
           {
-            title: "Low-Cost Index Funds",
-            content: "For most investors, low-cost index funds are the most efficient way to invest. They provide broad market exposure with minimal fees, which can save you tens of thousands of dollars over your investing lifetime."
+            title: "Dollar-Cost Averaging",
+            content: "Investing a fixed amount regularly, regardless of market conditions, is called dollar-cost averaging. This strategy removes the emotional component of investing and prevents the common mistake of buying high and selling low."
           },
           {
-            title: "Rebalancing Strategy",
-            content: "Set a schedule to rebalance your portfolio back to your target allocation, either annually or when allocations drift by 5% or more. This enforces the 'buy low, sell high' principle automatically."
-          }
-        ]
-      }
-    })
-  } else {
-    modules.push({
-      title: "Advanced Tax Optimization Strategies",
-      description: "Learn sophisticated techniques to minimize your tax burden and maximize after-tax returns.",
-      content_type: "article",
-      difficulty: "Advanced",
-      category: "Taxes",
-      duration_minutes: 30,
-      xp_reward: 60,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "Tax-Loss Harvesting",
-            content: "Strategically sell investments at a loss to offset capital gains. This can reduce your tax bill while maintaining your overall investment exposure through similar (but not identical) investments."
-          },
-          {
-            title: "Asset Location Optimization",
-            content: "Place tax-inefficient investments (like bonds or REITs) in tax-advantaged accounts, and tax-efficient investments (like index funds) in taxable accounts to minimize your overall tax burden."
-          },
-          {
-            title: "Roth Conversion Ladders",
-            content: "Systematically convert traditional IRA funds to Roth IRAs during low-income years to minimize taxes and create tax-free growth and withdrawals in retirement."
-          },
-          {
-            title: "Charitable Giving Strategies",
-            content: "Consider donor-advised funds, qualified charitable distributions from IRAs (if over 70½), and donating appreciated securities instead of cash to maximize tax benefits while supporting causes you care about."
+            title: "Rebalancing Your Portfolio",
+            content: "Over time, some investments will grow faster than others, causing your asset allocation to drift from your target. Rebalancing—selling some of your winners and buying more of your underperformers—keeps your risk level consistent and can actually boost returns."
           }
         ]
       }
