@@ -20,12 +20,14 @@ import {
   Trophy,
   Activity,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Video,
+  FileText,
+  Bookmark
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
 import QuizInterface from './QuizInterface';
-import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface LearningCenterProps {
   user: User;
@@ -157,8 +159,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'video': return Play;
-      case 'article': return BookOpen;
+      case 'video': return Video;
+      case 'article': return FileText;
       case 'course': return Users;
       case 'quiz': return Brain;
       case 'interactive': return Activity;
@@ -190,319 +192,290 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   return (
     <>
       <div className="space-y-6">
-        {/* Compact Header - Same height as other pages */}
-        <div className="bg-gradient-to-r from-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full transform translate-x-16 -translate-y-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full transform -translate-x-12 translate-y-12"></div>
-          </div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <motion.div
-                  animate={{ 
-                    rotate: [0, 5, -5, 0],
-                    scale: [1, 1.05, 1]
-                  }}
-                  transition={{ 
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center p-1"
-                >
-                  <img 
-                    src={doughjoMascot} 
-                    alt="DoughJo" 
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                </motion.div>
-                <div>
-                  <h1 className="text-2xl font-bold mb-1">Finance Kata</h1>
-                  <p className="text-white/90">Sharpen your money moves through daily financial practice</p>
-                </div>
+        {/* Finance Kata Header */}
+        <div className="bg-[#2A6F68] rounded-xl p-6 text-white relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-white" />
               </div>
-              
-              {/* Compact Quick Stats */}
-              <div className="flex items-center space-x-4">
-                <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
-                  <span className="text-sm">{beltRank.emoji}</span>
-                  <span className="text-sm font-medium">{beltRank.name}</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-1">
-                  <BookOpen className="h-4 w-4" />
-                  <span className="text-sm">{overallProgress.completed}/{overallProgress.total} Complete</span>
-                </div>
+              <div>
+                <h1 className="text-xl font-bold">Finance Kata</h1>
+                <p className="text-white/90 text-sm">Sharpen your money moves through daily financial practice</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
+                <span className="text-sm">{beltRank.emoji}</span>
+                <span className="text-sm font-medium">{beltRank.name}</span>
+              </div>
+              <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
+                {overallProgress.completed}/{overallProgress.total} Complete
               </div>
             </div>
           </div>
         </div>
 
-        {/* Simplified Progress Overview */}
+        {/* Your Achievements */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[#333333]">Learning Progress</h2>
-            <div className="text-2xl font-bold text-[#2A6F68]">
-              {overallProgress.percentage.toFixed(0)}%
+            <h2 className="text-lg font-bold text-[#333333]">Your Achievements</h2>
+            <div className="text-sm text-gray-500">
+              3/8 Unlocked
             </div>
-          </div>
-
-          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-            <div
-              className="h-3 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
-              style={{ width: `${overallProgress.percentage}%` }}
-            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-xl font-bold text-[#2A6F68]">{overallProgress.completed}</div>
-              <div className="text-sm text-gray-600">Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-[#B76E79]">{overallProgress.inProgress}</div>
-              <div className="text-sm text-gray-600">In Progress</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-green-600">
-                {modules.reduce((sum, m) => sum + (m.progress?.status === 'completed' ? m.xp_reward : 0), 0)}
+            {/* 3 Day Streak */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <Calendar className="h-3 w-3 text-green-600" />
+                  </div>
+                  <span className="text-sm font-medium">3 Day Streak</span>
+                </div>
+                <span className="text-xs text-gray-500">5/5</span>
               </div>
-              <div className="text-sm text-gray-600">XP Earned</div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 rounded-full bg-green-500" style={{ width: '100%' }} />
+              </div>
+            </div>
+
+            {/* Module Master */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <Bookmark className="h-3 w-3 text-yellow-600" />
+                  </div>
+                  <span className="text-sm font-medium">Module Master</span>
+                </div>
+                <span className="text-xs text-gray-500">3/5</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 rounded-full bg-yellow-500" style={{ width: '60%' }} />
+              </div>
+            </div>
+
+            {/* Quiz Champion */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Brain className="h-3 w-3 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium">Quiz Champion</span>
+                </div>
+                <span className="text-xs text-gray-500">2/5</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 rounded-full bg-blue-500" style={{ width: '40%' }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+              View All
+            </button>
+          </div>
+        </div>
+
+        {/* Recent Badges */}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-700">Recent Badges</h3>
+            <button className="text-xs text-blue-600 hover:text-blue-800">
+              View All
+            </button>
+          </div>
+          <div className="flex space-x-4">
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mb-1">
+                <Zap className="h-5 w-5 text-amber-600" />
+              </div>
+              <span className="text-xs text-gray-600">7-DAY STREAK</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-1">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
+              <span className="text-xs text-gray-600">BUDGET MASTER</span>
             </div>
           </div>
         </div>
 
-        {/* Personalized Modules */}
-        {personalizedModules.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-[#B76E79]" />
-              <h2 className="text-xl font-bold text-[#333333]">Perfect for You Right Now</h2>
+        {/* Featured Learning Module */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
+          </div>
+          
+          <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-6 text-white">
+            <div className="flex items-center space-x-2 mb-1">
+              <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
+              <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
+            </div>
+            <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
+            <p className="text-white/80 text-sm mb-4">
+              Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
+            </p>
+            
+            <div className="flex items-center space-x-4 mb-4 text-sm">
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4" />
+                <span>45 min</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Zap className="h-4 w-4 text-yellow-300" />
+                <span>+100 XP</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <BookOpen className="h-4 w-4" />
+                <span>Financial Basics</span>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {personalizedModules.map((module, index) => {
-                const TypeIcon = getTypeIcon(module.content_type);
-                
-                return (
-                  <div
-                    key={module.id}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-lg flex items-center justify-center">
-                          <TypeIcon className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(module.difficulty)}`}>
-                            {module.difficulty}
-                          </span>
-                          {module.content_type === 'quiz' && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
-                              Quiz
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {module.progress?.status === 'completed' && (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      )}
-                    </div>
-
-                    <h3 className="text-lg font-bold text-[#333333] mb-2">{module.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{module.description}</p>
-
-                    {module.progress?.status === 'in_progress' && (
-                      <div className="mb-4">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
-                            style={{ width: `${module.progress.progress_percentage}%` }}
-                          />
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {module.progress.progress_percentage}% complete
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{module.duration_minutes} min</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Zap className="h-4 w-4 text-yellow-500" />
-                          <span>+{module.xp_reward} XP</span>
-                        </div>
-                      </div>
-                      
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('=== PERSONALIZED MODULE BUTTON CLICKED ===');
-                          console.log('Module:', module.title);
-                          console.log('Type:', module.content_type);
-                          handleStartModule(module.id);
-                        }}
-                        disabled={module.progress?.status === 'completed'}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                          module.progress?.status === 'completed'
-                            ? 'bg-green-100 text-green-700 cursor-default'
-                            : module.progress?.status === 'in_progress'
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-gradient-to-r from-[#2A6F68] to-[#B76E79] text-white hover:shadow-lg'
-                        }`}
-                      >
-                        <span>
-                          {module.progress?.status === 'completed' ? 'Completed' : 
-                           module.progress?.status === 'in_progress' ? 'Continue' : 
-                           module.content_type === 'quiz' ? 'Take Quiz' : 'Start Learning'}
-                        </span>
-                        {module.progress?.status !== 'completed' && (
-                          <ArrowRight className="h-4 w-4" />
-                        )}
-                      </motion.button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="bg-white/10 rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Completed</div>
+                <CheckCircle className="h-5 w-5 text-green-300" />
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Explore More Section */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-[#333333]">Explore More</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recommendedModules.map((module, index) => {
-              const TypeIcon = getTypeIcon(module.content_type);
-              const isLocked = module.required_level > level;
-              
-              return (
-                <div
-                  key={module.id}
-                  className={`bg-white rounded-xl p-4 shadow-sm border border-gray-200 transition-all ${
-                    isLocked ? 'opacity-60' : 'hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isLocked ? 'bg-gray-100' : 'bg-gradient-to-br from-[#2A6F68] to-[#B76E79]'
-                      }`}>
-                        {isLocked ? (
-                          <Lock className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <TypeIcon className="h-5 w-5 text-white" />
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(module.difficulty)}`}>
-                          {module.difficulty}
-                        </span>
-                        {module.content_type === 'quiz' && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
-                            Quiz
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {module.progress?.status === 'completed' && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-
-                  <h3 className="font-bold text-[#333333] mb-2 text-sm">{module.title}</h3>
-                  <p className="text-gray-600 text-xs mb-3 line-clamp-2">{module.description}</p>
-
-                  {module.progress?.status === 'in_progress' && (
-                    <div className="mb-3">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="h-2 rounded-full bg-gradient-to-r from-[#2A6F68] to-[#B76E79]"
-                          style={{ width: `${module.progress.progress_percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 text-xs text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{module.duration_minutes}m</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Zap className="h-3 w-3 text-yellow-500" />
-                        <span>+{module.xp_reward}</span>
-                      </div>
-                    </div>
-                    
-                    {isLocked ? (
-                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        Level {module.required_level}+
-                      </div>
-                    ) : (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('=== EXPLORE MODULE BUTTON CLICKED ===');
-                          console.log('Module:', module.title);
-                          console.log('Type:', module.content_type);
-                          handleStartModule(module.id);
-                        }}
-                        disabled={module.progress?.status === 'completed'}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                          module.progress?.status === 'completed'
-                            ? 'bg-green-100 text-green-700 cursor-default'
-                            : module.progress?.status === 'in_progress'
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-[#2A6F68] text-white hover:bg-[#235A54]'
-                        }`}
-                      >
-                        {module.progress?.status === 'completed' ? 'Done' : 
-                         module.progress?.status === 'in_progress' ? 'Continue' : 
-                         module.content_type === 'quiz' ? 'Quiz' : 'Start'}
-                      </motion.button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
 
-        {/* Updated Training Tips */}
+        {/* Available Lessons */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
+          
+          <div className="space-y-3">
+            {/* Emergency Fund Basics */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Emergency Fund Basics</h3>
+                    <div className="text-xs text-gray-500">15 MIN</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2 w-24">
+                    <div className="h-2 rounded-full bg-green-500" style={{ width: '100%' }} />
+                  </div>
+                  <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                    REVIEW
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Credit Score Fundamentals */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
+                    <div className="text-xs text-gray-500">25 MIN</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-full bg-gray-200 rounded-full h-2 w-24">
+                    <div className="h-2 rounded-full bg-blue-500" style={{ width: '60%' }} />
+                  </div>
+                  <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                    CONTINUE
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Investment 101 */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Investment 101</h3>
+                    <div className="text-xs text-gray-500">35 MIN</div>
+                  </div>
+                </div>
+                <div className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-medium">
+                  START
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* For You Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-[#333333]">For You</h2>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Budgeting Strategies That Actually Work</h3>
+                <p className="text-sm text-gray-600">Practical methods - 50/30/20 rule, zero-based budgeting</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4 text-xs text-gray-500 mb-4">
+              <div className="flex items-center space-x-1">
+                <Video className="h-3 w-3" />
+                <span>VIDEO</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Bookmark className="h-3 w-3" />
+                <span>BEGINNER</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-3 w-3" />
+                <span>10 MINS</span>
+              </div>
+            </div>
+            
+            <button className="w-full bg-teal-500 text-white py-2 rounded-lg font-medium hover:bg-teal-600 transition-colors">
+              START LEARNING
+            </button>
+          </div>
+        </div>
+
+        {/* Training Tips */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center space-x-2 mb-4">
-            <Lightbulb className="h-5 w-5 text-[#B76E79]" />
+            <Lightbulb className="h-5 w-5 text-amber-500" />
             <h3 className="text-lg font-bold text-[#333333]">Training Tips from Sensei DoughJo</h3>
           </div>
 
-          <div className="p-4 bg-gradient-to-r from-[#2A6F68]/5 to-[#B76E79]/5 rounded-lg border-l-4 border-[#2A6F68]">
-            <div className="flex items-start space-x-3">
-              <Activity className="h-5 w-5 text-[#2A6F68] mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-bold text-[#333333] mb-2">Master Your Financial Kata</h4>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>• Practice daily financial exercises to build muscle memory</li>
-                  <li>• Start with your recommended difficulty level and advance gradually</li>
-                  <li>• Focus on form over speed - understanding beats rushing</li>
-                  <li>• Apply each kata to your real financial decisions</li>
-                </ul>
+          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                <Zap className="h-4 w-4 text-amber-600" />
               </div>
+              <h4 className="font-bold text-amber-800">Daily Financial Kata</h4>
+            </div>
+            <p className="text-sm text-amber-700 leading-relaxed">
+              "Like martial arts, financial mastery requires daily practice. Start each morning by reviewing your spending from yesterday."
+            </p>
+            <div className="mt-2 text-xs text-amber-600 font-medium">
+              Today's Tip:
+              <p className="mt-1">
+                "The way of the warrior is to stop trouble before it starts" - the same holds true of saving for unexpected expenses in the future.
+              </p>
             </div>
           </div>
         </div>
