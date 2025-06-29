@@ -10,6 +10,7 @@ interface BankAccount {
   name: string;
   type: string;
   account_subtype: string | null; // Updated from subtype
+  subtype: string | null; // For backward compatibility
   balance: number | null;
   institution_name: string;
   institution_id: string;
@@ -54,6 +55,8 @@ export const useBankAccounts = (user: User | null) => {
       }
 
       console.log('✅ Bank accounts fetched:', data?.length || 0);
+      console.log('Bank account data:', data);
+      
       setBankAccounts(data || []);
       
       // Calculate total balance

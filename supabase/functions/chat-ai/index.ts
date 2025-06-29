@@ -15,10 +15,11 @@ serve(async (req) => {
     console.log('=== CHAT AI EDGE FUNCTION START ===')
     console.log('Edge function called with method:', req.method)
     
-    const { message, userId } = await req.json()
+    const { message, userId, sessionId } = await req.json()
     console.log('📥 REQUEST:', {
       messageLength: message?.length || 0,
       userId: userId || 'MISSING',
+      sessionId: sessionId || 'NONE',
       messagePreview: message?.substring(0, 50) + '...'
     })
 
@@ -26,10 +27,10 @@ serve(async (req) => {
       throw new Error('Missing required parameters: message and userId')
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key for full data access
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for admin access
     )
 
     console.log('🔍 FETCHING USER CONTEXT...')
@@ -52,23 +53,29 @@ serve(async (req) => {
     const accountsData = accountsResult.data || []
 
     console.log('📊 USER CONTEXT FETCHED:', {
-      user: userData?.full_name || 'Unknown',
+      user: userData?.first_name || userData?.full_name || 'Unknown',
       goals: goalsData.length,
       xp: xpData?.points || 0,
       chats: recentChats.length,
       accounts: accountsData.length,
+      accountsData: accountsData.map(acc => ({
+        name: acc.name,
+        balance: acc.balance,
+        type: acc.type,
+        subtype: acc.account_subtype || acc.subtype
+      })),
       experience: profileData?.financial_experience || 'Unknown'
     })
 
     // Calculate financial metrics
     const totalBalance = accountsData.reduce((sum, acc) => sum + (acc.balance || 0), 0)
     const totalGoalAmount = goalsData.reduce((sum, goal) => sum + (goal.target_amount || 0), 0)
-    const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || 0), 0)
+    const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0)
     const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0
 
     // Build comprehensive context for AI
     const userContext = {
-      name: userData?.full_name || 'User',
+      name: userData?.first_name || userData?.full_name || 'User',
       email: userData?.email,
       level: Math.floor((xpData?.points || 0) / 100) + 1,
       xp: xpData?.points || 0,
@@ -97,13 +104,13 @@ COMPREHENSIVE USER PROFILE:
 
 FINANCIAL ACCOUNTS:
 ${userContext.accounts.map(acc => 
-  `- ${acc.name} (${acc.institution_name}): $${(acc.balance || 0).toLocaleString()} [${acc.type}/${acc.subtype}]`
+  `- ${acc.name} (${acc.institution_name}): $${(acc.balance || 0).toLocaleString()} [${acc.type}/${acc.account_subtype || acc.subtype || 'unknown'}]`
 ).join('\n') || 'No accounts connected yet'}
 
 FINANCIAL GOALS:
 ${userContext.goals.map(goal => {
-  const progress = goal.target_amount ? ((goal.saved_amount || 0) / goal.target_amount) * 100 : 0;
-  return `- ${goal.name}: $${(goal.saved_amount || 0).toLocaleString()} saved of $${(goal.target_amount || 0).toLocaleString()} target (${progress.toFixed(1)}% complete) ${goal.deadline ? `Due: ${goal.deadline}` : 'No deadline'}`;
+  const progress = goal.target_amount ? ((goal.saved_amount || goal.current_amount || 0) / goal.target_amount) * 100 : 0;
+  return `- ${goal.name}: $${(goal.saved_amount || goal.current_amount || 0).toLocaleString()} saved of $${(goal.target_amount || 0).toLocaleString()} target (${progress.toFixed(1)}% complete) ${goal.deadline ? `Due: ${goal.deadline}` : 'No deadline'}`;
 }).join('\n') || 'No goals set yet'}
 
 RECENT CONVERSATION CONTEXT:
@@ -254,18 +261,30 @@ CURRENT CONTEXT: The user just said: "${message}"`
       if (userId) {
         const supabaseClient = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for admin access
         )
         
-        const [userResult, goalsResult] = await Promise.all([
-          supabaseClient.from('users').select('full_name').eq('id', userId).single(),
-          supabaseClient.from('goals').select('name, target_amount, saved_amount').eq('user_id', userId).limit(3)
+        const [userResult, goalsResult, accountsResult] = await Promise.all([
+          supabaseClient.from('users').select('first_name, full_name').eq('id', userId).single(),
+          supabaseClient.from('goals').select('name, target_amount, saved_amount, current_amount').eq('user_id', userId).limit(3),
+          supabaseClient.from('bank_accounts').select('name, balance, type, account_subtype, subtype').eq('user_id', userId)
         ])
         
-        const userName = userResult.data?.full_name || 'there'
+        const userName = userResult.data?.first_name || userResult.data?.full_name?.split(' ')[0] || 'there'
         const goals = goalsResult.data || []
+        const accounts = accountsResult.data || []
+        const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
         
-        if (goals.length > 0) {
+        console.log('Fallback context:', {
+          userName,
+          goalCount: goals.length,
+          accountCount: accounts.length,
+          totalBalance
+        })
+        
+        if (accounts.length > 0) {
+          fallbackResponse = `Hi ${userName}! I can see you have ${accounts.length} connected account${accounts.length > 1 ? 's' : ''} with a total balance of $${totalBalance.toLocaleString()}. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
+        } else if (goals.length > 0) {
           fallbackResponse = `Hi ${userName}! I can see you have ${goals.length} financial goal${goals.length > 1 ? 's' : ''} in progress. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
         } else {
           fallbackResponse = `Hi ${userName}! I'm experiencing some technical difficulties with my AI processing, but I'm still here to help you build a strong financial foundation. What financial topic interests you most?`
@@ -292,12 +311,12 @@ CURRENT CONTEXT: The user just said: "${message}"`
 // Enhanced fallback response generator with user context
 function generateEnhancedFallback(message: string, userContext: any): string {
   const lowerMessage = message.toLowerCase()
-  const { name, totalBalance, goals, goalProgress, experience } = userContext
+  const { name, totalBalance, goals, goalProgress, experience, accounts } = userContext
   
   // Budget-related responses
   if (lowerMessage.includes('budget') || lowerMessage.includes('spending')) {
     if (totalBalance > 0) {
-      return `Great question, ${name}! With $${totalBalance.toLocaleString()} across your accounts, let's create a budget that works for you. I recommend the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings. Based on your current balance, you're in a good position to optimize your spending!`
+      return `Great question, ${name}! With $${totalBalance.toLocaleString()} across your ${accounts.length} account${accounts.length !== 1 ? 's' : ''}, let's create a budget that works for you. I recommend the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings. Based on your current balance, you're in a good position to optimize your spending!`
     }
     return `Creating a budget is a great first step, ${name}! I recommend the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings and debt repayment. Would you like help setting up specific budget categories?`
   }
@@ -325,7 +344,11 @@ function generateEnhancedFallback(message: string, userContext: any): string {
   
   // General personalized response
   if (totalBalance > 0 && goals.length > 0) {
-    return `I'm here to help optimize your financial strategy, ${name}! With $${totalBalance.toLocaleString()} in accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid foundation. What specific area would you like to focus on today?`
+    return `I'm here to help optimize your financial strategy, ${name}! With $${totalBalance.toLocaleString()} in ${accounts.length} account${accounts.length !== 1 ? 's' : ''} and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid foundation. What specific area would you like to focus on today?`
+  }
+  
+  if (totalBalance > 0) {
+    return `I'm here to help you build a stronger financial future, ${name}! With $${totalBalance.toLocaleString()} across ${accounts.length} account${accounts.length !== 1 ? 's' : ''}, you're off to a good start. What financial goals would you like to work toward?`
   }
   
   return `I'm here to help you build a stronger financial future, ${name}! Whether it's budgeting, saving, investing, or debt management, we can work together to create a plan that works for you. What's your biggest financial priority right now?`

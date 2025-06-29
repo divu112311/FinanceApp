@@ -232,6 +232,7 @@ export const useChat = (user: User | null) => {
 
         // Call AI API through Supabase Edge Function
         console.log('Calling AI Edge Function...');
+        const startTime = Date.now();
         const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
           body: {
             message: message.trim(),
@@ -239,8 +240,9 @@ export const useChat = (user: User | null) => {
             sessionId: currentSessionId
           },
         });
+        const responseTime = Date.now() - startTime;
 
-        console.log('AI Response received:', {
+        console.log('AI Response received in', responseTime, 'ms:', {
           hasData: !!aiResponseData,
           hasError: !!aiError,
           response: aiResponseData?.response?.substring(0, 100) + '...'
@@ -265,10 +267,10 @@ export const useChat = (user: User | null) => {
             metadata: {
               model: aiResponseData?.model || 'fallback',
               tokens: aiResponseData?.tokens || 0,
-              response_time: aiResponseData?.response_time || 0
+              response_time: responseTime
             },
             ai_model_used: aiResponseData?.model || 'fallback',
-            response_time: aiResponseData?.response_time || 0
+            response_time: responseTime
           })
           .select()
           .single();
@@ -316,14 +318,16 @@ export const useChat = (user: User | null) => {
 
         // Call AI API through Supabase Edge Function
         console.log('Calling AI Edge Function...');
+        const startTime = Date.now();
         const { data: aiResponseData, error: aiError } = await supabase.functions.invoke('chat-ai', {
           body: {
             message: message.trim(),
             userId: user.id,
           },
         });
+        const responseTime = Date.now() - startTime;
 
-        console.log('AI Response received:', {
+        console.log('AI Response received in', responseTime, 'ms:', {
           hasData: !!aiResponseData,
           hasError: !!aiError,
           response: aiResponseData?.response?.substring(0, 100) + '...'
