@@ -24,7 +24,8 @@ import {
   Video,
   FileText,
   Bookmark,
-  Flame
+  Flame,
+  TrendingDown
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
@@ -57,7 +58,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     completeModule: completeAIModule,
     getTodaysPractice,
     getRecommendedModules,
-    getOverallProgress: getAIProgress
+    getOverallProgress: getAIProgress,
+    generateQuizQuestions
   } = useAILearning(user);
 
   const [showQuiz, setShowQuiz] = useState(false);
@@ -65,6 +67,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   const [showVideo, setShowVideo] = useState(false);
   const [selectedModule, setSelectedModule] = useState<any>(null);
   const [currentView, setCurrentView] = useState<'quiz' | 'article' | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
 
@@ -142,6 +146,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
       // If it's a quiz module, show the quiz interface
       if (module.content_type === 'quiz') {
         console.log('Opening quiz interface for:', module.title);
+        setLoadingQuiz(true);
         
         // Start the module first if not started
         if (module.progress?.status === 'not_started' || !module.progress) {
@@ -153,9 +158,59 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           }
         }
         
+        // Check if module has questions in content_data
+        if (module.content_data && module.content_data.questions && module.content_data.questions.length > 0) {
+          console.log('Using questions from module content_data');
+          setQuizQuestions(module.content_data.questions);
+        } else {
+          // Generate questions if not available
+          console.log('Generating quiz questions for:', module.title);
+          try {
+            const generatedQuestions = await generateQuizQuestions(module.title, module.difficulty, 5);
+            console.log('Generated questions:', generatedQuestions);
+            setQuizQuestions(generatedQuestions);
+          } catch (error) {
+            console.error('Error generating questions:', error);
+            // Fallback to default questions
+            setQuizQuestions([
+              {
+                question_text: "What does the 50/30/20 budgeting rule recommend for needs?",
+                options: ["30% of income", "50% of income", "20% of income", "70% of income"],
+                correct_answer: "50% of income",
+                explanation: "The 50/30/20 rule suggests allocating 50% of your after-tax income to needs, 30% to wants, and 20% to savings and debt repayment."
+              },
+              {
+                question_text: "Which of these is typically considered a 'need' in budgeting?",
+                options: ["Netflix subscription", "Housing costs", "Dining out", "New clothes"],
+                correct_answer: "Housing costs",
+                explanation: "Needs are expenses that are essential for living, such as housing, utilities, groceries, and basic transportation."
+              },
+              {
+                question_text: "What is the recommended minimum amount for an emergency fund?",
+                options: ["$100", "$500", "1 month of expenses", "3-6 months of expenses"],
+                correct_answer: "3-6 months of expenses",
+                explanation: "Financial experts generally recommend having 3-6 months of essential expenses saved in an emergency fund."
+              },
+              {
+                question_text: "Which type of account typically offers the highest interest rate?",
+                options: ["Checking account", "Traditional savings account", "High-yield savings account", "Money market account"],
+                correct_answer: "High-yield savings account",
+                explanation: "High-yield savings accounts, often offered by online banks, typically provide much higher interest rates than traditional bank accounts."
+              },
+              {
+                question_text: "What is the first recommended step in creating a financial plan?",
+                options: ["Investing in stocks", "Creating a budget", "Opening a credit card", "Taking out a loan"],
+                correct_answer: "Creating a budget",
+                explanation: "A budget is the foundation of any financial plan, as it helps you understand your income, expenses, and where your money is going."
+              }
+            ]);
+          }
+        }
+        
         setSelectedModule({...module, isAIModule});
         setCurrentView('quiz');
         setShowQuiz(true);
+        setLoadingQuiz(false);
         return;
       }
       
@@ -337,12 +392,12 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   // Get button label based on content type
   const getButtonLabel = (contentType: string) => {
     switch (contentType) {
-      case 'video': return 'Watch';
-      case 'article': return 'View';
-      case 'quiz': return 'Start';
-      case 'course': return 'Start';
-      case 'interactive': return 'Start';
-      default: return 'Start';
+      case 'video': return 'WATCH';
+      case 'article': return 'VIEW';
+      case 'quiz': return 'START';
+      case 'course': return 'START';
+      case 'interactive': return 'START';
+      default: return 'START';
     }
   };
 
@@ -367,6 +422,8 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         user={user}
         onComplete={handleQuizComplete}
         onClose={handleCloseContent}
+        questions={quizQuestions}
+        isLoading={loadingQuiz}
       />
     );
   }
@@ -696,7 +753,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                               onClick={() => handleStartModule(module.id, true)}
                               className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
                             >
-                              {getButtonLabel(module.content_type).toUpperCase()}
+                              {getButtonLabel(module.content_type)}
                             </button>
                           )}
                         </div>

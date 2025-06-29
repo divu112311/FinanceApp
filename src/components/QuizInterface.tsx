@@ -18,12 +18,12 @@ import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface QuizQuestion {
-  id: string;
+  id?: string;
   question_text: string;
   options: string[];
   correct_answer: string;
   explanation: string;
-  points: number;
+  points?: number;
 }
 
 interface QuizInterfaceProps {
@@ -32,6 +32,8 @@ interface QuizInterfaceProps {
   user: User;
   onComplete: (score: number, xpEarned: number) => void;
   onClose: () => void;
+  questions?: QuizQuestion[];
+  isLoading?: boolean;
 }
 
 const QuizInterface: React.FC<QuizInterfaceProps> = ({
@@ -39,7 +41,9 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   moduleTitle,
   user,
   onComplete,
-  onClose
+  onClose,
+  questions: providedQuestions,
+  isLoading = false
 }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -56,6 +60,15 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('=== QUIZ INTERFACE MOUNTED ===');
     console.log('Module ID:', moduleId);
     console.log('Module Title:', moduleTitle);
+    console.log('Provided Questions:', providedQuestions);
+    
+    if (providedQuestions && providedQuestions.length > 0) {
+      console.log('Using provided questions');
+      setQuestions(providedQuestions);
+      setUserAnswers(new Array(providedQuestions.length).fill(''));
+      setLoading(false);
+      return;
+    }
     
     // If this is the budgeting mastery quiz, use hardcoded questions
     if (moduleId === 'budgeting-mastery-quiz') {
@@ -68,7 +81,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     
     // Otherwise fetch from database
     fetchQuizQuestions();
-  }, [moduleId]);
+  }, [moduleId, providedQuestions]);
 
   useEffect(() => {
     if (!quizCompleted) {
@@ -83,7 +96,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   const getBudgetingQuizQuestions = (): QuizQuestion[] => {
     return [
       {
-        id: '1',
         question_text: 'What does the 50/30/20 budgeting rule recommend for needs?',
         options: ['30% of income', '50% of income', '20% of income', '70% of income'],
         correct_answer: '50% of income',
@@ -91,7 +103,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         points: 5
       },
       {
-        id: '2',
         question_text: 'Which of the following is considered a "need" in budgeting?',
         options: ['Netflix subscription', 'Housing costs', 'Dining out', 'New clothes'],
         correct_answer: 'Housing costs',
@@ -99,7 +110,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         points: 5
       },
       {
-        id: '3',
         question_text: 'What is zero-based budgeting?',
         options: [
           'Spending zero money each month', 
@@ -112,7 +122,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         points: 5
       },
       {
-        id: '4',
         question_text: 'Which budgeting method is best for variable income?',
         options: [
           'Envelope system', 
@@ -125,7 +134,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         points: 5
       },
       {
-        id: '5',
         question_text: 'What is the envelope budgeting system?',
         options: [
           'Putting your budget in an envelope and mailing it to yourself', 
@@ -160,7 +168,46 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
 
       if (!data || data.length === 0) {
         console.warn('No quiz questions found for module:', moduleId);
-        setQuestions([]);
+        // Use default questions if none found
+        const defaultQuestions = [
+          {
+            question_text: "What does the 50/30/20 budgeting rule recommend for needs?",
+            options: ["30% of income", "50% of income", "20% of income", "70% of income"],
+            correct_answer: "50% of income",
+            explanation: "The 50/30/20 rule suggests allocating 50% of your after-tax income to needs, 30% to wants, and 20% to savings and debt repayment.",
+            points: 10
+          },
+          {
+            question_text: "Which of these is typically considered a 'need' in budgeting?",
+            options: ["Netflix subscription", "Housing costs", "Dining out", "New clothes"],
+            correct_answer: "Housing costs",
+            explanation: "Needs are expenses that are essential for living, such as housing, utilities, groceries, and basic transportation.",
+            points: 10
+          },
+          {
+            question_text: "What is the recommended minimum amount for an emergency fund?",
+            options: ["$100", "$500", "1 month of expenses", "3-6 months of expenses"],
+            correct_answer: "3-6 months of expenses",
+            explanation: "Financial experts generally recommend having 3-6 months of essential expenses saved in an emergency fund.",
+            points: 10
+          },
+          {
+            question_text: "Which type of account typically offers the highest interest rate?",
+            options: ["Checking account", "Traditional savings account", "High-yield savings account", "Money market account"],
+            correct_answer: "High-yield savings account",
+            explanation: "High-yield savings accounts, often offered by online banks, typically provide much higher interest rates than traditional bank accounts.",
+            points: 10
+          },
+          {
+            question_text: "What is the first recommended step in creating a financial plan?",
+            options: ["Investing in stocks", "Creating a budget", "Opening a credit card", "Taking out a loan"],
+            correct_answer: "Creating a budget",
+            explanation: "A budget is the foundation of any financial plan, as it helps you understand your income, expenses, and where your money is going.",
+            points: 10
+          }
+        ];
+        setQuestions(defaultQuestions);
+        setUserAnswers(new Array(defaultQuestions.length).fill(''));
         setLoading(false);
         return;
       }
@@ -193,6 +240,46 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       setUserAnswers(new Array(formattedQuestions.length).fill(''));
     } catch (error) {
       console.error('Error fetching quiz questions:', error);
+      // Use default questions if fetch fails
+      const defaultQuestions = [
+        {
+          question_text: "What does the 50/30/20 budgeting rule recommend for needs?",
+          options: ["30% of income", "50% of income", "20% of income", "70% of income"],
+          correct_answer: "50% of income",
+          explanation: "The 50/30/20 rule suggests allocating 50% of your after-tax income to needs, 30% to wants, and 20% to savings and debt repayment.",
+          points: 10
+        },
+        {
+          question_text: "Which of these is typically considered a 'need' in budgeting?",
+          options: ["Netflix subscription", "Housing costs", "Dining out", "New clothes"],
+          correct_answer: "Housing costs",
+          explanation: "Needs are expenses that are essential for living, such as housing, utilities, groceries, and basic transportation.",
+          points: 10
+        },
+        {
+          question_text: "What is the recommended minimum amount for an emergency fund?",
+          options: ["$100", "$500", "1 month of expenses", "3-6 months of expenses"],
+          correct_answer: "3-6 months of expenses",
+          explanation: "Financial experts generally recommend having 3-6 months of essential expenses saved in an emergency fund.",
+          points: 10
+        },
+        {
+          question_text: "Which type of account typically offers the highest interest rate?",
+          options: ["Checking account", "Traditional savings account", "High-yield savings account", "Money market account"],
+          correct_answer: "High-yield savings account",
+          explanation: "High-yield savings accounts, often offered by online banks, typically provide much higher interest rates than traditional bank accounts.",
+          points: 10
+        },
+        {
+          question_text: "What is the first recommended step in creating a financial plan?",
+          options: ["Investing in stocks", "Creating a budget", "Opening a credit card", "Taking out a loan"],
+          correct_answer: "Creating a budget",
+          explanation: "A budget is the foundation of any financial plan, as it helps you understand your income, expenses, and where your money is going.",
+          points: 10
+        }
+      ];
+      setQuestions(defaultQuestions);
+      setUserAnswers(new Array(defaultQuestions.length).fill(''));
     } finally {
       setLoading(false);
     }
@@ -239,7 +326,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('Updated user answers:', newAnswers);
 
     if (correct) {
-      const newScore = score + currentQuestion.points;
+      const newScore = score + (currentQuestion.points || 10);
       setScore(newScore);
       console.log('Score updated to:', newScore);
     }
@@ -335,7 +422,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -533,7 +620,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                               {isCorrect && (
                                 <div className="flex items-center space-x-1 mt-2 bg-green-200 rounded px-2 py-1 w-fit">
                                   <Sparkles className="h-3 w-3 text-green-700" />
-                                  <span className="text-green-700 font-medium text-xs">+{currentQuestion.points} points!</span>
+                                  <span className="text-green-700 font-medium text-xs">+{currentQuestion.points || 10} points!</span>
                                 </div>
                               )}
                             </div>
