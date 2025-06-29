@@ -560,6 +560,54 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         <div className="grid grid-cols-3 gap-6">
           {/* Left Column - Today's Practice (2/3 width) */}
           <div className="col-span-2 space-y-6">
+            {/* Featured Learning Section */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <h2 className="text-lg font-bold text-[#333333]">Featured Learning</h2>
+              </div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 shadow-md text-white overflow-hidden relative"
+              >
+                <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-md text-xs font-bold">
+                  Featured
+                </div>
+                
+                <div className="absolute top-4 right-4 bg-green-100 text-green-800 px-2 py-0.5 rounded-md text-xs font-bold">
+                  Beginner
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
+                  <p className="text-white/90 mb-4">
+                    Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
+                  </p>
+                  
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="h-4 w-4" />
+                      <span>45 min</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Zap className="h-4 w-4 text-yellow-300" />
+                      <span>+100 XP</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <BookOpen className="h-4 w-4" />
+                      <span>Financial Basics</span>
+                    </div>
+                  </div>
+                  
+                  <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                    Completed
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+
             {/* Today's Practice */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -653,54 +701,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Featured Learning Section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-[#333333]">Featured Learning</h2>
-              </div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 shadow-md text-white overflow-hidden relative"
-              >
-                <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-md text-xs font-bold">
-                  Featured
-                </div>
-                
-                <div className="absolute top-4 right-4 bg-green-100 text-green-800 px-2 py-0.5 rounded-md text-xs font-bold">
-                  Beginner
-                </div>
-                
-                <div className="mt-8">
-                  <h3 className="text-2xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
-                  <p className="text-white/90 mb-4">
-                    Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
-                  </p>
-                  
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span>45 min</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Zap className="h-4 w-4 text-yellow-300" />
-                      <span>+100 XP</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <BookOpen className="h-4 w-4" />
-                      <span>Financial Basics</span>
-                    </div>
-                  </div>
-                  
-                  <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-                    Completed
-                  </button>
-                </div>
-              </motion.div>
             </div>
 
             {/* Available Lessons */}
