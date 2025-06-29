@@ -560,6 +560,116 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         <div className="grid grid-cols-3 gap-6">
           {/* Left Column - Today's Practice (2/3 width) */}
           <div className="col-span-2 space-y-6">
+            {/* Available Lessons */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
+              
+              <div className="space-y-3">
+                {/* Credit Score Fundamentals Video */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68]/20 to-[#B76E79]/20 rounded-lg flex items-center justify-center">
+                        <Video className="h-5 w-5 text-[#2A6F68]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            VIDEO
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
+                        <div className="text-xs text-gray-500 flex items-center space-x-2">
+                          <span>18 min</span>
+                          <span>•</span>
+                          <span className="text-yellow-500 flex items-center">
+                            <Zap className="h-3 w-3 mr-0.5" />
+                            +35 XP
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => setShowVideo(true)}
+                        className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
+                      >
+                        WATCH
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Display filtered recommended modules */}
+                {recommendedModules.slice(0, 3).map((module, index) => {
+                  const TypeIcon = getTypeIcon(module.content_type);
+                  
+                  return (
+                    <div key={module.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68]/20 to-[#B76E79]/20 rounded-lg flex items-center justify-center">
+                            <TypeIcon className="h-5 w-5 text-[#2A6F68]" />
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className={`px-2 py-0.5 ${getDifficultyColor(module.difficulty)} rounded text-xs font-medium`}>
+                                {module.difficulty}
+                              </span>
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                                {getTypeLabel(module.content_type)}
+                              </span>
+                            </div>
+                            <h3 className="font-medium text-gray-900">{module.title}</h3>
+                            <div className="text-xs text-gray-500 flex items-center space-x-2">
+                              <span>{module.duration_minutes} min</span>
+                              <span>•</span>
+                              <span className="text-yellow-500 flex items-center">
+                                <Zap className="h-3 w-3 mr-0.5" />
+                                +{module.xp_reward} XP
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {module.progress?.status === 'completed' ? (
+                            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                              COMPLETED
+                            </div>
+                          ) : module.progress?.status === 'in_progress' ? (
+                            <div className="flex flex-col items-end">
+                              <div className="w-full bg-gray-200 rounded-full h-2 w-24 mb-1">
+                                <div 
+                                  className="h-2 rounded-full bg-blue-500" 
+                                  style={{ width: `${module.progress.progress_percentage}%` }} 
+                                />
+                              </div>
+                              <button
+                                onClick={() => handleStartModule(module.id, true)}
+                                className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium"
+                              >
+                                CONTINUE
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleStartModule(module.id, true)}
+                              className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
+                            >
+                              {getButtonLabel(module.content_type)}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Featured Learning Section */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -701,116 +811,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Available Lessons */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
-              
-              <div className="space-y-3">
-                {/* Credit Score Fundamentals Video */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68]/20 to-[#B76E79]/20 rounded-lg flex items-center justify-center">
-                        <Video className="h-5 w-5 text-[#2A6F68]" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
-                            Beginner
-                          </span>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                            VIDEO
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-gray-900">Credit Score Fundamentals</h3>
-                        <div className="text-xs text-gray-500 flex items-center space-x-2">
-                          <span>18 min</span>
-                          <span>•</span>
-                          <span className="text-yellow-500 flex items-center">
-                            <Zap className="h-3 w-3 mr-0.5" />
-                            +35 XP
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => setShowVideo(true)}
-                        className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
-                      >
-                        WATCH
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Display filtered recommended modules */}
-                {recommendedModules.slice(0, 3).map((module, index) => {
-                  const TypeIcon = getTypeIcon(module.content_type);
-                  
-                  return (
-                    <div key={module.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68]/20 to-[#B76E79]/20 rounded-lg flex items-center justify-center">
-                            <TypeIcon className="h-5 w-5 text-[#2A6F68]" />
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className={`px-2 py-0.5 ${getDifficultyColor(module.difficulty)} rounded text-xs font-medium`}>
-                                {module.difficulty}
-                              </span>
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                                {getTypeLabel(module.content_type)}
-                              </span>
-                            </div>
-                            <h3 className="font-medium text-gray-900">{module.title}</h3>
-                            <div className="text-xs text-gray-500 flex items-center space-x-2">
-                              <span>{module.duration_minutes} min</span>
-                              <span>•</span>
-                              <span className="text-yellow-500 flex items-center">
-                                <Zap className="h-3 w-3 mr-0.5" />
-                                +{module.xp_reward} XP
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {module.progress?.status === 'completed' ? (
-                            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              COMPLETED
-                            </div>
-                          ) : module.progress?.status === 'in_progress' ? (
-                            <div className="flex flex-col items-end">
-                              <div className="w-full bg-gray-200 rounded-full h-2 w-24 mb-1">
-                                <div 
-                                  className="h-2 rounded-full bg-blue-500" 
-                                  style={{ width: `${module.progress.progress_percentage}%` }} 
-                                />
-                              </div>
-                              <button
-                                onClick={() => handleStartModule(module.id, true)}
-                                className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium"
-                              >
-                                CONTINUE
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleStartModule(module.id, true)}
-                              className="px-3 py-1 bg-teal-500 text-white rounded-full text-xs font-medium"
-                            >
-                              {getButtonLabel(module.content_type)}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
