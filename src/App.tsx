@@ -12,7 +12,7 @@ import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile(user);
+  const { profile, loading: profileLoading, getDisplayName, getFullName, getInitials } = useUserProfile(user);
   const { xp, enhancedXP, updateXP, getCurrentLevel, getTotalXP, loading: xpLoading } = useXP(user); // Updated hook
   const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
   const [showAuth, setShowAuth] = useState(false);
@@ -54,6 +54,9 @@ function App() {
   // Get level from enhanced XP if available, otherwise calculate from regular XP
   const level = enhancedXP ? enhancedXP.current_level : getCurrentLevel();
   const totalXP = getTotalXP();
+  const displayName = getDisplayName();
+  const fullName = getFullName();
+  const initials = getInitials();
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -121,6 +124,21 @@ function App() {
                   Finance Kata
                 </button>
               </nav>
+              
+              {/* User Profile Section */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <div className="text-sm font-medium text-[#333333]">
+                    Welcome back, {displayName}!
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {fullName}
+                  </div>
+                </div>
+                <div className="w-8 h-8 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  {initials}
+                </div>
+              </div>
               
               <button
                 onClick={signOut}

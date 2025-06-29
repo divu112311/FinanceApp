@@ -20,7 +20,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
   const { messages, loading, sendMessage } = useChat(user);
   const { goals } = useGoals(user);
   const { bankAccounts, totalBalance } = useBankAccounts(user);
-  const { getDisplayName } = useUserProfile(user);
+  const { getDisplayName, getFullName } = useUserProfile(user);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || loading) return;
@@ -141,6 +141,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
 
   // Get last 6 messages to show more conversation history
   const recentMessages = messages.slice(-6);
+
+  // Get user's display name
+  const displayName = getDisplayName();
+  const fullName = getFullName();
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -318,7 +322,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     <div className="text-center py-6">
                       <div className="mb-4">
                         <h4 className="font-semibold text-gray-900 mb-2">
-                          Let's Optimize Your Finances, {getDisplayName()}
+                          Let's Optimize Your Finances, {displayName}
                         </h4>
                         <p className="text-gray-600 text-sm max-w-md mx-auto">
                           I can see you have {bankAccounts.length} connected account{bankAccounts.length !== 1 ? 's' : ''} 
@@ -534,9 +538,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                   <div className="bg-white/60 rounded-xl p-4 border border-white/40">
                     <p className="text-sm text-[#2A6F68] mb-3 font-medium">
                       {totalBalance > 0 ? (
-                        `Great progress, ${getDisplayName()}! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
+                        `Great progress, ${displayName}! With ${formatCurrency(totalBalance)} across your accounts and ${goalProgress.toFixed(1)}% progress toward your goals, you're building a solid financial foundation.`
                       ) : (
-                        `Welcome to your financial journey, ${getDisplayName()}! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
+                        `Welcome to your financial journey, ${displayName}! I'm here to help you build wealth, achieve your goals, and make smart money decisions.`
                       )}
                     </p>
                     

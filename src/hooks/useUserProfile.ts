@@ -76,6 +76,11 @@ export const useUserProfile = (user: User | null) => {
     if (!user) return;
 
     try {
+      console.log('=== FETCHING USER PROFILE DATA ===');
+      console.log('User ID:', user.id);
+      console.log('User email from auth:', user.email);
+      console.log('User metadata:', user.user_metadata);
+
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from('users')
@@ -83,7 +88,40 @@ export const useUserProfile = (user: User | null) => {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (profileError) throw profileError;
+      console.log('Profile query result:', { profileData, profileError });
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+      }
+
+      // If no profile exists, create one from auth metadata
+      if (!profileData && user.email) {
+        console.log('No profile found, creating from auth metadata...');
+        
+        const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User';
+        const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            first_name: firstName,
+            last_name: lastName,
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+        } else {
+          console.log('Created new profile:', newProfile);
+          setProfile(newProfile);
+        }
+      } else {
+        setProfile(profileData);
+      }
 
       // Fetch extended user profile
       const { data: extendedProfileData, error: extendedProfileError } = await supabase
@@ -93,7 +131,9 @@ export const useUserProfile = (user: User | null) => {
         .maybeSingle();
 
       if (extendedProfileError) {
-        throw extendedProfileError;
+        console.error('Extended profile fetch error:', extendedProfileError);
+      } else {
+        setExtendedProfile(extendedProfileData);
       }
 
       // Fetch user XP
@@ -104,12 +144,11 @@ export const useUserProfile = (user: User | null) => {
         .maybeSingle();
 
       if (xpError) {
-        throw xpError;
+        console.error('XP fetch error:', xpError);
+      } else {
+        setXP(xpData);
       }
 
-      setProfile(profileData);
-      setExtendedProfile(extendedProfileData);
-      setXP(xpData);
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
@@ -219,13 +258,42 @@ export const useUserProfile = (user: User | null) => {
   };
 
   const getFullName = () => {
-    if (!profile) return '';
-    return `${profile.first_name} ${profile.last_name}`.trim();
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`.trim();
+    }
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (user?.user_metadata?.first_name) {
+      const lastName = user.user_metadata?.last_name || '';
+      return `${user.user_metadata.first_name} ${lastName}`.trim();
+    }
+    return user?.email?.split('@')[0] || 'User';
   };
 
   const getDisplayName = () => {
-    if (!profile) return 'User';
-    return profile.first_name || 'User';
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.split(' ')[0];
+    }
+    return user?.email?.split('@')[0] || 'User';
+  };
+
+  const getInitials = () => {
+    const fullName = getFullName();
+    const names = fullName.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return fullName.substring(0, 2).toUpperCase();
   };
 
   return {
@@ -241,6 +309,7 @@ export const useUserProfile = (user: User | null) => {
     updateXP,
     getFullName,
     getDisplayName,
+    getInitials,
     refetch: fetchUserData,
   };
 };
