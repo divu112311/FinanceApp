@@ -28,7 +28,6 @@ import {
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
 import QuizInterface from './QuizInterface';
-import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface LearningCenterProps {
   user: User;
@@ -212,67 +211,9 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           </div>
         </div>
 
-        {/* Your Achievements */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[#333333]">Your Achievements</h2>
-            <div className="text-sm text-gray-500">
-              3/8 Unlocked
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            {/* 3 Day Streak */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <Calendar className="h-3 w-3 text-green-600" />
-                  </div>
-                  <span className="text-sm font-medium">3 Day Streak</span>
-                </div>
-                <span className="text-xs text-gray-500">5/5</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="h-2 rounded-full bg-green-500" style={{ width: '100%' }} />
-              </div>
-            </div>
-
-            {/* Module Master */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Bookmark className="h-3 w-3 text-yellow-600" />
-                  </div>
-                  <span className="text-sm font-medium">Module Master</span>
-                </div>
-                <span className="text-xs text-gray-500">3/5</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="h-2 rounded-full bg-yellow-500" style={{ width: '60%' }} />
-              </div>
-            </div>
-
-            {/* Quiz Champion */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Brain className="h-3 w-3 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium">Quiz Champion</span>
-                </div>
-                <span className="text-xs text-gray-500">2/5</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="h-2 rounded-full bg-blue-500" style={{ width: '40%' }} />
-              </div>
-            </div>
-          </div>
-        </div>
-
+        {/* Main Content Grid - 2 columns */}
         <div className="grid grid-cols-2 gap-6">
+          {/* Left Column */}
           <div className="space-y-6">
             {/* Featured Learning Module */}
             <div className="space-y-4">
@@ -387,7 +328,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             </div>
           </div>
 
-          {/* Right Column - Explore More and Training Tips */}
+          {/* Right Column */}
           <div className="space-y-6">
             {/* Explore More Section */}
             <div className="space-y-4">
