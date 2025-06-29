@@ -170,11 +170,6 @@ export const useSmartWins = (user: User | null) => {
   const generateSmartWins = (): SmartWin[] => {
     const wins: SmartWin[] = [];
     const now = new Date();
-    
-    // Generate a unique ID
-    const generateId = () => {
-      return 'win_' + Math.random().toString(36).substring(2, 15);
-    };
 
     // 1. Check for excess checking balance
     const checkingAccounts = bankAccounts.filter(acc => 
@@ -186,7 +181,7 @@ export const useSmartWins = (user: User | null) => {
     
     if (totalChecking > 5000) {
       wins.push({
-        id: generateId(),
+        id: '', // Let Supabase generate UUID
         title: "Optimize Excess Cash",
         description: `Move $${Math.floor((totalChecking - 3000) / 100) * 100} from checking to high-yield savings for better returns`,
         type: 'opportunity',
@@ -223,7 +218,7 @@ export const useSmartWins = (user: User | null) => {
         
         if (potentialSavings > 20) {
           wins.push({
-            id: generateId(),
+            id: '', // Let Supabase generate UUID
             title: "Review Subscriptions",
             description: `Most people save $${Math.floor(potentialSavings)}-${Math.floor(potentialSavings * 1.5)}/month by auditing recurring subscriptions`,
             type: 'spending',
@@ -243,7 +238,7 @@ export const useSmartWins = (user: User | null) => {
         
         if (topCategory.amount > monthlyIncome * 0.2) {
           wins.push({
-            id: generateId(),
+            id: '', // Let Supabase generate UUID
             title: `Reduce ${topCategory.category} Spending`,
             description: `Cutting ${topCategory.category} spending by 15% would save you $${Math.floor(topCategory.amount * 0.15)} monthly`,
             type: 'spending',
@@ -272,7 +267,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (totalMonthlyGoalAmount > 100) {
         wins.push({
-          id: generateId(),
+          id: '', // Let Supabase generate UUID
           title: "Automate Goal Contributions",
           description: `Automatically save $${Math.ceil(totalMonthlyGoalAmount / 100) * 100} monthly to reach your goals faster`,
           type: 'goal',
@@ -297,7 +292,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (additionalSavingsNeeded > 100) {
         wins.push({
-          id: generateId(),
+          id: '', // Let Supabase generate UUID
           title: "Boost Your Savings Rate",
           description: `Saving an additional $${Math.ceil(additionalSavingsNeeded / 50) * 50}/month would get you to the recommended 20% savings rate`,
           type: 'savings',
@@ -313,7 +308,7 @@ export const useSmartWins = (user: User | null) => {
     // 5. Check for investment opportunity
     if (totalBalance > 10000 && !bankAccounts.some(acc => acc.type === 'investment')) {
       wins.push({
-        id: generateId(),
+        id: '', // Let Supabase generate UUID
         title: "Start Investing",
         description: `Investing just 10% of your balance ($${Math.floor(totalBalance * 0.1)}) could yield $${Math.floor(totalBalance * 0.1 * 0.07)} annually at 7% average return`,
         type: 'investment',
@@ -329,7 +324,7 @@ export const useSmartWins = (user: User | null) => {
     if (wins.length < 3) {
       if (wins.length < 1) {
         wins.push({
-          id: generateId(),
+          id: '', // Let Supabase generate UUID
           title: "Track Your Spending",
           description: "Most people find 10-15% in savings just by tracking expenses for 30 days",
           type: 'spending',
@@ -343,7 +338,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (wins.length < 2) {
         wins.push({
-          id: generateId(),
+          id: '', // Let Supabase generate UUID
           title: "Set Up Automatic Savings",
           description: "Automating your savings can increase your savings rate by up to 20%",
           type: 'savings',
@@ -357,7 +352,7 @@ export const useSmartWins = (user: User | null) => {
       
       if (wins.length < 3) {
         wins.push({
-          id: generateId(),
+          id: '', // Let Supabase generate UUID
           title: "Create an Emergency Fund",
           description: "Start with $500 as a mini emergency fund to handle unexpected expenses",
           type: 'savings',
