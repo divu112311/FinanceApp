@@ -38,6 +38,38 @@ interface LearningCenterProps {
   onXPUpdate: (points: number) => void;
 }
 
+// Move utility functions outside the component
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'video': return Video;
+    case 'article': return FileText;
+    case 'course': return Users;
+    case 'quiz': return Brain;
+    case 'interactive': return Activity;
+    default: return BookOpen;
+  }
+};
+
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case 'video': return 'VIDEO';
+    case 'article': return 'ARTICLE';
+    case 'course': return 'COURSE';
+    case 'quiz': return 'QUIZ';
+    case 'interactive': return 'INTERACTIVE';
+    default: return 'LESSON';
+  }
+};
+
+const getDifficultyColor = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Beginner': return 'bg-green-100 text-green-800 border-green-200';
+    case 'Intermediate': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Advanced': return 'bg-purple-100 text-purple-800 border-purple-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
 const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate }) => {
   const { 
     modules, 
@@ -273,37 +305,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video': return Video;
-      case 'article': return FileText;
-      case 'course': return Users;
-      case 'quiz': return Brain;
-      case 'interactive': return Activity;
-      default: return BookOpen;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'video': return 'VIDEO';
-      case 'article': return 'ARTICLE';
-      case 'course': return 'COURSE';
-      case 'quiz': return 'QUIZ';
-      case 'interactive': return 'INTERACTIVE';
-      default: return 'LESSON';
-    }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Intermediate': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Advanced': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   if (regularLoading && aiLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -394,7 +395,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-purple-400 rounded-lg flex items-center justify-center">
-                      {getTypeIcon(todaysPractice.content_type)({ className: "h-6 w-6 text-white" })}
+                      {React.createElement(getTypeIcon(todaysPractice.content_type), { className: "h-6 w-6 text-white" })}
                     </div>
                     
                     <div className="flex-1">
