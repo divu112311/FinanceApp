@@ -137,31 +137,29 @@ RESPONSE GUIDELINES:
 
 CURRENT CONTEXT: The user just said: "${message}"`
 
-    // Check for OpenRouter API key
-    const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
+    // Check for OpenAI API key
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
     console.log('🔑 API KEY STATUS:', {
-      hasOpenRouterKey: !!openRouterKey,
-      keyLength: openRouterKey?.length || 0
+      hasOpenAIKey: !!openaiKey,
+      keyLength: openaiKey?.length || 0
     })
     
-    if (!openRouterKey) {
-      console.log('⚠️ OpenRouter API key not found, using enhanced fallback')
-      throw new Error('OpenRouter API key not configured')
+    if (!openaiKey) {
+      console.log('⚠️ OpenAI API key not found, using enhanced fallback')
+      throw new Error('OpenAI API key not configured')
     }
 
-    console.log('🤖 CALLING OPENROUTER API...')
+    console.log('🤖 CALLING OPENAI API...')
 
-    // Call OpenRouter API with free model
-    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
+        'Authorization': `Bearer ${openaiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://doughjo.app',
-        'X-Title': 'DoughJo AI Financial Sensei',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.1-8b-instruct:free', // Free model with good performance
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -174,67 +172,25 @@ CURRENT CONTEXT: The user just said: "${message}"`
         ],
         max_tokens: 400,
         temperature: 0.7,
-        top_p: 0.9,
       }),
     })
 
-    console.log('📡 OPENROUTER RESPONSE:', {
-      status: openRouterResponse.status,
-      statusText: openRouterResponse.statusText,
-      ok: openRouterResponse.ok
+    console.log('📡 OPENAI RESPONSE:', {
+      status: openaiResponse.status,
+      statusText: openaiResponse.statusText,
+      ok: openaiResponse.ok
     })
 
-    if (!openRouterResponse.ok) {
-      const errorText = await openRouterResponse.text()
-      console.error(`❌ OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
-      
-      // If rate limited on free model, try backup model
-      if (openRouterResponse.status === 429) {
-        console.log('🔄 TRYING BACKUP MODEL...')
-        
-        const backupResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openRouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://doughjo.app',
-            'X-Title': 'DoughJo AI Financial Sensei',
-          },
-          body: JSON.stringify({
-            model: 'google/gemma-2-9b-it:free', // Alternative free model
-            messages: [
-              {
-                role: 'user',
-                content: `${systemPrompt}\n\nUser message: ${message}`
-              }
-            ],
-            max_tokens: 400,
-            temperature: 0.7,
-          }),
-        })
-        
-        if (backupResponse.ok) {
-          const backupData = await backupResponse.json()
-          const aiResponse = backupData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
-          
-          console.log('✅ BACKUP MODEL SUCCESS')
-          return new Response(
-            JSON.stringify({ response: aiResponse }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200,
-            },
-          )
-        }
-      }
-      
-      throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text()
+      console.error(`❌ OpenAI API error: ${openaiResponse.status} - ${errorText}`)
+      throw new Error(`OpenAI API error: ${openaiResponse.status} - ${errorText}`)
     }
 
-    const openRouterData = await openRouterResponse.json()
-    console.log('✅ OPENROUTER SUCCESS')
+    const openaiData = await openaiResponse.json()
+    console.log('✅ OPENAI SUCCESS')
     
-    const aiResponse = openRouterData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
+    const aiResponse = openaiData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
 
     console.log('📤 SENDING RESPONSE:', {
       responseLength: aiResponse.length,
@@ -242,7 +198,11 @@ CURRENT CONTEXT: The user just said: "${message}"`
     })
 
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify({ 
+        response: aiResponse,
+        model: 'gpt-4o-mini',
+        tokens: openaiData.usage?.total_tokens || 0
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

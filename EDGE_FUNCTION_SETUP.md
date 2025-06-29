@@ -33,7 +33,7 @@ If you don't have an OpenAI API key yet:
 
 Once you've added the API key:
 
-1. Go back to your LuxeFi app
+1. Go back to your DoughJo app
 2. Try sending a message in the chat
 3. You should now get intelligent AI responses instead of generic ones!
 
@@ -65,7 +65,7 @@ You can monitor your Edge Function:
 
 ## What Happens Next
 
-Once configured, your LuxeBot will:
+Once configured, your DoughJo chatbot will:
 - ✅ Provide personalized financial advice
 - ✅ Remember your conversation history
 - ✅ Reference your goals and progress
