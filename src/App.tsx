@@ -129,7 +129,7 @@ function App() {
               <div className="flex items-center space-x-3">
                 <div className="text-right">
                   <div className="text-sm font-medium text-[#333333]">
-                    Welcome back, {displayName}!
+                    Welcome, {displayName}!
                   </div>
                   <div className="text-xs text-gray-500">
                     {fullName}
