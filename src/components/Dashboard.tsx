@@ -309,61 +309,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, xp }) => {
   return (
     <div className="space-y-6">
       {/* Compact Header - Same height as other pages */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-[#2A6F68] via-[#2A6F68] to-[#B76E79] rounded-2xl p-6 text-white relative overflow-hidden"
-      >
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full transform translate-x-16 -translate-y-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full transform -translate-x-12 translate-y-12"></div>
-        </div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <motion.div
-                animate={{ 
-                  rotate: [0, 5, -5, 0],
-                  scale: [1, 1.05, 1]
-                }}
-                transition={{ 
-                  duration: 3,
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-                className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center p-1"
-              >
-                <img 
-                  src={doughjoMascot} 
-                  alt="DoughJo" 
-                  className="w-full h-full object-contain rounded-lg"
-                />
-              </motion.div>
-              <div>
-                <h1 className="text-2xl font-bold mb-1">Dough Vault</h1>
-                <p className="text-white/90">Your complete financial overview and insights</p>
-              </div>
-            </div>
-            
-            {/* Compact Quick Stats */}
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center space-x-2 bg-gradient-to-r ${beltRank.color} text-white rounded-lg px-3 py-1`}>
-                <span className="text-sm">{beltRank.emoji}</span>
-                <span className="text-sm font-medium">{beltRank.name}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-1">
-                <Award className="h-4 w-4" />
-                <span className="text-sm">Level {level}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-white/20 rounded-lg px-3 py-1">
-                <span className="text-sm">{xp?.points || 0} XP</span>
-              </div>
-            </div>
+      <div className="bg-[#2A6F68] rounded-xl p-6 text-white relative overflow-hidden flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <BarChart3 className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Dough Vault</h1>
+            <p className="text-white/90 text-sm">Your complete financial overview and insights</p>
           </div>
         </div>
-      </motion.div>
+        
+        <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
+          <span className="text-white font-medium">White Belt</span>
+          <span className="mx-2 text-white/60">•</span>
+          <span className="text-white/90">{xp?.points || 0} XP</span>
+        </div>
+      </div>
 
       {/* Side-by-side Account Summary (Left) and Financial Health Score (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
