@@ -157,6 +157,23 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     setSelectedModule(null);
   };
 
+  const handleStartPractice = () => {
+    // Create a mock module for the budgeting quiz
+    const mockModule = {
+      id: 'budgeting-mastery-quiz',
+      title: 'Budgeting Mastery',
+      description: 'Learn practical budgeting methods that fit real life, including the 50/30/20 rule and zero-based budgeting techniques.',
+      content_type: 'quiz',
+      difficulty: 'Beginner',
+      category: 'Budgeting',
+      duration_minutes: 18,
+      xp_reward: 25
+    };
+    
+    setSelectedModule(mockModule);
+    setShowQuiz(true);
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'video': return Video;
@@ -215,42 +232,47 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         <div className="grid grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
-            {/* Featured Learning Module */}
+            {/* Today's Practice */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Star className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-[#333333]">Featured Learning Module</h2>
+                <h2 className="text-lg font-bold text-[#333333]">Today's Practice</h2>
               </div>
               
-              <div className="bg-gradient-to-r from-teal-500 to-purple-500 rounded-xl p-6 text-white">
-                <div className="flex items-center space-x-2 mb-1">
-                  <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Featured</div>
-                  <div className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">Beginner</div>
-                </div>
-                <h3 className="text-xl font-bold mb-2">Personal Finance 101: Getting Started</h3>
-                <p className="text-white/80 text-sm mb-4">
-                  Learn the fundamental concepts of personal finance including budgeting, saving, and basic investing principles.
-                </p>
-                
-                <div className="flex items-center space-x-4 mb-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4" />
-                    <span>45 min</span>
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-purple-400 rounded-lg flex items-center justify-center">
+                    <Target className="h-6 w-6 text-white" />
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Zap className="h-4 w-4 text-yellow-300" />
-                    <span>+100 XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <BookOpen className="h-4 w-4" />
-                    <span>Financial Basics</span>
-                  </div>
-                </div>
-                
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Completed</div>
-                    <CheckCircle className="h-5 w-5 text-green-300" />
+                  
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Budgeting Mastery</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Learn practical budgeting methods that fit real life, including the 50/30/20 rule and zero-based budgeting techniques.
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <div className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                        Beginner
+                      </div>
+                      <div className="flex items-center space-x-1 text-gray-500 text-xs">
+                        <Clock className="h-3 w-3" />
+                        <span>18 min practice</span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-yellow-500 text-xs">
+                        <Zap className="h-3 w-3" />
+                        <span>+25 XP</span>
+                      </div>
+                    </div>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleStartPractice}
+                      className="px-4 py-2 bg-[#2A6F68] text-white rounded-lg hover:bg-[#235A54] transition-colors text-sm font-medium"
+                    >
+                      Start Practice
+                    </motion.button>
                   </div>
                 </div>
               </div>

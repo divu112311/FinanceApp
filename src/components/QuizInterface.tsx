@@ -56,6 +56,17 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('=== QUIZ INTERFACE MOUNTED ===');
     console.log('Module ID:', moduleId);
     console.log('Module Title:', moduleTitle);
+    
+    // If this is the budgeting mastery quiz, use hardcoded questions
+    if (moduleId === 'budgeting-mastery-quiz') {
+      const budgetingQuestions = getBudgetingQuizQuestions();
+      setQuestions(budgetingQuestions);
+      setUserAnswers(new Array(budgetingQuestions.length).fill(''));
+      setLoading(false);
+      return;
+    }
+    
+    // Otherwise fetch from database
     fetchQuizQuestions();
   }, [moduleId]);
 
@@ -68,6 +79,66 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       return () => clearInterval(timer);
     }
   }, [quizCompleted]);
+
+  const getBudgetingQuizQuestions = (): QuizQuestion[] => {
+    return [
+      {
+        id: '1',
+        question_text: 'What does the 50/30/20 budgeting rule recommend for needs?',
+        options: ['30% of income', '50% of income', '20% of income', '70% of income'],
+        correct_answer: '50% of income',
+        explanation: 'The 50/30/20 rule suggests allocating 50% of your after-tax income to needs, 30% to wants, and 20% to savings and debt repayment.',
+        points: 5
+      },
+      {
+        id: '2',
+        question_text: 'Which of the following is considered a "need" in budgeting?',
+        options: ['Netflix subscription', 'Housing costs', 'Dining out', 'New clothes'],
+        correct_answer: 'Housing costs',
+        explanation: 'Housing costs (rent/mortgage, utilities) are essential needs, while entertainment subscriptions and dining out are typically categorized as wants.',
+        points: 5
+      },
+      {
+        id: '3',
+        question_text: 'What is zero-based budgeting?',
+        options: [
+          'Spending zero money each month', 
+          'Assigning every dollar of income to a specific purpose', 
+          'Having zero debt', 
+          'Saving zero money'
+        ],
+        correct_answer: 'Assigning every dollar of income to a specific purpose',
+        explanation: 'Zero-based budgeting means giving every dollar a job so your income minus your expenses equals zero. This doesn\'t mean spending everything, but rather allocating all income to categories including savings and investments.',
+        points: 5
+      },
+      {
+        id: '4',
+        question_text: 'Which budgeting method is best for variable income?',
+        options: [
+          'Envelope system', 
+          'Pay yourself first', 
+          'Zero-based budgeting', 
+          'Priority-based budgeting'
+        ],
+        correct_answer: 'Priority-based budgeting',
+        explanation: 'Priority-based budgeting works well for variable income because it focuses on covering essential expenses first, then moving down your priority list as more income becomes available.',
+        points: 5
+      },
+      {
+        id: '5',
+        question_text: 'What is the envelope budgeting system?',
+        options: [
+          'Putting your budget in an envelope and mailing it to yourself', 
+          'Allocating cash to different envelopes for different spending categories', 
+          'Saving money in envelopes', 
+          'Paying bills with envelopes'
+        ],
+        correct_answer: 'Allocating cash to different envelopes for different spending categories',
+        explanation: 'The envelope system involves putting cash into physical or digital envelopes labeled for different spending categories. When an envelope is empty, you stop spending in that category until the next budget period.',
+        points: 5
+      }
+    ];
+  };
 
   const fetchQuizQuestions = async () => {
     console.log('=== FETCHING QUIZ QUESTIONS ===');
