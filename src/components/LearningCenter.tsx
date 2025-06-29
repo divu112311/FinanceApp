@@ -481,7 +481,7 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
               
               <div className="space-y-3">
-                {/* Add new video lesson */}
+                {/* Credit Score Fundamentals Video */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -640,35 +640,80 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
               <h2 className="text-lg font-bold text-[#333333]">Explore More</h2>
               
               <div className="space-y-3">
-                {recommendedModules.slice(3, 6).map((module, index) => {
-                  const TypeIcon = getTypeIcon(module.content_type);
-                  
-                  return (
-                    <div key={module.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <TypeIcon className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className={`px-2 py-0.5 ${getDifficultyColor(module.difficulty)} rounded text-xs font-medium`}>
-                                {module.difficulty}
-                              </span>
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
-                                {getTypeLabel(module.content_type)}
-                              </span>
-                            </div>
-                            <h3 className="font-medium text-gray-900">{module.title}</h3>
-                            <div className="text-xs text-gray-500">
-                              {module.duration_minutes} MIN {getTypeLabel(module.content_type)}
-                            </div>
-                          </div>
+                {/* Debt Avalanche vs. Debt Snowball */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            ARTICLE
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Debt Avalanche vs. Debt Snowball</h3>
+                        <div className="text-xs text-gray-500">
+                          15 MIN ARTICLE
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+
+                {/* Investment Basics for Beginners */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Video className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            VIDEO
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Investment Basics for Beginners</h3>
+                        <div className="text-xs text-gray-500">
+                          22 MIN VIDEO
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Investment 101 */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className={`px-2 py-0.5 ${getDifficultyColor('Beginner')} rounded text-xs font-medium`}>
+                            Beginner
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded text-xs font-medium">
+                            COURSE
+                          </span>
+                        </div>
+                        <h3 className="font-medium text-gray-900">Investment 101</h3>
+                        <div className="text-xs text-gray-500">
+                          45 MIN COURSE
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
