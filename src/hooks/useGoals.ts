@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface Goal {
   id: string;
@@ -24,98 +24,133 @@ export const useGoals = (user: User | null) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && isSupabaseConfigured) {
       fetchGoals();
     }
   }, [user]);
 
   const fetchGoals = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot fetch goals: User not authenticated or Supabase not configured');
+      return;
+    }
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('goals')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching goals:', error);
+        throw error;
+      } else {
+        setGoals(data || []);
+      }
+    } catch (error) {
       console.error('Error fetching goals:', error);
-    } else {
-      setGoals(data || []);
+      // Set empty goals array on error to prevent UI crashes
+      setGoals([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const createGoal = async (goal: Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot create goal: User not authenticated or Supabase not configured');
+      return null;
+    }
 
-    const { data, error } = await supabase
-      .from('goals')
-      .insert({
-        user_id: user.id,
-        ...goal,
-        status: goal.status || 'active',
-        priority_level: goal.priority_level || 'medium',
-        current_amount: goal.saved_amount || goal.current_amount || 0,
-        target_date: goal.deadline || goal.target_date,
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .insert({
+          user_id: user.id,
+          ...goal,
+          status: goal.status || 'active',
+          priority_level: goal.priority_level || 'medium',
+          current_amount: goal.saved_amount || goal.current_amount || 0,
+          target_date: goal.deadline || goal.target_date,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Error creating goal:', error);
+        return null;
+      }
+
+      setGoals(prev => [data, ...prev]);
+      return data;
+    } catch (error) {
       console.error('Error creating goal:', error);
       return null;
     }
-
-    setGoals(prev => [data, ...prev]);
-    return data;
   };
 
   const updateGoal = async (id: string, updates: Partial<Goal>) => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('goals')
-      .update({
-        ...updates,
-        // Sync current_amount with saved_amount if either is updated
-        current_amount: updates.saved_amount !== undefined ? updates.saved_amount : updates.current_amount,
-        // Sync target_date with deadline if either is updated
-        target_date: updates.deadline !== undefined ? updates.deadline : updates.target_date,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating goal:', error);
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot update goal: User not authenticated or Supabase not configured');
       return null;
     }
 
-    setGoals(prev => prev.map(goal => goal.id === id ? data : goal));
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .update({
+          ...updates,
+          // Sync current_amount with saved_amount if either is updated
+          current_amount: updates.saved_amount !== undefined ? updates.saved_amount : updates.current_amount,
+          // Sync target_date with deadline if either is updated
+          target_date: updates.deadline !== undefined ? updates.deadline : updates.target_date,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating goal:', error);
+        return null;
+      }
+
+      setGoals(prev => prev.map(goal => goal.id === id ? data : goal));
+      return data;
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      return null;
+    }
   };
 
   const deleteGoal = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('goals')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error deleting goal:', error);
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot delete goal: User not authenticated or Supabase not configured');
       return false;
     }
 
-    setGoals(prev => prev.filter(goal => goal.id !== id));
-    return true;
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting goal:', error);
+        return false;
+      }
+
+      setGoals(prev => prev.filter(goal => goal.id !== id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      return false;
+    }
   };
 
   const updateGoalStatus = async (id: string, status: string) => {

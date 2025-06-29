@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useBankAccounts } from './useBankAccounts';
 import { useGoals } from './useGoals';
 import { useTransactions } from './useTransactions';
@@ -52,13 +52,16 @@ export const useAILearning = (user: User | null) => {
   const { profile, extendedProfile } = useUserProfile(user);
 
   useEffect(() => {
-    if (user) {
+    if (user && isSupabaseConfigured) {
       fetchAILearningContent();
     }
   }, [user]);
 
   const fetchAILearningContent = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot fetch AI learning content: User not authenticated or Supabase not configured');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -159,7 +162,10 @@ export const useAILearning = (user: User | null) => {
   };
 
   const generateAILearningContent = async () => {
-    if (!user) return;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot generate AI learning content: User not authenticated or Supabase not configured');
+      return null;
+    }
 
     setGenerating(true);
     setError(null);
@@ -175,7 +181,7 @@ export const useAILearning = (user: User | null) => {
 
       if (error) {
         console.error('Error generating AI learning content:', error);
-        throw error;
+        throw new Error(`Failed to send a request to the Edge Function: ${error.message}`);
       }
 
       console.log('AI learning content generated:', data);
@@ -474,7 +480,7 @@ export const useAILearning = (user: User | null) => {
   };
 
   const startModule = async (moduleId: string) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured) return null;
 
     try {
       console.log('Starting AI module:', moduleId);
@@ -544,7 +550,7 @@ export const useAILearning = (user: User | null) => {
   };
 
   const completeModule = async (moduleId: string, timeSpent: number = 0) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured) return null;
 
     try {
       console.log('Completing AI module:', moduleId);
@@ -588,7 +594,7 @@ export const useAILearning = (user: User | null) => {
   };
 
   const generateQuizQuestions = async (topic: string, difficulty: string, count: number = 5) => {
-    if (!user) return [];
+    if (!user || !isSupabaseConfigured) return [];
 
     try {
       console.log('Generating quiz questions:', { topic, difficulty, count });
@@ -815,7 +821,7 @@ export const useAILearning = (user: User | null) => {
   };
 
   const generateArticleContent = async (topic: string, difficulty: string) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured) return null;
 
     try {
       console.log('Generating article content:', { topic, difficulty });

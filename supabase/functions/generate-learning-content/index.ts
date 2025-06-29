@@ -25,10 +25,15 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client with service role key for full data access
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for admin access
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables')
+      throw new Error('Supabase configuration not found')
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     console.log('🔍 FETCHING USER DATA...')
 
@@ -235,7 +240,8 @@ IMPORTANT GUIDELINES:
             modules = generateLocalModules(userContext)
           }
         } else {
-          console.error('Error generating AI modules:', await aiResponse.text())
+          const errorText = await aiResponse.text()
+          console.error('Error generating AI modules:', errorText)
           // Fall back to local generation
           modules = generateLocalModules(userContext)
         }
