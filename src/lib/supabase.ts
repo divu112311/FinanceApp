@@ -126,27 +126,212 @@ export interface Database {
           id: string;
           user_id: string | null;
           name: string | null;
+          description: string | null; // New field
           target_amount: number | null;
           saved_amount: number | null;
+          current_amount: number | null; // New field
           deadline: string | null;
+          target_date: string | null; // New field
+          goal_type: string | null; // New field
+          priority_level: string | null; // New field
+          status: string | null; // New field
           created_at: string | null;
+          updated_at: string | null; // New field
         };
         Insert: {
           id?: string;
           user_id?: string | null;
           name?: string | null;
+          description?: string | null;
           target_amount?: number | null;
           saved_amount?: number | null;
+          current_amount?: number | null;
           deadline?: string | null;
+          target_date?: string | null;
+          goal_type?: string | null;
+          priority_level?: string | null;
+          status?: string | null;
           created_at?: string | null;
+          updated_at?: string | null;
         };
         Update: {
           id?: string;
           user_id?: string | null;
           name?: string | null;
+          description?: string | null;
           target_amount?: number | null;
           saved_amount?: number | null;
+          current_amount?: number | null;
           deadline?: string | null;
+          target_date?: string | null;
+          goal_type?: string | null;
+          priority_level?: string | null;
+          status?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      learning_modules: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          content_type: string;
+          difficulty: string;
+          category: string;
+          duration_minutes: number;
+          xp_reward: number;
+          required_level: number;
+          prerequisites: string[];
+          prerequisites_new: any; // New field
+          content_data: any; // New field
+          is_active: boolean; // New field
+          tags: string[];
+          is_featured: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          content_type: string;
+          difficulty: string;
+          category: string;
+          duration_minutes: number;
+          xp_reward?: number;
+          required_level?: number;
+          prerequisites?: string[];
+          prerequisites_new?: any;
+          content_data?: any;
+          is_active?: boolean;
+          tags?: string[];
+          is_featured?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          content_type?: string;
+          difficulty?: string;
+          category?: string;
+          duration_minutes?: number;
+          xp_reward?: number;
+          required_level?: number;
+          prerequisites?: string[];
+          prerequisites_new?: any;
+          content_data?: any;
+          is_active?: boolean;
+          tags?: string[];
+          is_featured?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      user_learning_progress: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          module_id: string | null;
+          status: string;
+          progress_percentage: number;
+          time_spent_minutes: number;
+          completed_at: string | null;
+          started_at: string | null;
+          last_accessed_at: string | null;
+          path_id: string | null; // New field
+          updated_at: string | null; // New field
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          module_id?: string | null;
+          status?: string;
+          progress_percentage?: number;
+          time_spent_minutes?: number;
+          completed_at?: string | null;
+          started_at?: string | null;
+          last_accessed_at?: string | null;
+          path_id?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          module_id?: string | null;
+          status?: string;
+          progress_percentage?: number;
+          time_spent_minutes?: number;
+          completed_at?: string | null;
+          started_at?: string | null;
+          last_accessed_at?: string | null;
+          path_id?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      learning_paths_new: {
+        Row: {
+          path_id: string;
+          name: string;
+          description: string | null;
+          target_audience: string | null;
+          estimated_duration: number | null;
+          completion_badge_id: string | null;
+          is_featured: boolean | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          path_id?: string;
+          name: string;
+          description?: string | null;
+          target_audience?: string | null;
+          estimated_duration?: number | null;
+          completion_badge_id?: string | null;
+          is_featured?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          path_id?: string;
+          name?: string;
+          description?: string | null;
+          target_audience?: string | null;
+          estimated_duration?: number | null;
+          completion_badge_id?: string | null;
+          is_featured?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+      learning_path_modules: {
+        Row: {
+          path_module_id: string;
+          path_id: string;
+          module_id: string;
+          sequence_order: number;
+          is_required: boolean | null;
+          unlock_conditions: any | null;
+          created_at: string | null;
+        };
+        Insert: {
+          path_module_id?: string;
+          path_id: string;
+          module_id: string;
+          sequence_order: number;
+          is_required?: boolean | null;
+          unlock_conditions?: any | null;
+          created_at?: string | null;
+        };
+        Update: {
+          path_module_id?: string;
+          path_id?: string;
+          module_id?: string;
+          sequence_order?: number;
+          is_required?: boolean | null;
+          unlock_conditions?: any | null;
           created_at?: string | null;
         };
       };

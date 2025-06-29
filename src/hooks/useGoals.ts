@@ -6,10 +6,17 @@ interface Goal {
   id: string;
   user_id: string | null;
   name: string | null;
+  description: string | null; // New field
   target_amount: number | null;
   saved_amount: number | null;
+  current_amount: number | null; // New field (alias for saved_amount)
   deadline: string | null;
+  target_date: string | null; // New field (alias for deadline)
+  goal_type: string | null; // New field
+  priority_level: string | null; // New field
+  status: string | null; // New field
   created_at: string | null;
+  updated_at: string | null; // New field
 }
 
 export const useGoals = (user: User | null) => {
@@ -40,7 +47,7 @@ export const useGoals = (user: User | null) => {
     setLoading(false);
   };
 
-  const createGoal = async (goal: Omit<Goal, 'id' | 'user_id' | 'created_at'>) => {
+  const createGoal = async (goal: Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -48,6 +55,11 @@ export const useGoals = (user: User | null) => {
       .insert({
         user_id: user.id,
         ...goal,
+        status: goal.status || 'active',
+        priority_level: goal.priority_level || 'medium',
+        current_amount: goal.saved_amount || goal.current_amount || 0,
+        target_date: goal.deadline || goal.target_date,
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -66,7 +78,14 @@ export const useGoals = (user: User | null) => {
 
     const { data, error } = await supabase
       .from('goals')
-      .update(updates)
+      .update({
+        ...updates,
+        // Sync current_amount with saved_amount if either is updated
+        current_amount: updates.saved_amount !== undefined ? updates.saved_amount : updates.current_amount,
+        // Sync target_date with deadline if either is updated
+        target_date: updates.deadline !== undefined ? updates.deadline : updates.target_date,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .eq('user_id', user.id)
       .select()
@@ -99,12 +118,22 @@ export const useGoals = (user: User | null) => {
     return true;
   };
 
+  const updateGoalStatus = async (id: string, status: string) => {
+    return updateGoal(id, { status });
+  };
+
+  const updateGoalPriority = async (id: string, priority: string) => {
+    return updateGoal(id, { priority_level: priority });
+  };
+
   return {
     goals,
     loading,
     createGoal,
     updateGoal,
     deleteGoal,
+    updateGoalStatus,
+    updateGoalPriority,
     refetch: fetchGoals,
   };
 };

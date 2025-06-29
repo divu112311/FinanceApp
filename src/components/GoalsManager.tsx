@@ -19,7 +19,9 @@ import {
   Shield,
   X,
   Lightbulb,
-  TrendingDown
+  TrendingDown,
+  AlertTriangle,
+  Flag
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useGoals } from '../hooks/useGoals';
@@ -31,22 +33,28 @@ interface GoalsManagerProps {
 
 interface GoalFormData {
   name: string;
+  description: string; // New field
   target_amount: number;
   saved_amount: number;
   deadline: string;
-  category: string;
+  goal_type: string; // New field
+  priority_level: string; // New field
+  status: string; // New field
 }
 
 const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
-  const { goals, loading, createGoal, updateGoal, deleteGoal } = useGoals(user);
+  const { goals, loading, createGoal, updateGoal, deleteGoal, updateGoalStatus, updateGoalPriority } = useGoals(user);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [formData, setFormData] = useState<GoalFormData>({
     name: '',
+    description: '',
     target_amount: 0,
     saved_amount: 0,
     deadline: '',
-    category: 'savings'
+    goal_type: 'savings',
+    priority_level: 'medium',
+    status: 'active'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,7 +66,22 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
     { id: 'vacation', label: 'Vacation', icon: Plane, color: 'from-orange-400 to-orange-600' },
     { id: 'education', label: 'Education', icon: GraduationCap, color: 'from-indigo-400 to-indigo-600' },
     { id: 'wedding', label: 'Wedding', icon: Heart, color: 'from-pink-400 to-pink-600' },
+    { id: 'investment', label: 'Investment', icon: TrendingUp, color: 'from-teal-400 to-teal-600' },
+    { id: 'debt', label: 'Debt Payoff', icon: TrendingDown, color: 'from-red-400 to-red-600' },
     { id: 'other', label: 'Other', icon: Gift, color: 'from-gray-400 to-gray-600' }
+  ];
+
+  const priorityLevels = [
+    { id: 'high', label: 'High Priority', color: 'text-red-600 bg-red-100', icon: AlertTriangle },
+    { id: 'medium', label: 'Medium Priority', color: 'text-yellow-600 bg-yellow-100', icon: Flag },
+    { id: 'low', label: 'Low Priority', color: 'text-green-600 bg-green-100', icon: CheckCircle }
+  ];
+
+  const statusOptions = [
+    { id: 'active', label: 'Active', color: 'text-blue-600 bg-blue-100' },
+    { id: 'completed', label: 'Completed', color: 'text-green-600 bg-green-100' },
+    { id: 'paused', label: 'Paused', color: 'text-yellow-600 bg-yellow-100' },
+    { id: 'cancelled', label: 'Cancelled', color: 'text-red-600 bg-red-100' }
   ];
 
   const handleOpenForm = (goal?: any) => {
@@ -66,19 +89,25 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
       setEditingGoal(goal);
       setFormData({
         name: goal.name || '',
+        description: goal.description || '',
         target_amount: goal.target_amount || 0,
-        saved_amount: goal.saved_amount || 0,
-        deadline: goal.deadline || '',
-        category: goal.category || 'savings'
+        saved_amount: goal.saved_amount || goal.current_amount || 0,
+        deadline: goal.deadline || goal.target_date || '',
+        goal_type: goal.goal_type || 'savings',
+        priority_level: goal.priority_level || 'medium',
+        status: goal.status || 'active'
       });
     } else {
       setEditingGoal(null);
       setFormData({
         name: '',
+        description: '',
         target_amount: 0,
         saved_amount: 0,
         deadline: '',
-        category: 'savings'
+        goal_type: 'savings',
+        priority_level: 'medium',
+        status: 'active'
       });
     }
     setShowForm(true);
@@ -89,10 +118,13 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
     setEditingGoal(null);
     setFormData({
       name: '',
+      description: '',
       target_amount: 0,
       saved_amount: 0,
       deadline: '',
-      category: 'savings'
+      goal_type: 'savings',
+      priority_level: 'medium',
+      status: 'active'
     });
     setIsSubmitting(false);
   };
@@ -136,7 +168,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
       await updateGoal(goalId, { saved_amount: newAmount });
       
       // Award XP for progress updates
-      if (onXPUpdate && newAmount > (goal.saved_amount || 0)) {
+      if (onXPUpdate && newAmount > (goal.saved_amount || goal.current_amount || 0)) {
         onXPUpdate(10);
       }
     }
@@ -144,6 +176,14 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
 
   const getCategoryInfo = (categoryId: string) => {
     return goalCategories.find(cat => cat.id === categoryId) || goalCategories[1];
+  };
+
+  const getPriorityInfo = (priorityId: string) => {
+    return priorityLevels.find(p => p.id === priorityId) || priorityLevels[1];
+  };
+
+  const getStatusInfo = (statusId: string) => {
+    return statusOptions.find(s => s.id === statusId) || statusOptions[0];
   };
 
   const formatCurrency = (amount: number) => {
@@ -180,11 +220,14 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
 
   // Calculate insights
   const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
-  const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || 0), 0);
+  const totalSavedAmount = goals.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0);
   const overallProgress = totalTargetAmount > 0 ? (totalSavedAmount / totalTargetAmount) * 100 : 0;
-  const completedGoals = goals.filter(goal => getProgressPercentage(goal.saved_amount || 0, goal.target_amount || 0) >= 100);
+  const completedGoals = goals.filter(goal => 
+    goal.status === 'completed' || 
+    getProgressPercentage(goal.saved_amount || goal.current_amount || 0, goal.target_amount || 0) >= 100
+  );
   const nearDeadlineGoals = goals.filter(goal => {
-    const days = getDaysUntilDeadline(goal.deadline || '');
+    const days = getDaysUntilDeadline(goal.deadline || goal.target_date || '');
     return days !== null && days <= 30 && days >= 0;
   });
 
@@ -207,7 +250,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
         </motion.button>
       </div>
 
-      {/* Simple Form */}
+      {/* Enhanced Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -240,6 +283,20 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Emergency Fund, Dream Vacation"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-[#333333] mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe your goal and why it's important to you"
+                  rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
                 />
               </div>
@@ -283,19 +340,55 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
                 </div>
               </div>
 
-              {/* Category */}
+              {/* Goal Type */}
               <div>
                 <label className="block text-sm font-medium text-[#333333] mb-1">
-                  Category
+                  Goal Type
                 </label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  value={formData.goal_type}
+                  onChange={(e) => setFormData(prev => ({ ...prev, goal_type: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
                 >
                   {goalCategories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Priority Level */}
+              <div>
+                <label className="block text-sm font-medium text-[#333333] mb-1">
+                  Priority Level
+                </label>
+                <select
+                  value={formData.priority_level}
+                  onChange={(e) => setFormData(prev => ({ ...prev, priority_level: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
+                >
+                  {priorityLevels.map(priority => (
+                    <option key={priority.id} value={priority.id}>
+                      {priority.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-[#333333] mb-1">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2A6F68] focus:border-transparent transition-all"
+                >
+                  {statusOptions.map(status => (
+                    <option key={status.id} value={status.id}>
+                      {status.label}
                     </option>
                   ))}
                 </select>
@@ -385,11 +478,14 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
               {goals.map((goal, index) => {
-                const categoryInfo = getCategoryInfo(goal.category || 'savings');
+                const categoryInfo = getCategoryInfo(goal.goal_type || 'savings');
+                const priorityInfo = getPriorityInfo(goal.priority_level || 'medium');
+                const statusInfo = getStatusInfo(goal.status || 'active');
                 const CategoryIcon = categoryInfo.icon;
-                const progress = getProgressPercentage(goal.saved_amount || 0, goal.target_amount || 0);
-                const daysLeft = getDaysUntilDeadline(goal.deadline || '');
-                const isCompleted = progress >= 100;
+                const PriorityIcon = priorityInfo.icon;
+                const progress = getProgressPercentage(goal.saved_amount || goal.current_amount || 0, goal.target_amount || 0);
+                const daysLeft = getDaysUntilDeadline(goal.deadline || goal.target_date || '');
+                const isCompleted = goal.status === 'completed' || progress >= 100;
                 
                 return (
                   <motion.div
@@ -414,19 +510,27 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
                         </div>
                       </div>
                       
-                      {isCompleted && (
-                        <div className="flex items-center space-x-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                          <CheckCircle className="h-3 w-3" />
-                          <span>Complete</span>
+                      <div className="flex flex-col items-end space-y-1">
+                        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                          <span>{statusInfo.label}</span>
                         </div>
-                      )}
+                        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${priorityInfo.color}`}>
+                          <PriorityIcon className="h-3 w-3" />
+                          <span>{priorityInfo.label.split(' ')[0]}</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Description */}
+                    {goal.description && (
+                      <p className="text-sm text-gray-600 mb-4">{goal.description}</p>
+                    )}
 
                     {/* Progress */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-[#333333]">
-                          {formatCurrency(goal.saved_amount || 0)} of {formatCurrency(goal.target_amount || 0)}
+                          {formatCurrency(goal.saved_amount || goal.current_amount || 0)} of {formatCurrency(goal.target_amount || 0)}
                         </span>
                         <span className="text-sm font-medium text-[#2A6F68]">
                           {progress.toFixed(1)}%
@@ -447,10 +551,10 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
                     </div>
 
                     {/* Deadline */}
-                    {goal.deadline && (
+                    {(goal.deadline || goal.target_date) && (
                       <div className="flex items-center space-x-2 mb-4 text-sm">
                         <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-600">{formatDate(goal.deadline)}</span>
+                        <span className="text-gray-600">{formatDate(goal.deadline || goal.target_date || '')}</span>
                         {daysLeft !== null && (
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             daysLeft < 0 ? 'bg-red-100 text-red-700' :
@@ -476,7 +580,7 @@ const GoalsManager: React.FC<GoalsManagerProps> = ({ user, onXPUpdate }) => {
                           type="number"
                           min="0"
                           max={goal.target_amount || 0}
-                          value={goal.saved_amount || 0}
+                          value={goal.saved_amount || goal.current_amount || 0}
                           onChange={(e) => handleUpdateProgress(goal.id, parseFloat(e.target.value) || 0)}
                           className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-[#2A6F68] focus:border-transparent"
                         />

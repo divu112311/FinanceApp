@@ -13,8 +13,11 @@ interface LearningModule {
   xp_reward: number;
   required_level: number;
   prerequisites: string[];
+  prerequisites_new: any; // New field for enhanced prerequisites
   tags: string[];
   is_featured: boolean;
+  is_active: boolean; // New field
+  content_data: any; // New field for structured content
   progress?: UserProgress;
 }
 
@@ -25,14 +28,30 @@ interface UserProgress {
   time_spent_minutes: number;
   completed_at?: string;
   started_at?: string;
+  path_id?: string; // New field for learning path association
+  updated_at?: string; // New field
 }
 
 interface LearningPath {
-  id: string;
+  path_id: string; // Updated field name
   name: string;
   description: string;
-  module_ids: string[];
-  is_active: boolean;
+  target_audience: string; // New field
+  estimated_duration: number; // New field
+  completion_badge_id: string | null; // New field
+  is_featured: boolean; // New field
+  created_at: string;
+  updated_at: string;
+}
+
+interface LearningPathModule {
+  path_module_id: string;
+  path_id: string;
+  module_id: string;
+  sequence_order: number;
+  is_required: boolean;
+  unlock_conditions: any;
+  created_at: string;
 }
 
 interface UserProfile {
@@ -49,6 +68,7 @@ export const useLearning = (user: User | null) => {
   const [modules, setModules] = useState<LearningModule[]>([]);
   const [userProgress, setUserProgress] = useState<Map<string, UserProgress>>(new Map());
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
+  const [pathModules, setPathModules] = useState<LearningPathModule[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -75,10 +95,11 @@ export const useLearning = (user: User | null) => {
       console.log('User profile:', profileData);
       setUserProfile(profileData);
 
-      // Fetch all learning modules
+      // Fetch all active learning modules
       const { data: modulesData, error: modulesError } = await supabase
         .from('learning_modules')
         .select('*')
+        .eq('is_active', true) // Only fetch active modules
         .order('is_featured', { ascending: false })
         .order('created_at', { ascending: true });
 
@@ -113,14 +134,22 @@ export const useLearning = (user: User | null) => {
       setModules(modulesWithProgress);
       setUserProgress(progressMap);
 
-      // Fetch learning paths
+      // Fetch learning paths (new structure)
       const { data: pathsData } = await supabase
-        .from('learning_paths')
+        .from('learning_paths_new')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
+        .order('is_featured', { ascending: false })
+        .order('created_at', { ascending: true });
 
       setLearningPaths(pathsData || []);
+
+      // Fetch learning path modules (junction table)
+      const { data: pathModulesData } = await supabase
+        .from('learning_path_modules')
+        .select('*')
+        .order('sequence_order', { ascending: true });
+
+      setPathModules(pathModulesData || []);
 
     } catch (error) {
       console.error('Error fetching learning data:', error);
@@ -129,11 +158,12 @@ export const useLearning = (user: User | null) => {
     }
   };
 
-  const startModule = async (moduleId: string) => {
+  const startModule = async (moduleId: string, pathId?: string) => {
     if (!user) return;
 
     console.log('=== STARTING MODULE ===');
     console.log('Module ID:', moduleId);
+    console.log('Path ID:', pathId);
     console.log('User ID:', user.id);
 
     try {
@@ -152,7 +182,9 @@ export const useLearning = (user: User | null) => {
         const { data, error } = await supabase
           .from('user_learning_progress')
           .update({
-            last_accessed_at: new Date().toISOString()
+            last_accessed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            path_id: pathId || existingProgress.path_id, // Update path_id if provided
           })
           .eq('user_id', user.id)
           .eq('module_id', moduleId)
@@ -182,7 +214,9 @@ export const useLearning = (user: User | null) => {
             status: 'in_progress',
             progress_percentage: 0,
             started_at: new Date().toISOString(),
-            last_accessed_at: new Date().toISOString()
+            last_accessed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            path_id: pathId || null,
           })
           .select()
           .single();
@@ -226,7 +260,8 @@ export const useLearning = (user: User | null) => {
         status: isCompleted ? 'completed' : 'in_progress',
         progress_percentage: progressPercentage,
         time_spent_minutes: timeSpent,
-        last_accessed_at: new Date().toISOString()
+        last_accessed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       if (isCompleted) {
@@ -339,10 +374,20 @@ export const useLearning = (user: User | null) => {
     };
   };
 
+  const getPathModules = (pathId: string) => {
+    const pathModuleIds = pathModules
+      .filter(pm => pm.path_id === pathId)
+      .sort((a, b) => a.sequence_order - b.sequence_order)
+      .map(pm => pm.module_id);
+
+    return modules.filter(module => pathModuleIds.includes(module.id));
+  };
+
   return {
     modules,
     userProgress,
     learningPaths,
+    pathModules,
     userProfile,
     loading,
     startModule,
@@ -352,6 +397,7 @@ export const useLearning = (user: User | null) => {
     getCompletedModules,
     getInProgressModules,
     getOverallProgress,
+    getPathModules,
     refetch: fetchLearningData
   };
 };
