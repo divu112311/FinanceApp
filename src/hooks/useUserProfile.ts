@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface UserProfile {
   id: string;
@@ -81,6 +81,37 @@ export const useUserProfile = (user: User | null) => {
       console.log('User email from auth:', user.email);
       console.log('User metadata:', user.user_metadata);
 
+      // Skip database operations if Supabase is not configured
+      if (!isSupabaseConfigured) {
+        console.log('Supabase not configured, using fallback profile data');
+        
+        // Create fallback profile from auth data
+        const fallbackProfile = {
+          id: user.id,
+          email: user.email,
+          first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User',
+          last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          phone_number: null,
+          date_of_birth: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Create fallback XP
+        const fallbackXP = {
+          id: 'default',
+          user_id: user.id,
+          points: 100,
+          badges: ['Welcome']
+        };
+        
+        setProfile(fallbackProfile);
+        setXP(fallbackXP);
+        setLoading(false);
+        return;
+      }
+
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from('users')
@@ -153,8 +184,8 @@ export const useUserProfile = (user: User | null) => {
             .from('xp')
             .insert({
               user_id: user.id,
-              points: 0,
-              badges: []
+              points: 100,
+              badges: ['Welcome']
             })
             .select()
             .single();
@@ -165,8 +196,8 @@ export const useUserProfile = (user: User | null) => {
             setXP({
               id: 'default',
               user_id: user.id,
-              points: 0,
-              badges: []
+              points: 100,
+              badges: ['Welcome']
             });
           } else {
             console.log('Created new XP record:', newXpData);
@@ -180,8 +211,8 @@ export const useUserProfile = (user: User | null) => {
             .from('xp')
             .insert({
               user_id: user.id,
-              points: 0,
-              badges: []
+              points: 100,
+              badges: ['Welcome']
             })
             .select()
             .single();
@@ -192,8 +223,8 @@ export const useUserProfile = (user: User | null) => {
             setXP({
               id: 'default',
               user_id: user.id,
-              points: 0,
-              badges: []
+              points: 100,
+              badges: ['Welcome']
             });
           } else {
             console.log('Created new XP record:', newXpData);
@@ -208,13 +239,33 @@ export const useUserProfile = (user: User | null) => {
         setXP({
           id: 'default',
           user_id: user.id,
-          points: 0,
-          badges: []
+          points: 100,
+          badges: ['Welcome']
         });
       }
 
     } catch (error) {
       console.error('Error fetching user data:', error);
+      
+      // Create fallback data on error
+      setProfile({
+        id: user.id,
+        email: user.email,
+        first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User',
+        last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        phone_number: null,
+        date_of_birth: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      
+      setXP({
+        id: 'default',
+        user_id: user.id,
+        points: 100,
+        badges: ['Welcome']
+      });
     } finally {
       setLoading(false);
     }
@@ -222,6 +273,12 @@ export const useUserProfile = (user: User | null) => {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !profile) return;
+    
+    if (!isSupabaseConfigured) {
+      // Local update only if Supabase is not configured
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      return { ...profile, ...updates };
+    }
 
     const { data, error } = await supabase
       .from('users')
@@ -244,6 +301,18 @@ export const useUserProfile = (user: User | null) => {
 
   const updateExtendedProfile = async (updates: Partial<ExtendedUserProfile>) => {
     if (!user) return;
+    
+    if (!isSupabaseConfigured) {
+      // Local update only if Supabase is not configured
+      setExtendedProfile(prev => prev ? { ...prev, ...updates } : {
+        id: 'default',
+        user_id: user.id,
+        ...updates,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as ExtendedUserProfile);
+      return;
+    }
 
     const { data, error } = await supabase
       .from('user_profiles')
@@ -303,7 +372,7 @@ export const useUserProfile = (user: User | null) => {
       : xp.badges;
 
     // If we have a default XP object (not in database), just update local state
-    if (xp.id === 'default') {
+    if (xp.id === 'default' || !isSupabaseConfigured) {
       const updatedXP = {
         ...xp,
         points: newPoints,
@@ -313,23 +382,31 @@ export const useUserProfile = (user: User | null) => {
       return updatedXP;
     }
 
-    const { data, error } = await supabase
-      .from('xp')
-      .update({
-        points: newPoints,
-        badges: newBadges,
-      })
-      .eq('user_id', user.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('xp')
+        .update({
+          points: newPoints,
+          badges: newBadges,
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error updating XP:', error);
-      return;
+      if (error) {
+        console.error('Error updating XP:', error);
+        // Update local state even if database update fails
+        setXP(prev => prev ? { ...prev, points: newPoints, badges: newBadges } : null);
+        return;
+      }
+
+      setXP(data);
+      return data;
+    } catch (error) {
+      console.error('Error in updateXP:', error);
+      // Update local state even if database update fails
+      setXP(prev => prev ? { ...prev, points: newPoints, badges: newBadges } : null);
     }
-
-    setXP(data);
-    return data;
   };
 
   const getFullName = () => {
