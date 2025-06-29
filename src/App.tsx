@@ -55,8 +55,6 @@ function App() {
   const level = enhancedXP ? enhancedXP.current_level : getCurrentLevel();
   const totalXP = getTotalXP();
   const displayName = getDisplayName();
-  const fullName = getFullName();
-  const initials = getInitials();
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -80,15 +78,14 @@ function App() {
                     className="w-full h-full object-contain rounded-full"
                   />
                 </div>
-                <h1 className="text-2xl font-serif font-bold text-[#333333]">
-                  DoughJo
-                </h1>
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-2xl font-serif font-bold text-[#333333]">
+                    DoughJo
+                  </h1>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-[#2A6F68] font-medium">{displayName}</span>
+                </div>
               </motion.div>
-              <div className="flex items-center space-x-2 bg-[#2A6F68] text-white px-3 py-1 rounded-full text-sm">
-                <span>Level {level}</span>
-                <span className="text-[#B76E79]">•</span>
-                <span>{totalXP} XP</span>
-              </div>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -124,21 +121,6 @@ function App() {
                   Finance Kata
                 </button>
               </nav>
-              
-              {/* User Profile Section */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-[#333333]">
-                    Welcome, {displayName}!
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {fullName}
-                  </div>
-                </div>
-                <div className="w-8 h-8 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {initials}
-                </div>
-              </div>
               
               <button
                 onClick={signOut}
