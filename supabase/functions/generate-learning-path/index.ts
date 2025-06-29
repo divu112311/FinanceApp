@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('=== GENERATE LEARNING CONTENT FUNCTION START ===')
+    console.log('=== GENERATE LEARNING PATH FUNCTION START ===')
     console.log('Edge function called with method:', req.method)
     
     const { userId } = await req.json()
@@ -96,11 +96,11 @@ serve(async (req) => {
       learning_style: profileData?.learning_style || 'Visual'
     }
 
-    // Generate learning modules
+    // Generate learning path
     let modules = []
     
     if (openRouterKey) {
-      console.log('🤖 GENERATING AI LEARNING CONTENT...')
+      console.log('🤖 GENERATING AI LEARNING PATH...')
       
       const prompt = `Generate a personalized learning path for a user with the following profile:
 
@@ -183,7 +183,7 @@ IMPORTANT GUIDELINES:
           const aiData = await aiResponse.json()
           const aiContent = aiData.choices[0]?.message?.content
           
-          console.log('✅ AI LEARNING CONTENT GENERATED')
+          console.log('✅ AI LEARNING PATH GENERATED')
           console.log('AI response preview:', aiContent.substring(0, 200) + '...')
           
           try {
@@ -313,7 +313,7 @@ IMPORTANT GUIDELINES:
     }
     
     console.log(`✅ Added ${pathModules.length} modules to learning path`)
-    console.log('=== GENERATE LEARNING CONTENT FUNCTION SUCCESS ===')
+    console.log('=== GENERATE LEARNING PATH FUNCTION SUCCESS ===')
 
     return new Response(
       JSON.stringify({ 
@@ -329,7 +329,7 @@ IMPORTANT GUIDELINES:
     )
 
   } catch (error) {
-    console.error('=== GENERATE LEARNING CONTENT FUNCTION FAILED ===')
+    console.error('=== GENERATE LEARNING PATH FUNCTION FAILED ===')
     console.error('❌ ERROR DETAILS:', {
       message: error.message,
       stack: error.stack,
@@ -340,7 +340,7 @@ IMPORTANT GUIDELINES:
       JSON.stringify({ 
         success: false,
         error: error.message,
-        debug: 'Failed to generate learning content',
+        debug: 'Failed to generate learning path',
         timestamp: new Date().toISOString()
       }),
       {

@@ -27,6 +27,14 @@ A sophisticated AI-powered personal finance application featuring your friendly 
 - **Micro-interactions**: Smooth animations and hover states throughout
 - **Responsive Layout**: Mobile-first design that scales beautifully
 
+### 📚 Personalized Learning Path System
+- **AI-Generated Content**: Customized learning modules based on user profile and financial data
+- **Adaptive Learning**: Content difficulty adjusts based on user experience level
+- **Mixed Content Types**: Articles, quizzes, videos, and interactive exercises
+- **Progress Tracking**: Visual progress indicators and completion statistics
+- **Scheduled Generation**: Automatic creation of new content when users complete their path
+- **XP Rewards**: Earn experience points for completing learning modules
+
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
@@ -41,7 +49,7 @@ A sophisticated AI-powered personal finance application featuring your friendly 
 ### Prerequisites
 - Node.js 18+ 
 - Supabase account
-- OpenAI API key
+- OpenAI API key or OpenRouter API key
 
 ### Installation
 
@@ -64,17 +72,17 @@ cp .env.example .env
 # Edit .env with your actual values:
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENAI_API_KEY=your_openai_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 4. Set up Supabase:
    - Create a new Supabase project at [supabase.com](https://supabase.com)
    - Copy your project URL and anon key from Settings > API
    - The database migrations will run automatically
-   - Deploy the Edge Function (see below)
-   - Add your OpenAI API key to Supabase secrets
+   - Deploy the Edge Functions (see below)
+   - Add your OpenRouter API key to Supabase secrets
 
-5. Deploy the Edge Function:
+5. Deploy the Edge Functions:
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -85,17 +93,92 @@ supabase login
 # Link your project
 supabase link --project-ref YOUR_PROJECT_REF
 
-# Deploy the function
+# Deploy the functions
 supabase functions deploy chat-ai
+supabase functions deploy generate-learning-path
+supabase functions deploy learning-progress
+supabase functions deploy schedule-learning-content
 
-# Set the OpenAI API key as a secret
-supabase secrets set OPENAI_API_KEY=your_openai_api_key_here
+# Set the OpenRouter API key as a secret
+supabase secrets set OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
 6. Start the development server:
 ```bash
 npm run dev
 ```
+
+## Learning Path System Configuration
+
+### Database Schema
+
+The learning system uses the following tables:
+
+1. **learning_modules**: Stores all learning content
+   - `id`: Unique identifier
+   - `title`: Module title
+   - `description`: Module description
+   - `content_type`: Type of content (article, quiz, video, interactive)
+   - `difficulty`: Difficulty level (Beginner, Intermediate, Advanced)
+   - `category`: Content category (Budgeting, Investing, etc.)
+   - `duration_minutes`: Estimated time to complete
+   - `xp_reward`: XP points awarded for completion
+   - `content_data`: JSON data containing the actual content
+
+2. **learning_paths_new**: Stores learning paths
+   - `path_id`: Unique identifier
+   - `name`: Path name
+   - `description`: Path description
+   - `target_audience`: Target audience (can be user experience level or user ID)
+   - `estimated_duration`: Total duration in minutes
+   - `is_featured`: Whether this is a featured path
+
+3. **learning_path_modules**: Junction table connecting paths to modules
+   - `path_module_id`: Unique identifier
+   - `path_id`: Reference to learning_paths_new
+   - `module_id`: Reference to learning_modules
+   - `sequence_order`: Order of modules in the path
+   - `is_required`: Whether the module is required
+
+4. **user_learning_progress**: Tracks user progress through modules
+   - `id`: Unique identifier
+   - `user_id`: Reference to users
+   - `module_id`: Reference to learning_modules
+   - `status`: Progress status (not_started, in_progress, completed)
+   - `progress_percentage`: Percentage complete (0-100)
+   - `time_spent_minutes`: Time spent on the module
+   - `completed_at`: When the module was completed
+
+### Scheduling Content Generation
+
+The system includes a scheduler function that can be triggered in several ways:
+
+1. **Manual Trigger**: Call the `schedule-learning-content` function with:
+   ```json
+   {
+     "manualTrigger": true,
+     "specificUserId": "optional-user-id"
+   }
+   ```
+
+2. **Cron Job**: Set up a cron job to call the function daily:
+   ```bash
+   # Using Supabase CLI
+   supabase functions schedule schedule-learning-content --cron "0 0 * * *" --body '{"manualTrigger": false}'
+   ```
+
+3. **User-Triggered**: Users can request new content by clicking the "Refresh" button in the UI, which calls the `generate-learning-path` function.
+
+### AI Integration
+
+The system uses OpenRouter API to generate personalized learning content. To customize the AI integration:
+
+1. Edit the prompt in `generate-learning-path/index.ts` to adjust the content generation
+2. Modify the `generateDefaultModules` function to change the fallback content
+3. Update the model selection in the OpenRouter API call:
+   ```javascript
+   model: 'meta-llama/llama-3.1-8b-instruct:free', // Change to your preferred model
+   ```
 
 ## The DoughJo Way
 
@@ -123,110 +206,6 @@ Your AI sensei provides guidance based on:
 - **Patience**: Long-term thinking for lasting results
 - **Wisdom**: Learning from both success and failure
 - **Strength**: Building financial resilience
-
-## Architecture
-
-### Frontend Structure
-```
-src/
-├── components/
-│   ├── LoginForm.tsx          # Dojo entrance
-│   ├── ChatInterface.tsx      # Training with Sensei DoughJo
-│   ├── Dashboard.tsx          # Financial progress overview
-│   └── OnboardingFlow.tsx     # Initial assessment
-├── hooks/
-│   ├── useAuth.ts            # Authentication logic
-│   ├── useChat.ts            # Chat with AI sensei
-│   ├── useGoals.ts           # Financial quest management
-│   └── useUserProfile.ts     # User profile & XP
-├── lib/
-│   └── supabase.ts           # Supabase client configuration
-└── App.tsx                   # Main dojo application
-```
-
-### Database Schema
-- **users**: Warrior profiles and authentication
-- **goals**: Financial quests and objectives
-- **chat_logs**: Complete training conversation history
-- **xp**: Progression system (points, badges, belt ranks)
-
-### Edge Functions
-- **chat-ai**: Handles OpenAI API integration with full user context
-
-## Key Features Explained
-
-### Conversational AI Sensei
-The heart of DoughJo is the conversational interface where users train with Sensei DoughJo through natural language. The AI has access to:
-- Complete user financial profile and belt rank
-- Real-time goal progress and targets
-- Full conversation history for context continuity
-- User XP level and achievement data
-- Personalized financial advice based on martial arts philosophy
-
-### Context-Aware Training
-Every AI response is generated with full context including:
-- User demographics and financial situation
-- Current belt rank and XP level
-- Progress toward financial quests
-- Previous training sessions for continuity
-- Personalized advice combining ancient wisdom with modern strategy
-
-### Progression System
-Users earn XP for various training activities:
-- Completing registration: +100 XP (Welcome badge)
-- Each chat interaction: +5 XP
-- Setting up financial quests: +50 XP
-- Reaching milestones: Variable XP
-
-Belt ranks increase based on total XP, with visual feedback throughout the dojo.
-
-## Sensei DoughJo's Teachings
-
-### Core Principles
-1. **"The way of the warrior is to stop trouble before it starts"** - Emergency fund wisdom
-2. **"A thousand-mile journey begins with a single step"** - Starting small with investments
-3. **"The bamboo that bends is stronger than the oak that resists"** - Adapting to market changes
-4. **"Empty your cup so that it may be filled"** - Learning new financial concepts
-5. **"The best time to plant a tree was 20 years ago. The second best time is now"** - Starting to invest
-
-### Training Methods
-- **Kata Practice**: Repetitive good financial habits
-- **Sparring**: Discussing financial scenarios and solutions
-- **Meditation**: Mindful spending and reflection
-- **Forms**: Structured approaches to budgeting and investing
-- **Philosophy**: Understanding the deeper meaning of financial wellness
-
-## Troubleshooting
-
-### Common Issues
-
-**1. "Invalid URL" Error**
-- Make sure your `.env` file has valid Supabase credentials
-- Check that URLs start with `https://` and contain `.supabase.co`
-
-**2. Sensei Not Responding**
-- Verify OpenAI API key is set in Supabase secrets
-- Check Edge Function deployment status
-- Look at browser console for error messages
-
-**3. Database Connection Issues**
-- Confirm Supabase project is active
-- Check that RLS policies are properly configured
-- Verify user authentication is working
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m 'Add feature'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a pull request
-
-## The DoughJo Philosophy
-
-*"In the dojo of finance, every dollar is a student, every decision a lesson, and every goal a belt to earn. Train with discipline, invest with wisdom, and let compound interest be your greatest technique."*
-
-**- Sensei DoughJo** 🥋💰
 
 ## License
 
