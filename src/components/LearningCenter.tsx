@@ -560,6 +560,101 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
         <div className="grid grid-cols-3 gap-6">
           {/* Left Column - Today's Practice (2/3 width) */}
           <div className="col-span-2 space-y-6">
+            {/* Today's Practice */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                <h2 className="text-lg font-bold text-[#333333]">Today's Practice</h2>
+              </div>
+              
+              {generating ? (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center justify-center">
+                  <div className="text-center py-8">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-8 h-8 border-2 border-[#2A6F68] border-t-transparent rounded-full mx-auto mb-4"
+                    />
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2">Generating Your Practice</h3>
+                    <p className="text-gray-600">Creating personalized learning content just for you...</p>
+                  </div>
+                </div>
+              ) : todaysPractice ? (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-purple-400 rounded-lg flex items-center justify-center">
+                      {React.createElement(getTypeIcon(todaysPractice.content_type), { className: "h-6 w-6 text-white" })}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className={`px-2 py-0.5 ${getDifficultyColor(todaysPractice.difficulty)} rounded text-xs font-medium`}>
+                          {todaysPractice.difficulty}
+                        </span>
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                          {getTypeLabel(todaysPractice.content_type)}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">{todaysPractice.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        {todaysPractice.description}
+                      </p>
+                      
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <div className="flex items-center space-x-1 text-gray-500 text-xs">
+                          <Clock className="h-3 w-3" />
+                          <span>{todaysPractice.duration_minutes} min practice</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-yellow-500 text-xs">
+                          <Zap className="h-3 w-3" />
+                          <span>+{todaysPractice.xp_reward} XP</span>
+                        </div>
+                      </div>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleStartPractice}
+                        className={`px-4 py-2 ${
+                          todaysPractice.progress?.status === 'completed'
+                            ? 'bg-green-100 text-green-700'
+                            : todaysPractice.progress?.status === 'in_progress'
+                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            : 'bg-[#2A6F68] text-white hover:bg-[#235A54]'
+                        } rounded-lg transition-colors text-sm font-medium`}
+                      >
+                        {todaysPractice.progress?.status === 'completed' 
+                          ? 'Completed' 
+                          : todaysPractice.progress?.status === 'in_progress'
+                          ? 'Continue Practice'
+                          : getButtonLabel(todaysPractice.content_type)}
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#333333] mb-2">No Practice Available</h3>
+                    <p className="text-gray-600 mb-4">We're preparing your personalized learning content</p>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => generateAILearningContent()}
+                      className="inline-flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] transition-colors"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>Generate Practice</span>
+                    </motion.button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Available Lessons */}
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-[#333333]">Available Lessons</h2>
@@ -716,101 +811,6 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
                   </button>
                 </div>
               </motion.div>
-            </div>
-
-            {/* Today's Practice */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-[#333333]">Today's Practice</h2>
-              </div>
-              
-              {generating ? (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex items-center justify-center">
-                  <div className="text-center py-8">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-8 h-8 border-2 border-[#2A6F68] border-t-transparent rounded-full mx-auto mb-4"
-                    />
-                    <h3 className="text-lg font-semibold text-[#333333] mb-2">Generating Your Practice</h3>
-                    <p className="text-gray-600">Creating personalized learning content just for you...</p>
-                  </div>
-                </div>
-              ) : todaysPractice ? (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-purple-400 rounded-lg flex items-center justify-center">
-                      {React.createElement(getTypeIcon(todaysPractice.content_type), { className: "h-6 w-6 text-white" })}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`px-2 py-0.5 ${getDifficultyColor(todaysPractice.difficulty)} rounded text-xs font-medium`}>
-                          {todaysPractice.difficulty}
-                        </span>
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                          {getTypeLabel(todaysPractice.content_type)}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{todaysPractice.title}</h3>
-                      <p className="text-gray-600 text-sm mb-4">
-                        {todaysPractice.description}
-                      </p>
-                      
-                      <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <div className="flex items-center space-x-1 text-gray-500 text-xs">
-                          <Clock className="h-3 w-3" />
-                          <span>{todaysPractice.duration_minutes} min practice</span>
-                        </div>
-                        <div className="flex items-center space-x-1 text-yellow-500 text-xs">
-                          <Zap className="h-3 w-3" />
-                          <span>+{todaysPractice.xp_reward} XP</span>
-                        </div>
-                      </div>
-                      
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleStartPractice}
-                        className={`px-4 py-2 ${
-                          todaysPractice.progress?.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
-                            : todaysPractice.progress?.status === 'in_progress'
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                            : 'bg-[#2A6F68] text-white hover:bg-[#235A54]'
-                        } rounded-lg transition-colors text-sm font-medium`}
-                      >
-                        {todaysPractice.progress?.status === 'completed' 
-                          ? 'Completed' 
-                          : todaysPractice.progress?.status === 'in_progress'
-                          ? 'Continue Practice'
-                          : getButtonLabel(todaysPractice.content_type)}
-                      </motion.button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <BookOpen className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-[#333333] mb-2">No Practice Available</h3>
-                    <p className="text-gray-600 mb-4">We're preparing your personalized learning content</p>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => generateAILearningContent()}
-                      className="inline-flex items-center space-x-2 bg-[#2A6F68] text-white px-4 py-2 rounded-lg hover:bg-[#235A54] transition-colors"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      <span>Generate Practice</span>
-                    </motion.button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
