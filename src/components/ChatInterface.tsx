@@ -8,7 +8,6 @@ import { useBankAccounts } from '../hooks/useBankAccounts';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useFinancialInsights } from '../hooks/useFinancialInsights';
 import SmartWinsWidget from './SmartWinsWidget';
-import doughjoMascot from '../assets/doughjo-mascot.png';
 
 interface ChatInterfaceProps {
   user: User;
@@ -118,24 +117,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
           <div className="relative z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <motion.div
-                  animate={{ 
-                    rotate: [0, 5, -5, 0],
-                    scale: [1, 1.05, 1]
-                  }}
-                  transition={{ 
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center p-1"
-                >
-                  <img 
-                    src={doughjoMascot} 
-                    alt="Sensei DoughJo" 
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                </motion.div>
                 <div>
                   <h1 className="text-2xl font-bold mb-1">Sensei's Circle</h1>
                   <p className="text-white/90">Strategic counsel for disciplined money moves</p>
@@ -276,15 +257,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                         }`}
                       >
                         <div className="flex items-start space-x-2">
-                          {message.sender !== 'user' && (
-                            <div className="w-4 h-4 mt-1 flex-shrink-0">
-                              <img 
-                                src={doughjoMascot} 
-                                alt="DoughJo" 
-                                className="w-full h-full object-contain rounded-full"
-                              />
-                            </div>
-                          )}
                           <p className="text-sm leading-relaxed">{message.message}</p>
                           {message.sender === 'user' && (
                             <UserIcon className="h-3 w-3 mt-1 text-white/70 flex-shrink-0" />
@@ -302,13 +274,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ user, onXPUpdate }) => {
                     >
                       <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 max-w-xs border border-gray-200">
                         <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4">
-                            <img 
-                              src={doughjoMascot} 
-                              alt="DoughJo" 
-                              className="w-full h-full object-contain rounded-full"
-                            />
-                          </div>
                           <div className="flex space-x-1">
                             {[0, 1, 2].map((i) => (
                               <motion.div

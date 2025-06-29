@@ -8,7 +8,6 @@ import LandingPage from './components/LandingPage';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import { useXP } from './hooks/useXP'; // Updated import
-import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -71,15 +70,8 @@ function App() {
                 whileHover={{ scale: 1.05 }}
                 className="flex items-center space-x-3"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-[#2A6F68] to-[#B76E79] rounded-full flex items-center justify-center p-1">
-                  <img 
-                    src={doughjoMascot} 
-                    alt="DoughJo Mascot" 
-                    className="w-full h-full object-contain rounded-full"
-                  />
-                </div>
                 <h1 className="text-2xl font-serif font-bold text-[#333333]">
-                  {displayName}
+                  Hi {displayName}
                 </h1>
               </motion.div>
             </div>

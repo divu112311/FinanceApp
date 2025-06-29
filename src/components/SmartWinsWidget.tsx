@@ -6,8 +6,7 @@ import {
   PiggyBank, 
   Target, 
   DollarSign,
-  Zap,
-  RefreshCw
+  Zap
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useSmartWins } from '../hooks/useSmartWins';
@@ -19,7 +18,6 @@ interface SmartWinsWidgetProps {
 
 const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
   const { smartWins, loading, fetchSmartWins } = useSmartWins(user);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Force refresh smart wins when component mounts
   useEffect(() => {
@@ -48,31 +46,6 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
     refreshData();
   }, [user.id]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      // Call the edge function to generate new smart wins
-      const { data, error } = await supabase.functions.invoke('generate-smart-wins', {
-        body: {
-          userId: user.id,
-          forceGenerate: true
-        },
-      });
-      
-      if (error) {
-        console.error('Error generating smart wins:', error);
-      } else {
-        console.log('Smart wins generated:', data);
-        // Refresh the local state
-        await fetchSmartWins();
-      }
-    } catch (err) {
-      console.error('Error calling generate-smart-wins function:', err);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const getWinIcon = (type: string) => {
     switch (type) {
       case 'savings': return PiggyBank;
@@ -90,24 +63,11 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
   if (loading && displayWins.length === 0) {
     return (
       <div className="bg-gradient-to-br from-[#2A6F68]/5 to-[#2A6F68]/10 rounded-2xl p-6 border border-[#2A6F68]/20">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
-              <Lightbulb className="h-4 w-4 text-white" />
-            </div>
-            <h3 className="text-lg font-bold text-[#2A6F68]">Smart Wins This Week</h3>
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
+            <Lightbulb className="h-4 w-4 text-white" />
           </div>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center space-x-1 px-2 py-1 bg-white/60 rounded-lg text-[#2A6F68] text-xs font-medium hover:bg-white/80 transition-colors"
-          >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </motion.button>
+          <h3 className="text-lg font-bold text-[#2A6F68]">Smart Wins This Week</h3>
         </div>
         
         <div className="flex items-center justify-center py-6">
@@ -123,24 +83,11 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
 
   return (
     <div className="bg-gradient-to-br from-[#2A6F68]/5 to-[#2A6F68]/10 rounded-2xl p-6 border border-[#2A6F68]/20">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
-            <Lightbulb className="h-4 w-4 text-white" />
-          </div>
-          <h3 className="text-lg font-bold text-[#2A6F68]">Smart Wins This Week</h3>
+      <div className="flex items-center mb-4">
+        <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
+          <Lightbulb className="h-4 w-4 text-white" />
         </div>
-        
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center space-x-1 px-2 py-1 bg-white/60 rounded-lg text-[#2A6F68] text-xs font-medium hover:bg-white/80 transition-colors"
-        >
-          <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </motion.button>
+        <h3 className="text-lg font-bold text-[#2A6F68] ml-3">Smart Wins This Week</h3>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
