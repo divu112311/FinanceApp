@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import ChatInterface from './components/ChatInterface';
 import LearningCenter from './components/LearningCenter';
 import LandingPage from './components/LandingPage';
+import AppRouter from './components/AppRouter';
 import { useAuth } from './hooks/useAuth';
 import { useUserProfile } from './hooks/useUserProfile';
 import { useXP } from './hooks/useXP'; // Updated import
@@ -12,9 +13,8 @@ import doughjoMascot from './assets/doughjo-mascot.png';
 
 function App() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile(user);
+  const { profile, loading: profileLoading, getDisplayName } = useUserProfile(user);
   const { xp, enhancedXP, updateXP, getCurrentLevel, getTotalXP, loading: xpLoading } = useXP(user); // Updated hook
-  const [activeView, setActiveView] = useState<'dashboard' | 'advisor' | 'learning'>('advisor');
   const [showAuth, setShowAuth] = useState(false);
 
   const handleXPUpdate = async (points: number) => {
@@ -54,6 +54,7 @@ function App() {
   // Get level from enhanced XP if available, otherwise calculate from regular XP
   const level = enhancedXP ? enhancedXP.current_level : getCurrentLevel();
   const totalXP = getTotalXP();
+  const displayName = getDisplayName();
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -77,9 +78,12 @@ function App() {
                     className="w-full h-full object-contain rounded-full"
                   />
                 </div>
-                <h1 className="text-2xl font-serif font-bold text-[#333333]">
-                  DoughJo
-                </h1>
+                <div>
+                  <h1 className="text-2xl font-serif font-bold text-[#333333]">
+                    DoughJo
+                  </h1>
+                  <p className="text-sm text-gray-600">Welcome, {displayName}</p>
+                </div>
               </motion.div>
               <div className="flex items-center space-x-2 bg-[#2A6F68] text-white px-3 py-1 rounded-full text-sm">
                 <span>Level {level}</span>
@@ -88,40 +92,7 @@ function App() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <nav className="flex space-x-2">
-                <button
-                  onClick={() => setActiveView('advisor')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'advisor'
-                      ? 'bg-[#2A6F68] text-white'
-                      : 'text-[#333333] hover:bg-gray-100'
-                  }`}
-                >
-                  Sensei's Circle
-                </button>
-                <button
-                  onClick={() => setActiveView('dashboard')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'dashboard'
-                      ? 'bg-[#2A6F68] text-white'
-                      : 'text-[#333333] hover:bg-gray-100'
-                  }`}
-                >
-                  Dough Vault
-                </button>
-                <button
-                  onClick={() => setActiveView('learning')}
-                  className={`px-4 py-2 rounded-lg transition-all ${
-                    activeView === 'learning'
-                      ? 'bg-[#2A6F68] text-white'
-                      : 'text-[#333333] hover:bg-gray-100'
-                  }`}
-                >
-                  Finance Kata
-                </button>
-              </nav>
-              
+            <div className="flex items-center space-x-4">              
               <button
                 onClick={signOut}
                 className="text-[#333333] hover:text-[#B76E79] transition-colors"
@@ -135,39 +106,7 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AnimatePresence mode="wait">
-          {activeView === 'advisor' ? (
-            <motion.div
-              key="advisor"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ChatInterface user={user} onXPUpdate={handleXPUpdate} />
-            </motion.div>
-          ) : activeView === 'dashboard' ? (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Dashboard user={user} xp={{ points: totalXP, badges: xp?.badges || [] }} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="learning"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LearningCenter user={user} xp={{ points: totalXP, badges: xp?.badges || [] }} onXPUpdate={handleXPUpdate} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <AppRouter user={user} xp={{ points: totalXP, badges: xp?.badges || [] }} onXPUpdate={handleXPUpdate} />
       </main>
     </div>
   );
