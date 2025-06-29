@@ -84,7 +84,10 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
     }
   };
 
-  if (loading && smartWins.length === 0) {
+  // Limit smart wins to 3
+  const displayWins = smartWins.slice(0, 3);
+
+  if (loading && displayWins.length === 0) {
     return (
       <div className="bg-gradient-to-br from-[#2A6F68]/5 to-[#2A6F68]/10 rounded-2xl p-6 border border-[#2A6F68]/20">
         <div className="flex items-center justify-between mb-4">
@@ -141,7 +144,7 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        {smartWins.map((win, index) => {
+        {displayWins.map((win, index) => {
           const WinIcon = getWinIcon(win.type);
           
           return (
@@ -166,7 +169,7 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
           );
         })}
         
-        {smartWins.length === 0 && (
+        {displayWins.length === 0 && (
           <div className="text-center py-4">
             <p className="text-sm text-gray-600">
               Connect your accounts to get personalized smart wins

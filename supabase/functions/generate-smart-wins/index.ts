@@ -355,9 +355,12 @@ serve(async (req) => {
       }
     }
 
+    // Limit to 3 smart wins
+    const limitedSmartWins = smartWins.slice(0, 3);
+
     // Store smart wins in database
     console.log('💾 STORING SMART WINS IN DATABASE...')
-    console.log(`Generated ${smartWins.length} smart wins`)
+    console.log(`Generated ${limitedSmartWins.length} smart wins`)
     
     // First, expire any existing wins
     const { error: expireError } = await supabaseClient
@@ -373,7 +376,7 @@ serve(async (req) => {
     // Then insert new wins
     const { data: insertedWins, error: insertError } = await supabaseClient
       .from('smart_wins')
-      .insert(smartWins)
+      .insert(limitedSmartWins)
       .select()
     
     if (insertError) {
