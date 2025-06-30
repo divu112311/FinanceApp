@@ -107,7 +107,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         points: 5
       },
       {
-        question_text: 'Which of the following is considered a "need" in budgeting?',
+        question_text: 'Which of these is typically considered a "need" in budgeting?',
         options: ['Netflix subscription', 'Housing costs', 'Dining out', 'New clothes'],
         correct_answer: 'Housing costs',
         explanation: 'Housing costs (rent/mortgage, utilities) are essential needs, while entertainment subscriptions and dining out are typically categorized as wants.',
@@ -338,7 +338,8 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       questionId: currentQuestion.id || `q-${currentQuestionIndex}`,
       question: currentQuestion,
       userAnswer: selectedAnswer,
-      isCorrect: correct
+      isCorrect: correct,
+      conceptId: currentQuestion.concept_id
     };
     setResults(newResults);
 
@@ -639,11 +640,6 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                                 <div className="flex items-center space-x-1 mt-2 bg-green-200 rounded px-2 py-1 w-fit">
                                   <Sparkles className="h-3 w-3 text-green-700" />
                                   <span className="text-green-700 font-medium text-xs">+{currentQuestion.points || 10} points!</span>
-                                </div>
-                              )}
-                              {currentQuestion.concept_id && (
-                                <div className="mt-2 text-xs text-gray-500">
-                                  This question tests your knowledge of a specific financial concept.
                                 </div>
                               )}
                             </div>
