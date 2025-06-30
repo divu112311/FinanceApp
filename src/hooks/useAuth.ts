@@ -9,11 +9,14 @@ export const useAuth = () => {
 
   const signOut = useCallback(async () => {
     try {
+      console.log('=== SIGNING OUT ===');
+      
       // Get current session to check if it exists
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       // If there's an error getting the session or no session exists, just clear local state
       if (sessionError || !session) {
+        console.log('No active session found or error getting session:', sessionError?.message);
         setUser(null);
         return;
       }
@@ -27,17 +30,20 @@ export const useAuth = () => {
           
           // If token is expired, just clear local state without calling server
           if (payload.exp && payload.exp < currentTime) {
+            console.log('Token is expired, clearing local state');
             setUser(null);
             return;
           }
         } catch (decodeError) {
           // If we can't decode the token, it's likely invalid, so just clear local state
+          console.error('Error decoding token:', decodeError);
           setUser(null);
           return;
         }
       }
 
       // Attempt to sign out from server
+      console.log('Signing out from Supabase');
       const { error } = await supabase.auth.signOut();
       
       // Clear local state regardless of server response
@@ -63,6 +69,8 @@ export const useAuth = () => {
     // Get initial session with error handling for invalid refresh tokens
     const initializeAuth = async () => {
       try {
+        console.log('=== INITIALIZING AUTH ===');
+        
         // Check if Supabase is configured before attempting to get session
         if (!isSupabaseConfigured) {
           console.warn('Supabase is not configured. Auth functionality will be limited.');
@@ -76,12 +84,18 @@ export const useAuth = () => {
           // Check if the error is related to invalid refresh token
           if (error.message?.includes('Invalid Refresh Token') || 
               error.message?.includes('refresh_token_not_found')) {
+            console.warn('Invalid refresh token, forcing clean logout');
             // Clear invalid session and force clean logout
             await signOut();
             setLoading(false);
             return;
           }
           throw error;
+        }
+        
+        console.log('Session found:', !!session);
+        if (session?.user) {
+          console.log('User authenticated:', session.user.email);
         }
         
         setUser(session?.user ?? null);
@@ -99,6 +113,7 @@ export const useAuth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event);
         setUser(session?.user ?? null);
         setLoading(false);
       }
@@ -115,7 +130,9 @@ export const useAuth = () => {
 
     setAuthError(null);
     try {
+      console.log('=== SIGNING UP ===');
       console.log('Signing up user:', email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -245,7 +262,9 @@ export const useAuth = () => {
 
     setAuthError(null);
     try {
+      console.log('=== SIGNING IN ===');
       console.log('Signing in user:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -257,6 +276,7 @@ export const useAuth = () => {
         throw error;
       }
 
+      console.log('Sign in successful');
       return data;
     } catch (error: any) {
       console.error('Sign in error:', error);

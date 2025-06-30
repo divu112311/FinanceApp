@@ -60,6 +60,7 @@ export const useUserProfile = (user: User | null) => {
   const [extendedProfile, setExtendedProfile] = useState<ExtendedUserProfile | null>(null);
   const [xp, setXP] = useState<UserXP | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -69,11 +70,15 @@ export const useUserProfile = (user: User | null) => {
       setExtendedProfile(null);
       setXP(null);
       setLoading(false);
+      setError(null);
     }
   }, [user]);
 
   const fetchUserData = async () => {
     if (!user) return;
+
+    setLoading(true);
+    setError(null);
 
     try {
       console.log('=== FETCHING USER PROFILE DATA ===');
@@ -140,40 +145,63 @@ export const useUserProfile = (user: User | null) => {
       }
 
       // Fetch user profile with error handling
-      const { data: profileData, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      console.log('Profile query result:', { profileData, profileError });
+        console.log('Profile query result:', { 
+          hasData: !!profileData, 
+          error: profileError?.message || 'none' 
+        });
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-      }
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw profileError;
+        }
 
-      // If no profile exists, create one from auth metadata
-      if (!profileData && user.email) {
-        console.log('No profile found, creating from auth metadata...');
-        
-        const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User';
-        const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
-        
-        try {
-          const { data: newProfile, error: createError } = await supabase
-            .from('users')
-            .insert({
-              id: user.id,
-              email: user.email,
-              first_name: firstName,
-              last_name: lastName,
-              is_active: true,
-            })
-            .select()
-            .single();
+        // If no profile exists, create one from auth metadata
+        if (!profileData && user.email) {
+          console.log('No profile found, creating from auth metadata...');
+          
+          const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User';
+          const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
+          
+          try {
+            const { data: newProfile, error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: user.id,
+                email: user.email,
+                first_name: firstName,
+                last_name: lastName,
+                is_active: true,
+              })
+              .select()
+              .single();
 
-          if (createError) {
-            console.error('Error creating user profile:', createError);
+            if (createError) {
+              console.error('Error creating user profile:', createError);
+              // Use fallback profile
+              setProfile({
+                id: user.id,
+                email: user.email,
+                first_name: firstName,
+                last_name: lastName,
+                phone_number: null,
+                date_of_birth: null,
+                is_active: true,
+                created_at: new Date().toISOString(),
+                updated_at: null
+              });
+            } else {
+              console.log('Created new profile:', newProfile);
+              setProfile(newProfile);
+            }
+          } catch (err) {
+            console.error('Error in profile creation:', err);
             // Use fallback profile
             setProfile({
               id: user.id,
@@ -186,27 +214,24 @@ export const useUserProfile = (user: User | null) => {
               created_at: new Date().toISOString(),
               updated_at: null
             });
-          } else {
-            console.log('Created new profile:', newProfile);
-            setProfile(newProfile);
           }
-        } catch (err) {
-          console.error('Error in profile creation:', err);
-          // Use fallback profile
-          setProfile({
-            id: user.id,
-            email: user.email,
-            first_name: firstName,
-            last_name: lastName,
-            phone_number: null,
-            date_of_birth: null,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: null
-          });
+        } else {
+          setProfile(profileData);
         }
-      } else {
-        setProfile(profileData);
+      } catch (profileErr) {
+        console.error('Error fetching user profile:', profileErr);
+        // Set fallback profile
+        setProfile({
+          id: user.id,
+          email: user.email,
+          first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User',
+          last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          phone_number: null,
+          date_of_birth: null,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: null
+        });
       }
 
       // Fetch extended user profile with error handling
@@ -217,43 +242,120 @@ export const useUserProfile = (user: User | null) => {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        console.log('Extended profile query result:', { 
+          hasData: !!extendedProfileData, 
+          error: extendedProfileError?.message || 'none' 
+        });
+
         if (extendedProfileError) {
           console.error('Extended profile fetch error:', extendedProfileError);
-          // Use fallback extended profile
-          setExtendedProfile({
-            id: crypto.randomUUID(),
-            user_id: user.id,
-            age_range: null,
-            income_range: null,
-            financial_experience: 'Beginner',
-            primary_goals: [],
-            learning_style: 'visual',
-            time_availability: '30min',
-            interests: [],
-            notification_preferences: {
-              email_notifications: true,
-              push_notifications: true,
-              sms_notifications: false,
-              marketing_emails: false,
-              goal_reminders: true,
-              learning_reminders: true,
-              weekly_summary: true
-            },
-            privacy_settings: {
-              profile_visibility: 'private',
-              data_sharing: false,
-              analytics_tracking: true,
-              third_party_sharing: false
-            },
-            theme_preferences: 'auto',
-            created_at: new Date().toISOString(),
-            updated_at: null
-          });
+          throw extendedProfileError;
+        }
+
+        if (!extendedProfileData) {
+          // Create default extended profile
+          try {
+            const { data: newExtendedProfile, error: createExtendedError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: user.id,
+                financial_experience: 'Beginner',
+                learning_style: 'visual',
+                time_availability: '30min',
+                notification_preferences: {
+                  email_notifications: true,
+                  push_notifications: true,
+                  sms_notifications: false,
+                  marketing_emails: false,
+                  goal_reminders: true,
+                  learning_reminders: true,
+                  weekly_summary: true
+                },
+                privacy_settings: {
+                  profile_visibility: 'private',
+                  data_sharing: false,
+                  analytics_tracking: true,
+                  third_party_sharing: false
+                },
+                theme_preferences: 'auto'
+              })
+              .select()
+              .single();
+
+            if (createExtendedError) {
+              console.error('Error creating extended profile:', createExtendedError);
+              // Use fallback extended profile
+              setExtendedProfile({
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                age_range: null,
+                income_range: null,
+                financial_experience: 'Beginner',
+                primary_goals: [],
+                learning_style: 'visual',
+                time_availability: '30min',
+                interests: [],
+                notification_preferences: {
+                  email_notifications: true,
+                  push_notifications: true,
+                  sms_notifications: false,
+                  marketing_emails: false,
+                  goal_reminders: true,
+                  learning_reminders: true,
+                  weekly_summary: true
+                },
+                privacy_settings: {
+                  profile_visibility: 'private',
+                  data_sharing: false,
+                  analytics_tracking: true,
+                  third_party_sharing: false
+                },
+                theme_preferences: 'auto',
+                created_at: new Date().toISOString(),
+                updated_at: null
+              });
+            } else {
+              console.log('Created new extended profile:', newExtendedProfile);
+              setExtendedProfile(newExtendedProfile);
+            }
+          } catch (createErr) {
+            console.error('Error creating extended profile:', createErr);
+            // Use fallback extended profile
+            setExtendedProfile({
+              id: crypto.randomUUID(),
+              user_id: user.id,
+              age_range: null,
+              income_range: null,
+              financial_experience: 'Beginner',
+              primary_goals: [],
+              learning_style: 'visual',
+              time_availability: '30min',
+              interests: [],
+              notification_preferences: {
+                email_notifications: true,
+                push_notifications: true,
+                sms_notifications: false,
+                marketing_emails: false,
+                goal_reminders: true,
+                learning_reminders: true,
+                weekly_summary: true
+              },
+              privacy_settings: {
+                profile_visibility: 'private',
+                data_sharing: false,
+                analytics_tracking: true,
+                third_party_sharing: false
+              },
+              theme_preferences: 'auto',
+              created_at: new Date().toISOString(),
+              updated_at: null
+            });
+          }
         } else {
           setExtendedProfile(extendedProfileData);
         }
-      } catch (err) {
-        console.error('Error fetching extended profile:', err);
+      } catch (extendedErr) {
+        console.error('Error fetching extended profile:', extendedErr);
         // Use fallback extended profile
         setExtendedProfile({
           id: crypto.randomUUID(),
@@ -295,6 +397,11 @@ export const useUserProfile = (user: User | null) => {
           .eq('user_id', user.id)
           .maybeSingle();
           
+        console.log('Enhanced XP query result:', { 
+          hasData: !!enhancedXpData, 
+          error: enhancedXpError?.message || 'none' 
+        });
+
         if (!enhancedXpError && enhancedXpData) {
           // Convert to compatible format for backward compatibility
           setXP({
@@ -311,15 +418,47 @@ export const useUserProfile = (user: User | null) => {
             .eq('user_id', user.id)
             .maybeSingle();
 
+          console.log('Original XP query result:', { 
+            hasData: !!xpData, 
+            error: xpError?.message || 'none' 
+          });
+
           if (xpError) {
             console.error('XP fetch error:', xpError);
-            // Use fallback XP data
-            setXP({
-              id: crypto.randomUUID(),
-              user_id: user.id,
-              points: 100,
-              badges: ['Welcome']
-            });
+            // Try to create XP record
+            try {
+              const { data: newXP, error: createXPError } = await supabase
+                .from('xp')
+                .insert({
+                  user_id: user.id,
+                  points: 100,
+                  badges: ['Welcome']
+                })
+                .select()
+                .single();
+
+              if (createXPError) {
+                console.error('Error creating XP record:', createXPError);
+                // Use fallback XP data
+                setXP({
+                  id: crypto.randomUUID(),
+                  user_id: user.id,
+                  points: 100,
+                  badges: ['Welcome']
+                });
+              } else {
+                setXP(newXP);
+              }
+            } catch (createXPErr) {
+              console.error('Error creating XP record:', createXPErr);
+              // Use fallback XP data
+              setXP({
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                points: 100,
+                badges: ['Welcome']
+              });
+            }
           } else {
             setXP(xpData || {
               id: crypto.randomUUID(),
@@ -329,8 +468,8 @@ export const useUserProfile = (user: User | null) => {
             });
           }
         }
-      } catch (err) {
-        console.error('Error fetching XP data:', err);
+      } catch (xpErr) {
+        console.error('Error fetching XP data:', xpErr);
         // Use fallback XP data
         setXP({
           id: crypto.randomUUID(),
@@ -340,8 +479,10 @@ export const useUserProfile = (user: User | null) => {
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching user data:', error);
+      setError(error.message || 'Failed to fetch user data');
+      
       // Set fallback data for all profile components
       setProfile({
         id: user.id,
@@ -397,9 +538,15 @@ export const useUserProfile = (user: User | null) => {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !profile) return;
+    if (!user || !profile) return null;
 
     try {
+      if (!isSupabaseConfigured) {
+        // Update local state only if Supabase is not configured
+        setProfile(prev => prev ? { ...prev, ...updates } : null);
+        return { ...profile, ...updates };
+      }
+
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -412,21 +559,31 @@ export const useUserProfile = (user: User | null) => {
 
       if (error) {
         console.error('Error updating profile:', error);
-        return;
+        // Update local state even if DB update fails
+        setProfile(prev => prev ? { ...prev, ...updates } : null);
+        return { ...profile, ...updates };
       }
 
       setProfile(data);
       return data;
     } catch (error) {
       console.error('Error in updateProfile:', error);
-      return null;
+      // Update local state even if DB update fails
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      return { ...profile, ...updates };
     }
   };
 
   const updateExtendedProfile = async (updates: Partial<ExtendedUserProfile>) => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
+      if (!isSupabaseConfigured) {
+        // Update local state only if Supabase is not configured
+        setExtendedProfile(prev => prev ? { ...prev, ...updates } : null);
+        return extendedProfile ? { ...extendedProfile, ...updates } : null;
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .upsert({
@@ -439,19 +596,23 @@ export const useUserProfile = (user: User | null) => {
 
       if (error) {
         console.error('Error updating extended profile:', error);
-        return;
+        // Update local state even if DB update fails
+        setExtendedProfile(prev => prev ? { ...prev, ...updates } : null);
+        return extendedProfile ? { ...extendedProfile, ...updates } : null;
       }
 
       setExtendedProfile(data);
       return data;
     } catch (error) {
       console.error('Error in updateExtendedProfile:', error);
-      return null;
+      // Update local state even if DB update fails
+      setExtendedProfile(prev => prev ? { ...prev, ...updates } : null);
+      return extendedProfile ? { ...extendedProfile, ...updates } : null;
     }
   };
 
   const updateNotificationPreferences = async (preferences: Partial<NotificationPreferences>) => {
-    if (!user) return;
+    if (!user) return null;
 
     const currentPreferences = extendedProfile?.notification_preferences || {};
     const updatedPreferences = { ...currentPreferences, ...preferences };
@@ -462,7 +623,7 @@ export const useUserProfile = (user: User | null) => {
   };
 
   const updatePrivacySettings = async (settings: Partial<PrivacySettings>) => {
-    if (!user) return;
+    if (!user) return null;
 
     const currentSettings = extendedProfile?.privacy_settings || {};
     const updatedSettings = { ...currentSettings, ...settings };
@@ -473,7 +634,7 @@ export const useUserProfile = (user: User | null) => {
   };
 
   const updateThemePreference = async (theme: string) => {
-    if (!user) return;
+    if (!user) return null;
 
     return updateExtendedProfile({
       theme_preferences: theme
@@ -481,13 +642,23 @@ export const useUserProfile = (user: User | null) => {
   };
 
   const updateXP = async (pointsToAdd: number, newBadge?: string) => {
-    if (!user || !xp) return;
+    if (!user || !xp) return null;
 
     try {
       const newPoints = (xp.points || 0) + pointsToAdd;
       const newBadges = newBadge 
         ? [...(xp.badges || []), newBadge]
         : xp.badges;
+
+      if (!isSupabaseConfigured) {
+        // Update local state only if Supabase is not configured
+        setXP(prev => prev ? {
+          ...prev,
+          points: newPoints,
+          badges: newBadges
+        } : null);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('xp')
@@ -568,6 +739,7 @@ export const useUserProfile = (user: User | null) => {
     extendedProfile,
     xp,
     loading,
+    error,
     updateProfile,
     updateExtendedProfile,
     updateNotificationPreferences,
