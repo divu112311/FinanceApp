@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -81,12 +81,12 @@ export const useUserProfile = (user: User | null) => {
       console.log('User email from auth:', user.email);
       console.log('User metadata:', user.user_metadata);
 
-      // Skip database operations if Supabase is not configured
+      // Check if Supabase is configured before attempting to fetch data
       if (!isSupabaseConfigured) {
-        console.log('Supabase not configured, using fallback profile data');
+        console.warn('Supabase is not configured. Using default profile data.');
         
-        // Create fallback profile from auth data
-        const fallbackProfile = {
+        // Set default profile data for development/testing
+        setProfile({
           id: user.id,
           email: user.email,
           first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User',
@@ -95,24 +95,51 @@ export const useUserProfile = (user: User | null) => {
           date_of_birth: null,
           is_active: true,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+          updated_at: null
+        });
         
-        // Create fallback XP
-        const fallbackXP = {
-          id: 'default',
+        setExtendedProfile({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          age_range: null,
+          income_range: null,
+          financial_experience: 'Beginner',
+          primary_goals: [],
+          learning_style: 'visual',
+          time_availability: '30min',
+          interests: [],
+          notification_preferences: {
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
+            goal_reminders: true,
+            learning_reminders: true,
+            weekly_summary: true
+          },
+          privacy_settings: {
+            profile_visibility: 'private',
+            data_sharing: false,
+            analytics_tracking: true,
+            third_party_sharing: false
+          },
+          theme_preferences: 'auto',
+          created_at: new Date().toISOString(),
+          updated_at: null
+        });
+        
+        setXP({
+          id: crypto.randomUUID(),
           user_id: user.id,
           points: 100,
           badges: ['Welcome']
-        };
+        });
         
-        setProfile(fallbackProfile);
-        setXP(fallbackXP);
         setLoading(false);
         return;
       }
 
-      // Fetch user profile
+      // Fetch user profile with error handling
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -132,112 +159,181 @@ export const useUserProfile = (user: User | null) => {
         const firstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || 'User';
         const lastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
         
-        const { data: newProfile, error: createError } = await supabase
-          .from('users')
-          .insert({
+        try {
+          const { data: newProfile, error: createError } = await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              email: user.email,
+              first_name: firstName,
+              last_name: lastName,
+              is_active: true,
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating user profile:', createError);
+            // Use fallback profile
+            setProfile({
+              id: user.id,
+              email: user.email,
+              first_name: firstName,
+              last_name: lastName,
+              phone_number: null,
+              date_of_birth: null,
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: null
+            });
+          } else {
+            console.log('Created new profile:', newProfile);
+            setProfile(newProfile);
+          }
+        } catch (err) {
+          console.error('Error in profile creation:', err);
+          // Use fallback profile
+          setProfile({
             id: user.id,
             email: user.email,
             first_name: firstName,
             last_name: lastName,
+            phone_number: null,
+            date_of_birth: null,
             is_active: true,
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating profile:', createError);
-        } else {
-          console.log('Created new profile:', newProfile);
-          setProfile(newProfile);
+            created_at: new Date().toISOString(),
+            updated_at: null
+          });
         }
       } else {
         setProfile(profileData);
       }
 
-      // Fetch extended user profile
-      const { data: extendedProfileData, error: extendedProfileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (extendedProfileError) {
-        console.error('Extended profile fetch error:', extendedProfileError);
-      } else {
-        setExtendedProfile(extendedProfileData);
-      }
-
-      // Fetch user XP with better error handling
+      // Fetch extended user profile with error handling
       try {
-        const { data: xpData, error: xpError } = await supabase
-          .from('xp')
+        const { data: extendedProfileData, error: extendedProfileError } = await supabase
+          .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (xpError) {
-          console.error('XP fetch error:', xpError);
-          // If XP table doesn't exist or there's an error, create a default XP record
-          console.log('Attempting to create default XP record...');
-          
-          const { data: newXpData, error: createXpError } = await supabase
-            .from('xp')
-            .insert({
-              user_id: user.id,
-              points: 100,
-              badges: ['Welcome']
-            })
-            .select()
-            .single();
-
-          if (createXpError) {
-            console.error('Error creating XP record:', createXpError);
-            // Set a default XP object if we can't create one in the database
-            setXP({
-              id: 'default',
-              user_id: user.id,
-              points: 100,
-              badges: ['Welcome']
-            });
-          } else {
-            console.log('Created new XP record:', newXpData);
-            setXP(newXpData);
-          }
-        } else if (!xpData) {
-          // No XP record exists, create one
-          console.log('No XP record found, creating one...');
-          
-          const { data: newXpData, error: createXpError } = await supabase
-            .from('xp')
-            .insert({
-              user_id: user.id,
-              points: 100,
-              badges: ['Welcome']
-            })
-            .select()
-            .single();
-
-          if (createXpError) {
-            console.error('Error creating XP record:', createXpError);
-            // Set a default XP object if we can't create one in the database
-            setXP({
-              id: 'default',
-              user_id: user.id,
-              points: 100,
-              badges: ['Welcome']
-            });
-          } else {
-            console.log('Created new XP record:', newXpData);
-            setXP(newXpData);
-          }
+        if (extendedProfileError) {
+          console.error('Extended profile fetch error:', extendedProfileError);
+          // Use fallback extended profile
+          setExtendedProfile({
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            age_range: null,
+            income_range: null,
+            financial_experience: 'Beginner',
+            primary_goals: [],
+            learning_style: 'visual',
+            time_availability: '30min',
+            interests: [],
+            notification_preferences: {
+              email_notifications: true,
+              push_notifications: true,
+              sms_notifications: false,
+              marketing_emails: false,
+              goal_reminders: true,
+              learning_reminders: true,
+              weekly_summary: true
+            },
+            privacy_settings: {
+              profile_visibility: 'private',
+              data_sharing: false,
+              analytics_tracking: true,
+              third_party_sharing: false
+            },
+            theme_preferences: 'auto',
+            created_at: new Date().toISOString(),
+            updated_at: null
+          });
         } else {
-          setXP(xpData);
+          setExtendedProfile(extendedProfileData);
         }
-      } catch (xpFetchError) {
-        console.error('XP fetch operation failed:', xpFetchError);
-        // Set a default XP object as fallback
+      } catch (err) {
+        console.error('Error fetching extended profile:', err);
+        // Use fallback extended profile
+        setExtendedProfile({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          age_range: null,
+          income_range: null,
+          financial_experience: 'Beginner',
+          primary_goals: [],
+          learning_style: 'visual',
+          time_availability: '30min',
+          interests: [],
+          notification_preferences: {
+            email_notifications: true,
+            push_notifications: true,
+            sms_notifications: false,
+            marketing_emails: false,
+            goal_reminders: true,
+            learning_reminders: true,
+            weekly_summary: true
+          },
+          privacy_settings: {
+            profile_visibility: 'private',
+            data_sharing: false,
+            analytics_tracking: true,
+            third_party_sharing: false
+          },
+          theme_preferences: 'auto',
+          created_at: new Date().toISOString(),
+          updated_at: null
+        });
+      }
+
+      // Fetch user XP with error handling
+      try {
+        // Try to fetch from enhanced user_xp table first
+        const { data: enhancedXpData, error: enhancedXpError } = await supabase
+          .from('user_xp')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (!enhancedXpError && enhancedXpData) {
+          // Convert to compatible format for backward compatibility
+          setXP({
+            id: enhancedXpData.xp_id,
+            user_id: enhancedXpData.user_id,
+            points: enhancedXpData.total_xp,
+            badges: []
+          });
+        } else {
+          // Fallback to original xp table
+          const { data: xpData, error: xpError } = await supabase
+            .from('xp')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (xpError) {
+            console.error('XP fetch error:', xpError);
+            // Use fallback XP data
+            setXP({
+              id: crypto.randomUUID(),
+              user_id: user.id,
+              points: 100,
+              badges: ['Welcome']
+            });
+          } else {
+            setXP(xpData || {
+              id: crypto.randomUUID(),
+              user_id: user.id,
+              points: 100,
+              badges: ['Welcome']
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching XP data:', err);
+        // Use fallback XP data
         setXP({
-          id: 'default',
+          id: crypto.randomUUID(),
           user_id: user.id,
           points: 100,
           badges: ['Welcome']
@@ -246,8 +342,7 @@ export const useUserProfile = (user: User | null) => {
 
     } catch (error) {
       console.error('Error fetching user data:', error);
-      
-      // Create fallback data on error
+      // Set fallback data for all profile components
       setProfile({
         id: user.id,
         email: user.email,
@@ -257,11 +352,41 @@ export const useUserProfile = (user: User | null) => {
         date_of_birth: null,
         is_active: true,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: null
+      });
+      
+      setExtendedProfile({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        age_range: null,
+        income_range: null,
+        financial_experience: 'Beginner',
+        primary_goals: [],
+        learning_style: 'visual',
+        time_availability: '30min',
+        interests: [],
+        notification_preferences: {
+          email_notifications: true,
+          push_notifications: true,
+          sms_notifications: false,
+          marketing_emails: false,
+          goal_reminders: true,
+          learning_reminders: true,
+          weekly_summary: true
+        },
+        privacy_settings: {
+          profile_visibility: 'private',
+          data_sharing: false,
+          analytics_tracking: true,
+          third_party_sharing: false
+        },
+        theme_preferences: 'auto',
+        created_at: new Date().toISOString(),
+        updated_at: null
       });
       
       setXP({
-        id: 'default',
+        id: crypto.randomUUID(),
         user_id: user.id,
         points: 100,
         badges: ['Welcome']
@@ -273,64 +398,56 @@ export const useUserProfile = (user: User | null) => {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user || !profile) return;
-    
-    if (!isSupabaseConfigured) {
-      // Local update only if Supabase is not configured
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-      return { ...profile, ...updates };
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        return;
+      }
+
+      setProfile(data);
+      return data;
+    } catch (error) {
+      console.error('Error in updateProfile:', error);
+      return null;
     }
-
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating profile:', error);
-      return;
-    }
-
-    setProfile(data);
-    return data;
   };
 
   const updateExtendedProfile = async (updates: Partial<ExtendedUserProfile>) => {
     if (!user) return;
-    
-    if (!isSupabaseConfigured) {
-      // Local update only if Supabase is not configured
-      setExtendedProfile(prev => prev ? { ...prev, ...updates } : {
-        id: 'default',
-        user_id: user.id,
-        ...updates,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      } as ExtendedUserProfile);
-      return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating extended profile:', error);
+        return;
+      }
+
+      setExtendedProfile(data);
+      return data;
+    } catch (error) {
+      console.error('Error in updateExtendedProfile:', error);
+      return null;
     }
-
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert({
-        user_id: user.id,
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating extended profile:', error);
-      return;
-    }
-
-    setExtendedProfile(data);
-    return data;
   };
 
   const updateNotificationPreferences = async (preferences: Partial<NotificationPreferences>) => {
@@ -366,23 +483,12 @@ export const useUserProfile = (user: User | null) => {
   const updateXP = async (pointsToAdd: number, newBadge?: string) => {
     if (!user || !xp) return;
 
-    const newPoints = (xp.points || 0) + pointsToAdd;
-    const newBadges = newBadge 
-      ? [...(xp.badges || []), newBadge]
-      : xp.badges;
-
-    // If we have a default XP object (not in database), just update local state
-    if (xp.id === 'default' || !isSupabaseConfigured) {
-      const updatedXP = {
-        ...xp,
-        points: newPoints,
-        badges: newBadges
-      };
-      setXP(updatedXP);
-      return updatedXP;
-    }
-
     try {
+      const newPoints = (xp.points || 0) + pointsToAdd;
+      const newBadges = newBadge 
+        ? [...(xp.badges || []), newBadge]
+        : xp.badges;
+
       const { data, error } = await supabase
         .from('xp')
         .update({
@@ -395,8 +501,12 @@ export const useUserProfile = (user: User | null) => {
 
       if (error) {
         console.error('Error updating XP:', error);
-        // Update local state even if database update fails
-        setXP(prev => prev ? { ...prev, points: newPoints, badges: newBadges } : null);
+        // Update local state even if DB update fails
+        setXP(prev => prev ? {
+          ...prev,
+          points: newPoints,
+          badges: newBadges
+        } : null);
         return;
       }
 
@@ -404,8 +514,13 @@ export const useUserProfile = (user: User | null) => {
       return data;
     } catch (error) {
       console.error('Error in updateXP:', error);
-      // Update local state even if database update fails
-      setXP(prev => prev ? { ...prev, points: newPoints, badges: newBadges } : null);
+      // Update local state even if DB update fails
+      setXP(prev => prev ? {
+        ...prev,
+        points: (xp.points || 0) + pointsToAdd,
+        badges: newBadge ? [...(xp.badges || []), newBadge] : xp.badges
+      } : null);
+      return null;
     }
   };
 

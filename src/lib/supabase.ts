@@ -20,6 +20,10 @@ if (!hasValidCredentials) {
   console.log('   - VITE_SUPABASE_ANON_KEY (your anon key)');
 }
 
+// Use valid placeholder URL to prevent initialization errors
+const fallbackUrl = 'https://placeholder.supabase.co';
+const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.placeholder';
+
 // Log Supabase configuration for debugging
 console.log('=== SUPABASE CONFIGURATION ===');
 console.log('URL:', hasValidCredentials ? supabaseUrl : 'Using fallback URL');
@@ -27,8 +31,8 @@ console.log('Has Anon Key:', !!supabaseAnonKey);
 console.log('Valid Credentials:', hasValidCredentials);
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.placeholder'
+  hasValidCredentials ? supabaseUrl : fallbackUrl,
+  hasValidCredentials ? supabaseAnonKey : fallbackKey
 );
 
 // Export a flag to check if Supabase is properly configured

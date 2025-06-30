@@ -61,19 +61,30 @@ export const useXP = (user: User | null) => {
 
     setLoading(true);
     try {
-      // Skip database operations if Supabase is not configured
+      // Check if Supabase is configured
       if (!isSupabaseConfigured) {
-        console.log('Supabase not configured, using fallback XP data');
+        console.warn('Supabase is not configured. Using default XP data.');
         
-        // Create fallback XP data
-        const fallbackXP = {
-          id: 'default',
+        // Set default XP data for development/testing
+        setXP({
+          id: crypto.randomUUID(),
           user_id: user.id,
           points: 100,
           badges: ['Welcome']
-        };
+        });
         
-        setXP(fallbackXP);
+        setEnhancedXP({
+          xp_id: crypto.randomUUID(),
+          user_id: user.id,
+          total_xp: 100,
+          current_level: 2,
+          xp_to_next_level: 100,
+          last_xp_earned_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        
+        setUserBadges([]);
         setLoading(false);
         return;
       }
@@ -105,39 +116,17 @@ export const useXP = (user: User | null) => {
             .maybeSingle();
 
           if (xpError) {
-            console.log('Error fetching from xp table:', xpError.message);
-            
-            // Try to create a new XP record
-            try {
-              const { data: newXpData, error: createError } = await supabase
-                .from('xp')
-                .insert({
-                  user_id: user.id,
-                  points: 100,
-                  badges: ['Welcome']
-                })
-                .select()
-                .single();
-                
-              if (createError) {
-                console.error('Error creating XP record:', createError);
-                throw createError;
-              }
-              
-              setXP(newXpData);
-            } catch (createErr) {
-              console.error('Failed to create XP record:', createErr);
-              // Use fallback XP data
-              setXP({
-                id: 'default',
-                user_id: user.id,
-                points: 100,
-                badges: ['Welcome']
-              });
-            }
+            console.warn('XP fetch error:', xpError);
+            // Use default XP data
+            setXP({
+              id: crypto.randomUUID(),
+              user_id: user.id,
+              points: 100,
+              badges: ['Welcome']
+            });
           } else {
             setXP(xpData || {
-              id: 'default',
+              id: crypto.randomUUID(),
               user_id: user.id,
               points: 100,
               badges: ['Welcome']
@@ -145,10 +134,10 @@ export const useXP = (user: User | null) => {
           }
         }
       } catch (error) {
-        console.error('Error in enhanced XP fetch:', error);
-        // Use fallback XP data
+        console.error('Error fetching XP data:', error);
+        // Use default XP data
         setXP({
-          id: 'default',
+          id: crypto.randomUUID(),
           user_id: user.id,
           points: 100,
           badges: ['Welcome']
@@ -173,44 +162,32 @@ export const useXP = (user: User | null) => {
           }));
           
           setUserBadges(formattedBadges);
+        } else {
+          setUserBadges([]);
         }
-      } catch (badgesError) {
-        console.error('Error fetching badges:', badgesError);
-        // Continue without badges
+      } catch (error) {
+        console.error('Error fetching badges:', error);
+        setUserBadges([]);
       }
     } catch (error) {
       console.error('Error fetching XP data:', error);
-      // Use fallback XP data
+      // Use default XP data
       setXP({
-        id: 'default',
+        id: crypto.randomUUID(),
         user_id: user.id,
         points: 100,
         badges: ['Welcome']
       });
+      setUserBadges([]);
     } finally {
       setLoading(false);
     }
   };
 
   const updateXP = async (pointsToAdd: number, badgeId?: string) => {
-    if (!user) return false;
+    if (!user) return;
 
     try {
-      // If we're using fallback XP or Supabase is not configured
-      if (!isSupabaseConfigured || (xp && xp.id === 'default')) {
-        const newPoints = (xp?.points || 0) + pointsToAdd;
-        setXP(prev => prev ? {
-          ...prev,
-          points: newPoints
-        } : {
-          id: 'default',
-          user_id: user.id,
-          points: newPoints,
-          badges: ['Welcome']
-        });
-        return true;
-      }
-
       if (enhancedXP) {
         // Update enhanced user_xp table
         const newTotalXP = enhancedXP.total_xp + pointsToAdd;
@@ -231,8 +208,20 @@ export const useXP = (user: User | null) => {
             .select()
             .single();
 
-          if (error) throw error;
-          setEnhancedXP(data);
+          if (error) {
+            console.warn('Error updating user_xp:', error);
+            // Update local state even if DB update fails
+            setEnhancedXP(prev => prev ? {
+              ...prev,
+              total_xp: newTotalXP,
+              current_level: newLevel,
+              xp_to_next_level: xpToNextLevel,
+              last_xp_earned_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            } : null);
+          } else {
+            setEnhancedXP(data);
+          }
           
           // Update local xp state for backward compatibility
           setXP(prev => prev ? {
@@ -240,14 +229,13 @@ export const useXP = (user: User | null) => {
             points: newTotalXP
           } : null);
         } catch (error) {
-          console.error('Error updating enhanced XP:', error);
-          // Update local state even if database update fails
-          const newTotalXP = enhancedXP.total_xp + pointsToAdd;
+          console.error('Error updating user_xp:', error);
+          // Update local state even if DB update fails
           setEnhancedXP(prev => prev ? {
             ...prev,
             total_xp: newTotalXP,
-            current_level: Math.floor(newTotalXP / 100) + 1,
-            xp_to_next_level: ((Math.floor(newTotalXP / 100) + 1) * 100) - newTotalXP,
+            current_level: newLevel,
+            xp_to_next_level: xpToNextLevel,
             last_xp_earned_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           } : null);
@@ -261,9 +249,8 @@ export const useXP = (user: User | null) => {
         // Record user action
         try {
           await recordXPAction(pointsToAdd);
-        } catch (actionError) {
-          console.error('Error recording XP action:', actionError);
-          // Continue even if action recording fails
+        } catch (error) {
+          console.error('Error recording XP action:', error);
         }
       } else if (xp) {
         // Fallback to original xp table
@@ -279,15 +266,84 @@ export const useXP = (user: User | null) => {
             .select()
             .single();
 
-          if (error) throw error;
-          setXP(data);
+          if (error) {
+            console.warn('Error updating xp:', error);
+            // Update local state even if DB update fails
+            setXP(prev => prev ? {
+              ...prev,
+              points: newPoints
+            } : null);
+          } else {
+            setXP(data);
+          }
         } catch (error) {
-          console.error('Error updating XP:', error);
-          // Update local state even if database update fails
+          console.error('Error updating xp:', error);
+          // Update local state even if DB update fails
           setXP(prev => prev ? {
             ...prev,
             points: newPoints
           } : null);
+        }
+      } else {
+        // No XP record exists, create one
+        try {
+          // Try to create in user_xp first
+          const { data: newXP, error: newXPError } = await supabase
+            .from('user_xp')
+            .insert({
+              user_id: user.id,
+              total_xp: pointsToAdd,
+              current_level: Math.floor(pointsToAdd / 100) + 1,
+              xp_to_next_level: 100 - (pointsToAdd % 100),
+              last_xp_earned_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+            
+          if (newXPError) {
+            console.warn('Error creating user_xp:', newXPError);
+            
+            // Fallback to original xp table
+            const { data: fallbackXP, error: fallbackError } = await supabase
+              .from('xp')
+              .insert({
+                user_id: user.id,
+                points: pointsToAdd,
+                badges: []
+              })
+              .select()
+              .single();
+              
+            if (fallbackError) {
+              console.error('Error creating xp:', fallbackError);
+              // Use local state only
+              setXP({
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                points: pointsToAdd,
+                badges: []
+              });
+            } else {
+              setXP(fallbackXP);
+            }
+          } else {
+            setEnhancedXP(newXP);
+            setXP({
+              id: newXP.xp_id,
+              user_id: newXP.user_id,
+              points: newXP.total_xp,
+              badges: []
+            });
+          }
+        } catch (error) {
+          console.error('Error creating XP record:', error);
+          // Use local state only
+          setXP({
+            id: crypto.randomUUID(),
+            user_id: user.id,
+            points: pointsToAdd,
+            badges: []
+          });
         }
       }
 
@@ -299,22 +355,34 @@ export const useXP = (user: User | null) => {
       return true;
     } catch (error) {
       console.error('Error updating XP:', error);
-      
-      // Update local state even if database operations fail
+      // Update local state even if everything fails
       if (enhancedXP) {
         const newTotalXP = enhancedXP.total_xp + pointsToAdd;
+        const newLevel = Math.floor(newTotalXP / 100) + 1;
+        const xpToNextLevel = (newLevel * 100) - newTotalXP;
+        
         setEnhancedXP(prev => prev ? {
           ...prev,
           total_xp: newTotalXP,
-          current_level: Math.floor(newTotalXP / 100) + 1,
-          xp_to_next_level: ((Math.floor(newTotalXP / 100) + 1) * 100) - newTotalXP
+          current_level: newLevel,
+          xp_to_next_level: xpToNextLevel,
+          last_xp_earned_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         } : null);
-      } else if (xp) {
-        const newPoints = (xp.points || 0) + pointsToAdd;
+      }
+      
+      if (xp) {
         setXP(prev => prev ? {
           ...prev,
-          points: newPoints
+          points: (prev.points || 0) + pointsToAdd
         } : null);
+      } else {
+        setXP({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          points: pointsToAdd,
+          badges: []
+        });
       }
       
       return false;
@@ -322,7 +390,7 @@ export const useXP = (user: User | null) => {
   };
 
   const awardBadge = async (badgeId: string) => {
-    if (!user || !isSupabaseConfigured) return false;
+    if (!user) return;
 
     try {
       // Check if user already has this badge
@@ -335,7 +403,7 @@ export const useXP = (user: User | null) => {
 
       if (existingBadge) {
         console.log('User already has this badge:', badgeId);
-        return true;
+        return;
       }
 
       // Award the badge
