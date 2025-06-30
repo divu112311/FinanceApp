@@ -24,13 +24,14 @@ interface QuizQuestion {
   correct_answer: string;
   explanation: string;
   points?: number;
+  concept_id?: string;
 }
 
 interface QuizInterfaceProps {
   moduleId: string;
   moduleTitle: string;
   user: User;
-  onComplete: (score: number, xpEarned: number) => void;
+  onComplete: (score: number, xpEarned: number, results: any[]) => void;
   onClose: () => void;
   questions?: QuizQuestion[];
   isLoading?: boolean;
@@ -55,6 +56,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [results, setResults] = useState<any[]>([]);
 
   useEffect(() => {
     console.log('=== QUIZ INTERFACE MOUNTED ===');
@@ -66,6 +68,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       console.log('Using provided questions');
       setQuestions(providedQuestions);
       setUserAnswers(new Array(providedQuestions.length).fill(''));
+      setResults(new Array(providedQuestions.length).fill(null));
       setLoading(false);
       return;
     }
@@ -75,6 +78,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       const budgetingQuestions = getBudgetingQuizQuestions();
       setQuestions(budgetingQuestions);
       setUserAnswers(new Array(budgetingQuestions.length).fill(''));
+      setResults(new Array(budgetingQuestions.length).fill(null));
       setLoading(false);
       return;
     }
@@ -208,6 +212,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
         ];
         setQuestions(defaultQuestions);
         setUserAnswers(new Array(defaultQuestions.length).fill(''));
+        setResults(new Array(defaultQuestions.length).fill(null));
         setLoading(false);
         return;
       }
@@ -238,6 +243,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       console.log('Formatted questions:', formattedQuestions);
       setQuestions(formattedQuestions);
       setUserAnswers(new Array(formattedQuestions.length).fill(''));
+      setResults(new Array(formattedQuestions.length).fill(null));
     } catch (error) {
       console.error('Error fetching quiz questions:', error);
       // Use default questions if fetch fails
@@ -280,6 +286,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
       ];
       setQuestions(defaultQuestions);
       setUserAnswers(new Array(defaultQuestions.length).fill(''));
+      setResults(new Array(defaultQuestions.length).fill(null));
     } finally {
       setLoading(false);
     }
@@ -324,6 +331,16 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     newAnswers[currentQuestionIndex] = selectedAnswer;
     setUserAnswers(newAnswers);
     console.log('Updated user answers:', newAnswers);
+
+    // Update results
+    const newResults = [...results];
+    newResults[currentQuestionIndex] = {
+      questionId: currentQuestion.id || `q-${currentQuestionIndex}`,
+      question: currentQuestion,
+      userAnswer: selectedAnswer,
+      isCorrect: correct
+    };
+    setResults(newResults);
 
     if (correct) {
       const newScore = score + (currentQuestion.points || 10);
@@ -394,6 +411,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     console.log('=== COMPLETING QUIZ ===');
     console.log('Final score:', score);
     console.log('User answers:', userAnswers);
+    console.log('Results:', results);
     
     setQuizCompleted(true);
     
@@ -412,7 +430,7 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
     });
     
     setTimeout(() => {
-      onComplete(finalScore, xpEarned);
+      onComplete(finalScore, xpEarned, results.filter(r => r !== null));
     }, 2000);
   };
 
@@ -621,6 +639,11 @@ const QuizInterface: React.FC<QuizInterfaceProps> = ({
                                 <div className="flex items-center space-x-1 mt-2 bg-green-200 rounded px-2 py-1 w-fit">
                                   <Sparkles className="h-3 w-3 text-green-700" />
                                   <span className="text-green-700 font-medium text-xs">+{currentQuestion.points || 10} points!</span>
+                                </div>
+                              )}
+                              {currentQuestion.concept_id && (
+                                <div className="mt-2 text-xs text-gray-500">
+                                  This question tests your knowledge of a specific financial concept.
                                 </div>
                               )}
                             </div>

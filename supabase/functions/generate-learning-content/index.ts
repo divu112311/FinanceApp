@@ -15,9 +15,11 @@ serve(async (req) => {
     console.log('=== GENERATE LEARNING CONTENT FUNCTION START ===')
     console.log('Edge function called with method:', req.method)
     
-    const { userId } = await req.json()
+    const { userId, forceGenerate, queueSize = 15 } = await req.json()
     console.log('📥 REQUEST:', {
-      userId: userId || 'MISSING'
+      userId: userId || 'MISSING',
+      forceGenerate: forceGenerate || false,
+      queueSize
     })
 
     if (!userId) {
@@ -35,10 +37,72 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
+    // Check if we should generate new content
+    if (!forceGenerate) {
+      // Check if user has enough content in queue
+      const { data: queueData, error: queueError } = await supabaseClient
+        .from('learning_content_queue')
+        .select('queue_id')
+        .eq('user_id', userId)
+        .eq('is_deployed', false)
+        .limit(1)
+      
+      if (!queueError && queueData && queueData.length > 0) {
+        // Check if we need to deploy content from queue to modules
+        const { data: moduleCount } = await supabaseClient
+          .from('learning_modules')
+          .select('id', { count: 'exact', head: true })
+          .eq('content_data->generated_by', 'ai')
+          .not('id', 'in', `(
+            SELECT module_id FROM user_learning_progress 
+            WHERE user_id = '${userId}' AND status = 'completed'
+          )`)
+        
+        // If fewer than 5 modules available, deploy from queue
+        if (moduleCount === 0) {
+          console.log('Deploying content from queue to modules...')
+          
+          // Call the deploy_queued_content function
+          const { data: deployResult } = await supabaseClient.rpc('deploy_queued_content', {
+            user_id: userId,
+            count: 5
+          })
+          
+          console.log(`Deployed ${deployResult} modules from queue`)
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: 'Deployed content from queue',
+              deployed: deployResult,
+              generated: false
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            },
+          )
+        }
+        
+        console.log('User has sufficient content in queue and modules')
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'User has sufficient content',
+            generated: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          },
+        )
+      }
+    }
+
     console.log('🔍 FETCHING USER DATA...')
 
     // Get comprehensive user data from database
-    const [userResult, goalsResult, accountsResult, transactionsResult, profileResult, xpResult] = await Promise.all([
+    const [userResult, goalsResult, accountsResult, transactionsResult, profileResult, xpResult, knowledgeResult, conceptsResult] = await Promise.all([
       supabaseClient.from('users').select('*').eq('id', userId).single(),
       supabaseClient.from('goals').select('*').eq('user_id', userId),
       supabaseClient.from('bank_accounts').select('*').eq('user_id', userId),
@@ -49,7 +113,11 @@ serve(async (req) => {
         .order('date', { ascending: false })
         .limit(100),
       supabaseClient.from('user_profiles').select('*').eq('user_id', userId).single(),
-      supabaseClient.from('xp').select('*').eq('user_id', userId).single()
+      supabaseClient.from('xp').select('*').eq('user_id', userId).single(),
+      supabaseClient.from('user_knowledge_areas')
+        .select('*, concept:concept_id(concept_name, concept_category, difficulty_level)')
+        .eq('user_id', userId),
+      supabaseClient.from('financial_concepts').select('*')
     ])
 
     const userData = userResult.data
@@ -58,6 +126,8 @@ serve(async (req) => {
     const transactionsData = transactionsResult.data || []
     const profileData = profileResult.data
     const xpData = xpResult.data
+    const knowledgeData = knowledgeResult.data || []
+    const conceptsData = conceptsResult.data || []
 
     console.log('📊 USER DATA FETCHED:', {
       user: userData?.first_name || userData?.full_name || 'Unknown',
@@ -65,7 +135,9 @@ serve(async (req) => {
       accounts: accountsData.length,
       transactions: transactionsData.length,
       experience: profileData?.financial_experience || 'Unknown',
-      xp: xpData?.points || 0
+      xp: xpData?.points || 0,
+      knowledgeAreas: knowledgeData.length,
+      concepts: conceptsData.length
     })
 
     // Calculate financial metrics
@@ -74,6 +146,54 @@ serve(async (req) => {
     const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0)
     const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0
     const level = Math.floor((xpData?.points || 0) / 100) + 1
+
+    // Get user's knowledge level
+    let userDifficultyLevel = 1
+    let masteredConcepts = []
+    let strugglingConcepts = []
+    
+    if (profileData?.learning_progression) {
+      userDifficultyLevel = parseInt(profileData.learning_progression.current_difficulty || '1')
+      masteredConcepts = profileData.learning_progression.mastered_concepts || []
+      strugglingConcepts = profileData.learning_progression.struggling_concepts || []
+    }
+    
+    // Map knowledge areas by concept
+    const knowledgeByConceptId = {}
+    knowledgeData.forEach(k => {
+      knowledgeByConceptId[k.concept_id] = {
+        proficiency: k.proficiency_level,
+        confidence: k.confidence_score,
+        timesEncountered: k.times_encountered,
+        lastAssessed: k.last_assessed
+      }
+    })
+    
+    // Get concepts user needs to learn
+    const conceptsToLearn = conceptsData
+      .filter(c => {
+        // Skip concepts user has mastered
+        if (masteredConcepts.includes(c.concept_id)) return false
+        
+        // Prioritize struggling concepts
+        if (strugglingConcepts.includes(c.concept_id)) return true
+        
+        // Filter by difficulty level (allow slightly higher than user's level)
+        return c.difficulty_level <= userDifficultyLevel + 2
+      })
+      .sort((a, b) => {
+        // Prioritize struggling concepts
+        const aIsStruggling = strugglingConcepts.includes(a.concept_id)
+        const bIsStruggling = strugglingConcepts.includes(b.concept_id)
+        if (aIsStruggling && !bIsStruggling) return -1
+        if (!aIsStruggling && bIsStruggling) return 1
+        
+        // Then sort by difficulty (appropriate for user's level first)
+        const aDiffDelta = Math.abs(a.difficulty_level - userDifficultyLevel)
+        const bDiffDelta = Math.abs(b.difficulty_level - userDifficultyLevel)
+        return aDiffDelta - bDiffDelta
+      })
+      .slice(0, 10) // Get top 10 concepts to focus on
 
     // Check for OpenRouter API key to generate personalized content
     const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
@@ -94,6 +214,7 @@ serve(async (req) => {
         experience: profileData?.financial_experience || 'Beginner',
         level: level,
         xp: xpData?.points || 0,
+        difficultyLevel: userDifficultyLevel,
         goals: goalsData.map(g => ({
           name: g.name,
           target: g.target_amount,
@@ -110,7 +231,25 @@ serve(async (req) => {
           count: transactionsData.length,
           categories: [...new Set(transactionsData.map(t => t.category).filter(Boolean))]
         },
-        interests: profileData?.interests || []
+        interests: profileData?.interests || [],
+        knowledgeAreas: knowledgeData.map(k => ({
+          concept: k.concept.concept_name,
+          category: k.concept.concept_category,
+          proficiency: k.proficiency_level,
+          confidence: k.confidence_score
+        })),
+        conceptsToLearn: conceptsToLearn.map(c => ({
+          id: c.concept_id,
+          name: c.concept_name,
+          category: c.concept_category,
+          difficulty: c.difficulty_level,
+          currentProficiency: knowledgeByConceptId[c.concept_id]?.proficiency || 0
+        })),
+        masteredConcepts: masteredConcepts.length,
+        strugglingConcepts: strugglingConcepts.map(id => {
+          const concept = conceptsData.find(c => c.concept_id === id)
+          return concept ? concept.concept_name : id
+        })
       }
       
       const prompt = `Generate a personalized learning path for a user with the following financial profile:
@@ -118,7 +257,7 @@ serve(async (req) => {
 USER CONTEXT:
 ${JSON.stringify(userContext, null, 2)}
 
-Create 5 learning modules that would be most beneficial for this user based on their financial situation, experience level, and goals.
+Create ${queueSize} learning modules that would be most beneficial for this user based on their financial situation, experience level, goals, and current knowledge level.
 
 Each module should include:
 1. Title
@@ -128,10 +267,17 @@ Each module should include:
 5. Category (e.g., Budgeting, Investing, Savings, etc.)
 6. Duration in minutes
 7. XP reward for completion
-8. For articles: 3-4 sections with titles and content
-9. For quizzes: 5 multiple-choice questions with options, correct answers, and explanations
+8. Target concepts (list of concept IDs from conceptsToLearn that this module addresses)
+9. For articles: 3-4 sections with titles and content
+10. For quizzes: 5 multiple-choice questions with options, correct answers, and explanations
 
-The first module should be today's recommended practice, tailored specifically to their most pressing financial need.
+IMPORTANT KNOWLEDGE TRACKING GUIDELINES:
+1. Focus on concepts the user needs to learn (from conceptsToLearn)
+2. For struggling concepts, create remedial content that explains fundamentals
+3. Gradually increase difficulty based on user's current difficulty level (${userDifficultyLevel})
+4. For concepts like "Debt-to-Income Ratio" that the user may not understand, include clear explanations
+5. Each module should target 1-3 specific concepts from conceptsToLearn
+6. Include knowledge prerequisites and expected knowledge gain
 
 FORMAT YOUR RESPONSE AS A JSON ARRAY:
 [
@@ -143,6 +289,15 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY:
     "category": "Category name",
     "duration_minutes": 15,
     "xp_reward": 30,
+    "target_concepts": ["concept-id-1", "concept-id-2"],
+    "knowledge_requirements": {
+      "concept-id-1": 2,  // Minimum proficiency level needed (1-10)
+      "concept-id-2": 1
+    },
+    "knowledge_gain": {
+      "concept-id-1": 2,  // Expected proficiency gain
+      "concept-id-2": 3
+    },
     "content_data": {
       // For articles:
       "sections": [
@@ -154,7 +309,8 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY:
           "question_text": "Question?",
           "options": ["Option A", "Option B", "Option C", "Option D"],
           "correct_answer": "Option B",
-          "explanation": "Explanation of why B is correct"
+          "explanation": "Explanation of why B is correct",
+          "concept_id": "concept-id-1"  // Which concept this tests
         }
       ]
     }
@@ -163,11 +319,13 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY:
 
 IMPORTANT GUIDELINES:
 1. Make content practical and actionable
-2. Tailor difficulty to the user's experience level
+2. Tailor difficulty to the user's experience level and knowledge
 3. Focus on their specific financial situation and goals
 4. Include a mix of content types (articles, quizzes)
 5. Make sure quiz questions have exactly 4 options
-6. Return ONLY the JSON array with no additional text`
+6. For concepts user is struggling with, provide more basic explanations
+7. For debt-to-income ratio and other complex concepts, include clear definitions
+8. Return ONLY the JSON array with no additional text`
 
       try {
         const aiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -186,7 +344,7 @@ IMPORTANT GUIDELINES:
                 content: prompt
               }
             ],
-            max_tokens: 2000,
+            max_tokens: 4000,
             temperature: 0.7,
             response_format: { type: "json_object" }
           }),
@@ -237,18 +395,18 @@ IMPORTANT GUIDELINES:
             console.error('Error parsing AI modules:', parseError)
             console.log('Raw AI response:', aiContent)
             // Fall back to local generation
-            modules = generateLocalModules(userContext)
+            modules = generateLocalModules(userContext, conceptsToLearn)
           }
         } else {
           const errorText = await aiResponse.text()
           console.error('Error generating AI modules:', errorText)
           // Fall back to local generation
-          modules = generateLocalModules(userContext)
+          modules = generateLocalModules(userContext, conceptsToLearn)
         }
       } catch (aiError) {
         console.error('Error calling AI service:', aiError)
         // Fall back to local generation
-        modules = generateLocalModules(userContext)
+        modules = generateLocalModules(userContext, conceptsToLearn)
       }
     } else {
       console.log('No OpenRouter API key, using local module generation')
@@ -257,17 +415,83 @@ IMPORTANT GUIDELINES:
         experience: profileData?.financial_experience || 'Beginner',
         level: level,
         xp: xpData?.points || 0,
+        difficultyLevel: userDifficultyLevel,
         goals: goalsData,
         accounts: accountsData,
-        transactions: transactionsData
-      })
+        transactions: transactionsData,
+        conceptsToLearn: conceptsToLearn
+      }, conceptsToLearn)
     }
 
-    // Store modules in database
-    console.log('💾 STORING MODULES IN DATABASE...')
+    // Generate content hashes for deduplication
+    modules = modules.map(module => {
+      // Create a hash based on title and content
+      const contentString = module.title + JSON.stringify(module.content_data)
+      const contentHash = hashString(contentString)
+      
+      return {
+        ...module,
+        content_hash: contentHash
+      }
+    })
+
+    // Check for new users with no content
+    const { data: existingModules } = await supabaseClient
+      .from('learning_modules')
+      .select('id')
+      .eq('content_data->generated_by', 'ai')
+      .limit(1)
+    
+    const isNewUser = !existingModules || existingModules.length === 0
+    
+    // For new users, initialize with default content
+    if (isNewUser) {
+      console.log('New user detected, initializing with default content')
+      
+      // Call the initialize_user_content function
+      const { data: initResult } = await supabaseClient.rpc('initialize_user_content', {
+        user_id: userId
+      })
+      
+      console.log(`Initialized ${initResult} default modules for new user`)
+    }
+
+    // Store modules in content queue
+    console.log('💾 STORING MODULES IN CONTENT QUEUE...')
     console.log(`Generated ${modules.length} modules`)
     
-    const modulesToInsert = modules.map(module => ({
+    // Check for existing content with same hashes
+    const contentHashes = modules.map(m => m.content_hash)
+    const { data: existingContent } = await supabaseClient
+      .from('learning_content_history')
+      .select('content_hash')
+      .eq('user_id', userId)
+      .in('content_hash', contentHashes)
+    
+    const existingHashes = new Set(existingContent?.map(c => c.content_hash) || [])
+    
+    // Filter out content user has already seen
+    const newModules = modules.filter(m => !existingHashes.has(m.content_hash))
+    console.log(`Filtered to ${newModules.length} new modules after deduplication`)
+    
+    if (newModules.length === 0) {
+      console.log('No new content to add after deduplication')
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No new content to add after deduplication',
+          generated: true,
+          count: 0
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
+    }
+    
+    const modulesToInsert = newModules.map(module => ({
+      user_id: userId,
       title: module.title,
       description: module.description,
       content_type: module.content_type,
@@ -275,14 +499,16 @@ IMPORTANT GUIDELINES:
       category: module.category,
       duration_minutes: module.duration_minutes,
       xp_reward: module.xp_reward,
-      required_level: 1,
       content_data: module.content_data,
-      is_active: true,
-      tags: [module.category, module.difficulty.toLowerCase(), module.content_type]
+      content_hash: module.content_hash,
+      target_concepts: module.target_concepts || [],
+      knowledge_requirements: module.knowledge_requirements || {},
+      knowledge_gain: module.knowledge_gain || {},
+      priority: calculatePriority(module, userContext)
     }))
     
     const { data: insertedModules, error: insertError } = await supabaseClient
-      .from('learning_modules')
+      .from('learning_content_queue')
       .insert(modulesToInsert)
       .select()
     
@@ -291,7 +517,23 @@ IMPORTANT GUIDELINES:
       throw new Error(`Failed to store modules: ${insertError.message}`)
     }
     
-    console.log(`✅ Successfully stored ${insertedModules.length} modules`)
+    console.log(`✅ Successfully stored ${insertedModules.length} modules in queue`)
+    
+    // Update user profile with new refresh timestamp
+    await supabaseClient
+      .from('user_profiles')
+      .update({ content_refresh_trigger: new Date().toISOString() })
+      .eq('user_id', userId)
+    
+    // Deploy some modules from queue to active modules
+    console.log('🚀 DEPLOYING MODULES FROM QUEUE...')
+    
+    const { data: deployResult } = await supabaseClient.rpc('deploy_queued_content', {
+      user_id: userId,
+      count: 5
+    })
+    
+    console.log(`✅ Deployed ${deployResult} modules from queue`)
     console.log('=== GENERATE LEARNING CONTENT FUNCTION SUCCESS ===')
 
     return new Response(
@@ -299,7 +541,8 @@ IMPORTANT GUIDELINES:
         success: true, 
         modules: insertedModules,
         generated: true,
-        count: insertedModules.length
+        count: insertedModules.length,
+        deployed: deployResult
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -330,239 +573,136 @@ IMPORTANT GUIDELINES:
   }
 })
 
-// Generate modules locally based on user context
-function generateLocalModules(userContext: any) {
+// Generate modules locally based on user context and concepts
+function generateLocalModules(userContext: any, conceptsToLearn: any[]) {
   const modules = []
   const now = new Date().toISOString()
   const experience = userContext.experience || 'Beginner'
+  const difficultyLevel = userContext.difficultyLevel || 1
   
-  // Determine user's financial situation
-  const hasAccounts = userContext.accounts?.length > 0
-  const hasGoals = userContext.goals?.length > 0
+  // Map difficulty level to module difficulty
+  const mapDifficultyToLevel = (level: number) => {
+    if (level <= 3) return 'Beginner'
+    if (level <= 7) return 'Intermediate'
+    return 'Advanced'
+  }
   
-  // 1. Always include a budgeting module
-  modules.push({
-    title: "Smart Budgeting Strategies",
-    description: "Learn practical budgeting methods that fit your lifestyle, including the 50/30/20 rule and zero-based budgeting techniques.",
-    content_type: "article",
-    difficulty: "Beginner",
-    category: "Budgeting",
-    duration_minutes: 15,
-    xp_reward: 25,
-    content_data: {
-      generated_by: "ai",
-      generated_at: now,
-      sections: [
-        {
-          title: "Understanding the 50/30/20 Rule",
-          content: "The 50/30/20 rule is a simple budgeting method that allocates 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. This balanced approach ensures you're covering essentials while still enjoying life and building financial security."
-        },
-        {
-          title: "Zero-Based Budgeting",
-          content: "Zero-based budgeting means giving every dollar a purpose until your income minus expenses equals zero. This doesn't mean spending everything – it means allocating all income to categories including savings and investments."
-        },
-        {
-          title: "Tracking Your Spending",
-          content: "The foundation of any budget is tracking your spending. Use categories that make sense for your lifestyle and review your spending weekly to stay on track."
+  // Generate modules for each concept to learn
+  conceptsToLearn.forEach((concept, index) => {
+    // Skip after 15 modules
+    if (modules.length >= 15) return
+    
+    const conceptId = concept.concept_id || concept.id
+    const conceptName = concept.concept_name || concept.name
+    const conceptCategory = concept.concept_category || concept.category
+    const conceptDifficulty = concept.difficulty_level || concept.difficulty || 1
+    
+    // Determine module difficulty based on concept difficulty and user level
+    const moduleDifficulty = mapDifficultyToLevel(conceptDifficulty)
+    
+    // Generate different content types
+    const contentType = index % 3 === 0 ? 'quiz' : 'article'
+    
+    if (contentType === 'article') {
+      modules.push({
+        title: `Understanding ${conceptName}`,
+        description: `Learn about ${conceptName.toLowerCase()} and how it applies to your financial journey.`,
+        content_type: 'article',
+        difficulty: moduleDifficulty,
+        category: conceptCategory,
+        duration_minutes: 15 + (conceptDifficulty * 2),
+        xp_reward: 25 + (conceptDifficulty * 5),
+        target_concepts: [conceptId],
+        knowledge_requirements: { [conceptId]: Math.max(1, conceptDifficulty - 2) },
+        knowledge_gain: { [conceptId]: 2 },
+        content_data: {
+          generated_by: 'ai',
+          generated_at: now,
+          sections: generateArticleSections(conceptName, conceptCategory, conceptDifficulty)
         }
-      ]
+      })
+    } else {
+      modules.push({
+        title: `${conceptName} Quiz`,
+        description: `Test your knowledge of ${conceptName.toLowerCase()} with this interactive quiz.`,
+        content_type: 'quiz',
+        difficulty: moduleDifficulty,
+        category: conceptCategory,
+        duration_minutes: 10,
+        xp_reward: 30 + (conceptDifficulty * 5),
+        target_concepts: [conceptId],
+        knowledge_requirements: { [conceptId]: Math.max(1, conceptDifficulty - 1) },
+        knowledge_gain: { [conceptId]: 3 },
+        content_data: {
+          generated_by: 'ai',
+          generated_at: now,
+          questions: generateQuizQuestions(conceptName, conceptCategory, conceptDifficulty, conceptId)
+        }
+      })
     }
   })
   
-  // 2. Add a module based on whether they have accounts
-  if (!hasAccounts) {
+  // If we don't have enough modules, add some general ones
+  if (modules.length < 5) {
+    // Add budgeting module
     modules.push({
-      title: "Getting Started with Banking",
-      description: "Learn how to choose the right bank accounts for your needs and how to use them effectively.",
+      title: "Smart Budgeting Strategies",
+      description: "Learn practical budgeting methods that fit your lifestyle, including the 50/30/20 rule and zero-based budgeting techniques.",
       content_type: "article",
       difficulty: "Beginner",
-      category: "Banking",
+      category: "Budgeting",
+      duration_minutes: 15,
+      xp_reward: 25,
+      target_concepts: [],
+      knowledge_requirements: {},
+      knowledge_gain: {},
+      content_data: {
+        generated_by: "ai",
+        generated_at: now,
+        sections: [
+          {
+            title: "Understanding the 50/30/20 Rule",
+            content: "The 50/30/20 rule is a simple budgeting method that allocates 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. This balanced approach ensures you're covering essentials while still enjoying life and building financial security."
+          },
+          {
+            title: "Zero-Based Budgeting",
+            content: "Zero-based budgeting means giving every dollar a purpose until your income minus expenses equals zero. This doesn't mean spending everything – it means allocating all income to categories including savings and investments."
+          },
+          {
+            title: "Tracking Your Spending",
+            content: "The foundation of any budget is tracking your spending. Use categories that make sense for your lifestyle and review your spending weekly to stay on track."
+          }
+        ]
+      }
+    })
+    
+    // Add emergency fund module
+    modules.push({
+      title: "Building an Emergency Fund",
+      description: "Learn why emergency funds are crucial and how to build one that works for your situation.",
+      content_type: "article",
+      difficulty: "Beginner",
+      category: "Savings",
       duration_minutes: 12,
       xp_reward: 20,
+      target_concepts: [],
+      knowledge_requirements: {},
+      knowledge_gain: {},
       content_data: {
         generated_by: "ai",
         generated_at: now,
         sections: [
           {
-            title: "Choosing the Right Checking Account",
-            content: "Look for accounts with no monthly fees, no minimum balance requirements, and a large ATM network. Online banks often offer better terms than traditional banks."
+            title: "Why You Need an Emergency Fund",
+            content: "An emergency fund is your financial buffer against unexpected events like job loss, medical emergencies, or car repairs. Without this safety net, you're forced to rely on credit cards or loans, potentially creating a cycle of debt."
           },
           {
-            title: "High-Yield Savings Accounts",
-            content: "Don't settle for the 0.01% interest rate at traditional banks. High-yield savings accounts can offer 10-20x more interest on your savings."
+            title: "How Much to Save",
+            content: "The general recommendation is 3-6 months of essential expenses. Start with a mini emergency fund of $1,000 while paying off high-interest debt, then build toward your full target."
           },
           {
-            title: "Setting Up Direct Deposit and Automatic Transfers",
-            content: "Automate your finances by setting up direct deposit for your paycheck and automatic transfers to your savings accounts."
-          }
-        ]
-      }
-    })
-  } else {
-    modules.push({
-      title: "Optimizing Your Bank Accounts",
-      description: "Learn strategies to maximize the benefits of your existing accounts and minimize fees.",
-      content_type: "article",
-      difficulty: experience === "Beginner" ? "Beginner" : "Intermediate",
-      category: "Banking",
-      duration_minutes: 18,
-      xp_reward: 30,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "Account Fee Audit",
-            content: "Review all your accounts for hidden fees and consider switching to fee-free alternatives. Even small monthly fees add up to hundreds of dollars over time."
-          },
-          {
-            title: "Interest Rate Optimization",
-            content: "Compare your current savings interest rates to the best available rates. Moving your emergency fund to a high-yield savings account could earn you 10-20x more interest."
-          },
-          {
-            title: "Strategic Account Structure",
-            content: "Consider using multiple accounts for different purposes: checking for daily expenses, high-yield savings for emergency funds, and separate savings accounts for specific goals."
-          }
-        ]
-      }
-    })
-  }
-  
-  // 3. Add a module based on whether they have goals
-  if (!hasGoals) {
-    modules.push({
-      title: "Setting Effective Financial Goals",
-      description: "Learn how to create SMART financial goals that motivate you and track your progress effectively.",
-      content_type: "interactive",
-      difficulty: "Beginner",
-      category: "Goal Setting",
-      duration_minutes: 20,
-      xp_reward: 35,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "The SMART Goal Framework",
-            content: "Effective financial goals are Specific, Measurable, Achievable, Relevant, and Time-bound. Instead of 'save more money,' try 'save $5,000 for an emergency fund by December 31st.'"
-          },
-          {
-            title: "Prioritizing Your Goals",
-            content: "Not all financial goals are equal. Prioritize emergency savings and high-interest debt repayment before other goals like vacation funds or luxury purchases."
-          },
-          {
-            title: "Tracking Progress and Staying Motivated",
-            content: "Visual progress trackers, regular check-ins, and celebrating milestones are key to maintaining momentum toward your financial goals."
-          }
-        ]
-      }
-    })
-  } else {
-    modules.push({
-      title: "Accelerating Your Financial Goals",
-      description: "Advanced strategies to reach your financial goals faster and more efficiently.",
-      content_type: "interactive",
-      difficulty: experience === "Beginner" ? "Beginner" : "Intermediate",
-      category: "Goal Setting",
-      duration_minutes: 25,
-      xp_reward: 40,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "The Power of Automation",
-            content: "Set up automatic transfers to your goal accounts on payday. What happens first with your money tends to stick, while what happens last often falls by the wayside."
-          },
-          {
-            title: "Finding Hidden Money",
-            content: "Conduct a spending audit to identify 'money leaks' - small recurring expenses that add up over time. Redirecting these funds to your goals can accelerate progress significantly."
-          },
-          {
-            title: "Using Windfalls Strategically",
-            content: "Create a plan for how you'll allocate unexpected money like tax refunds, bonuses, or gifts. Consider the 50/30/20 rule: 50% toward goals, 30% to savings, and 20% for enjoyment."
-          }
-        ]
-      }
-    })
-  }
-  
-  // 4. Add a quiz module
-  modules.push({
-    title: "Financial Fundamentals Quiz",
-    description: "Test your knowledge of essential financial concepts and identify areas for further learning.",
-    content_type: "quiz",
-    difficulty: "Beginner",
-    category: "General",
-    duration_minutes: 10,
-    xp_reward: 50,
-    content_data: {
-      generated_by: "ai",
-      generated_at: now,
-      questions: [
-        {
-          question_text: "What does the 50/30/20 budgeting rule recommend for needs?",
-          options: ["30% of income", "50% of income", "20% of income", "70% of income"],
-          correct_answer: "50% of income",
-          explanation: "The 50/30/20 rule suggests allocating 50% of your after-tax income to needs, 30% to wants, and 20% to savings and debt repayment."
-        },
-        {
-          question_text: "Which of these is typically considered a 'need' in budgeting?",
-          options: ["Netflix subscription", "Housing costs", "Dining out", "New clothes"],
-          correct_answer: "Housing costs",
-          explanation: "Needs are expenses that are essential for living, such as housing, utilities, groceries, and basic transportation."
-        },
-        {
-          question_text: "What is the recommended minimum amount for an emergency fund?",
-          options: ["$100", "$500", "1 month of expenses", "3-6 months of expenses"],
-          correct_answer: "3-6 months of expenses",
-          explanation: "Financial experts generally recommend having 3-6 months of essential expenses saved in an emergency fund."
-        },
-        {
-          question_text: "Which type of account typically offers the highest interest rate?",
-          options: ["Checking account", "Traditional savings account", "High-yield savings account", "Money market account"],
-          correct_answer: "High-yield savings account",
-          explanation: "High-yield savings accounts, often offered by online banks, typically provide much higher interest rates than traditional bank accounts."
-        },
-        {
-          question_text: "What is the first recommended step in creating a financial plan?",
-          options: ["Investing in stocks", "Creating a budget", "Opening a credit card", "Taking out a loan"],
-          correct_answer: "Creating a budget",
-          explanation: "A budget is the foundation of any financial plan, as it helps you understand your income, expenses, and where your money is going."
-        }
-      ]
-    }
-  })
-  
-  // 5. Add an investment module if they're beyond beginner
-  if (experience !== 'Beginner') {
-    modules.push({
-      title: "Investment Strategy Fundamentals",
-      description: "Learn the core principles of successful investing and how to build a portfolio aligned with your goals.",
-      content_type: "article",
-      difficulty: "Intermediate",
-      category: "Investing",
-      duration_minutes: 22,
-      xp_reward: 45,
-      content_data: {
-        generated_by: "ai",
-        generated_at: now,
-        sections: [
-          {
-            title: "Asset Allocation Basics",
-            content: "Asset allocation—how you divide your investments among stocks, bonds, and other asset classes—is responsible for about 90% of your portfolio's volatility. Your ideal allocation depends on your time horizon, risk tolerance, and financial goals."
-          },
-          {
-            title: "The Power of Index Funds",
-            content: "For most investors, low-cost index funds are the most efficient way to invest. Rather than trying to pick winning stocks or time the market (which even professionals struggle to do consistently), index funds give you broad market exposure with minimal fees."
-          },
-          {
-            title: "Dollar-Cost Averaging",
-            content: "Investing a fixed amount regularly, regardless of market conditions, is called dollar-cost averaging. This strategy removes the emotional component of investing and prevents the common mistake of buying high and selling low."
-          },
-          {
-            title: "Rebalancing Your Portfolio",
-            content: "Over time, some investments will grow faster than others, causing your asset allocation to drift from your target. Rebalancing—selling some of your winners and buying more of your underperformers—keeps your risk level consistent and can actually boost returns."
+            title: "Where to Keep Your Emergency Fund",
+            content: "Your emergency fund should be liquid (easily accessible) but not too accessible (to avoid temptation). High-yield savings accounts are ideal - they offer better returns than traditional savings accounts while maintaining FDIC insurance and liquidity."
           }
         ]
       }
@@ -570,4 +710,458 @@ function generateLocalModules(userContext: any) {
   }
   
   return modules
+}
+
+// Generate article sections for a concept
+function generateArticleSections(conceptName: string, category: string, difficulty: number) {
+  // Default sections for different categories
+  const sectionsByCategory = {
+    'Budgeting': [
+      {
+        title: `What is ${conceptName}?`,
+        content: `${conceptName} is a key budgeting concept that helps you manage your money more effectively. Understanding and applying this concept can significantly improve your financial health and help you reach your goals faster.`
+      },
+      {
+        title: "How to Apply This to Your Budget",
+        content: `To incorporate ${conceptName} into your budget, start by tracking your income and expenses. Then, analyze your spending patterns to identify areas where you can make adjustments. Remember that small changes can add up to significant improvements over time.`
+      },
+      {
+        title: "Common Mistakes to Avoid",
+        content: `When implementing ${conceptName}, many people make the mistake of being too restrictive or unrealistic. It's important to create a sustainable approach that you can maintain long-term, rather than an overly ambitious plan that you'll abandon after a few weeks.`
+      },
+      {
+        title: "Next Steps and Implementation",
+        content: `Now that you understand ${conceptName}, try implementing it in your own financial plan. Start small, track your progress, and adjust as needed. Remember that financial management is a journey, not a destination.`
+      }
+    ],
+    'Investing': [
+      {
+        title: `Understanding ${conceptName}`,
+        content: `${conceptName} is a fundamental investing concept that can significantly impact your long-term returns. Whether you're a beginner or experienced investor, mastering this concept will help you make more informed investment decisions.`
+      },
+      {
+        title: "How It Affects Your Returns",
+        content: `${conceptName} directly influences your investment performance by affecting risk, potential returns, and portfolio stability. Understanding this relationship helps you align your investment strategy with your financial goals and risk tolerance.`
+      },
+      {
+        title: "Implementing This Strategy",
+        content: `To apply ${conceptName} to your investment approach, consider your time horizon, risk tolerance, and financial goals. Different investment vehicles offer various ways to leverage this concept, from index funds to individual securities.`
+      },
+      {
+        title: "Monitoring and Adjusting",
+        content: `Once you've implemented ${conceptName}, regularly review your strategy to ensure it continues to serve your needs. Market conditions change, and your financial situation evolves, so periodic adjustments are essential for long-term success.`
+      }
+    ],
+    'Debt Management': [
+      {
+        title: `What is ${conceptName}?`,
+        content: `${conceptName} is a crucial concept in debt management that helps you understand and control your debt more effectively. Mastering this concept can save you money on interest and help you become debt-free faster.`
+      },
+      {
+        title: "Calculating and Interpreting",
+        content: `To calculate your ${conceptName.toLowerCase()}, you'll need to gather information about your debts and income. Once calculated, you can interpret this number to understand your current financial position and identify areas for improvement.`
+      },
+      {
+        title: "Strategies for Improvement",
+        content: `Improving your ${conceptName.toLowerCase()} typically involves either reducing debt, increasing income, or both. Consider debt consolidation, refinancing, or accelerated payment strategies depending on your specific situation.`
+      },
+      {
+        title: "Monitoring Your Progress",
+        content: `Track your ${conceptName.toLowerCase()} over time to ensure you're moving in the right direction. Set specific targets and celebrate milestones along the way to stay motivated on your debt reduction journey.`
+      }
+    ],
+    'Credit': [
+      {
+        title: `Understanding ${conceptName}`,
+        content: `${conceptName} is an important aspect of your credit profile that lenders evaluate when determining your creditworthiness. A solid understanding of this concept can help you build and maintain excellent credit.`
+      },
+      {
+        title: "How It Affects Your Credit Score",
+        content: `${conceptName} influences your credit score by [specific impact]. Lenders view this factor as an indicator of your financial responsibility and risk level as a borrower.`
+      },
+      {
+        title: "Strategies for Optimization",
+        content: `To optimize your ${conceptName.toLowerCase()}, consider implementing strategies such as [specific strategies]. These approaches can help you improve your credit profile over time.`
+      },
+      {
+        title: "Common Misconceptions",
+        content: `Many people misunderstand ${conceptName}, believing [common misconception]. In reality, [correct information]. Understanding these nuances can help you make better credit decisions.`
+      }
+    ],
+    'Financial Planning': [
+      {
+        title: `The Importance of ${conceptName}`,
+        content: `${conceptName} plays a vital role in comprehensive financial planning by helping you align your money decisions with your long-term goals. This concept bridges the gap between your current financial situation and your desired future.`
+      },
+      {
+        title: "Incorporating This Into Your Plan",
+        content: `To effectively use ${conceptName} in your financial plan, start by clarifying your goals and timeline. Then, evaluate your current position and develop specific strategies to implement this concept in your unique situation.`
+      },
+      {
+        title: "Tools and Resources",
+        content: `Several tools can help you apply ${conceptName} more effectively, from specialized calculators to budgeting apps. These resources simplify the process and provide valuable insights for decision-making.`
+      },
+      {
+        title: "Adjusting for Life Changes",
+        content: `As your life circumstances change, you'll need to revisit how you apply ${conceptName}. Major events like career changes, marriage, children, or retirement require reassessment and adjustment of your approach.`
+      }
+    ]
+  }
+  
+  // Default for any category not specifically covered
+  const defaultSections = [
+    {
+      title: `Understanding ${conceptName}`,
+      content: `${conceptName} is an important financial concept that can significantly impact your financial health and decision-making. Taking the time to understand this concept will empower you to make better financial choices.`
+    },
+    {
+      title: "Practical Applications",
+      content: `There are several ways to apply ${conceptName} in your daily financial life. Consider how this concept relates to your specific situation and goals, and identify concrete steps you can take to implement it.`
+    },
+    {
+      title: "Common Misconceptions",
+      content: `Many people misunderstand ${conceptName}, which can lead to suboptimal financial decisions. By clarifying these misconceptions, you can avoid common pitfalls and make more informed choices.`
+    },
+    {
+      title: "Next Steps",
+      content: `Now that you understand ${conceptName}, consider how you'll incorporate this knowledge into your financial plan. Set specific, measurable goals related to this concept and track your progress over time.`
+    }
+  ]
+  
+  // Return appropriate sections based on category
+  return sectionsByCategory[category] || defaultSections
+}
+
+// Generate quiz questions for a concept
+function generateQuizQuestions(conceptName: string, category: string, difficulty: number, conceptId: string) {
+  // Default questions for different categories
+  const questionsByCategory = {
+    'Budgeting': [
+      {
+        question_text: `What is the primary purpose of ${conceptName}?`,
+        options: [
+          "To increase your credit score",
+          "To track and plan your spending",
+          "To maximize investment returns",
+          "To eliminate all debt immediately"
+        ],
+        correct_answer: "To track and plan your spending",
+        explanation: `${conceptName} is primarily designed to help you understand, track, and plan your spending in alignment with your income and financial goals.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Which of these is a key component of ${conceptName}?`,
+        options: [
+          "Stock market analysis",
+          "Credit score monitoring",
+          "Income and expense tracking",
+          "Real estate valuation"
+        ],
+        correct_answer: "Income and expense tracking",
+        explanation: `Tracking both income and expenses is essential to ${conceptName}, as it provides the foundation for understanding your cash flow and making informed financial decisions.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `How often should you review your ${conceptName.toLowerCase()}?`,
+        options: [
+          "Once a year",
+          "Every 5 years",
+          "Monthly",
+          "Only when applying for loans"
+        ],
+        correct_answer: "Monthly",
+        explanation: `Regular monthly reviews of your ${conceptName.toLowerCase()} allow you to track progress, identify issues early, and make necessary adjustments to stay on track with your financial goals.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `What is a common mistake when implementing ${conceptName}?`,
+        options: [
+          "Being too detailed with categories",
+          "Making it too restrictive",
+          "Reviewing it too frequently",
+          "Focusing too much on saving"
+        ],
+        correct_answer: "Making it too restrictive",
+        explanation: `Many people make their ${conceptName.toLowerCase()} too restrictive, which isn't sustainable long-term. A good approach should be realistic and include some flexibility for quality of life expenses.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Which tool would be most helpful for ${conceptName}?`,
+        options: [
+          "Investment portfolio tracker",
+          "Credit monitoring service",
+          "Expense tracking app",
+          "Retirement calculator"
+        ],
+        correct_answer: "Expense tracking app",
+        explanation: `An expense tracking app helps you implement ${conceptName} by automatically categorizing transactions, visualizing spending patterns, and monitoring progress toward your budgeting goals.`,
+        concept_id: conceptId
+      }
+    ],
+    'Investing': [
+      {
+        question_text: `What is ${conceptName} in the context of investing?`,
+        options: [
+          "A type of retirement account",
+          "A strategy for managing investment risk and return",
+          "A government bond program",
+          "A tax deduction for investors"
+        ],
+        correct_answer: "A strategy for managing investment risk and return",
+        explanation: `${conceptName} refers to a strategy that helps investors manage the relationship between risk and potential returns in their investment portfolios.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Which of these best demonstrates ${conceptName}?`,
+        options: [
+          "Putting all your money in a single stock",
+          "Keeping all your savings in cash",
+          "Spreading investments across different asset classes",
+          "Frequently trading based on market news"
+        ],
+        correct_answer: "Spreading investments across different asset classes",
+        explanation: `${conceptName} typically involves spreading investments across different assets to optimize the risk-return profile of your portfolio.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `How does ${conceptName} typically affect long-term investment returns?`,
+        options: [
+          "It guarantees specific returns",
+          "It eliminates all investment risk",
+          "It can help optimize the risk-return profile",
+          "It focuses exclusively on short-term gains"
+        ],
+        correct_answer: "It can help optimize the risk-return profile",
+        explanation: `${conceptName} doesn't eliminate risk or guarantee returns, but it helps investors optimize their risk-return profile based on their goals and risk tolerance.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Which investor would likely benefit most from understanding ${conceptName}?`,
+        options: [
+          "Day traders only",
+          "Only very wealthy investors",
+          "All investors, regardless of experience level",
+          "Only professional financial advisors"
+        ],
+        correct_answer: "All investors, regardless of experience level",
+        explanation: `${conceptName} is a fundamental concept that benefits all investors, from beginners to experienced professionals, as it helps create more resilient investment strategies.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `What factor is most important when applying ${conceptName} to your investments?`,
+        options: [
+          "Your age",
+          "Your income level",
+          "Your financial goals and time horizon",
+          "The current market conditions"
+        ],
+        correct_answer: "Your financial goals and time horizon",
+        explanation: `When applying ${conceptName}, your specific financial goals and time horizon are most important, as they determine the appropriate level of risk and potential return for your situation.`,
+        concept_id: conceptId
+      }
+    ],
+    'Debt Management': [
+      {
+        question_text: `What is ${conceptName}?`,
+        options: [
+          "The total amount of debt you owe",
+          "A ratio comparing your debt payments to your income",
+          "A credit score factor",
+          "A debt consolidation method"
+        ],
+        correct_answer: "A ratio comparing your debt payments to your income",
+        explanation: `${conceptName} is a financial metric that compares your total monthly debt payments to your gross monthly income, expressed as a percentage.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `What is generally considered a good ${conceptName.toLowerCase()}?`,
+        options: [
+          "Below 36%",
+          "50-60%",
+          "70-80%",
+          "Above 80%"
+        ],
+        correct_answer: "Below 36%",
+        explanation: `Most financial experts recommend keeping your ${conceptName.toLowerCase()} below 36%, with housing costs not exceeding 28% of your gross monthly income.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `How can you improve your ${conceptName.toLowerCase()}?`,
+        options: [
+          "Taking on more debt",
+          "Reducing your income",
+          "Paying down debt or increasing income",
+          "Closing old credit accounts"
+        ],
+        correct_answer: "Paying down debt or increasing income",
+        explanation: `To improve your ${conceptName.toLowerCase()}, you can either reduce your debt (and thus your monthly payments) or increase your income, both of which will lower the ratio.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Why do lenders care about your ${conceptName.toLowerCase()}?`,
+        options: [
+          "They don't; it's only important to borrowers",
+          "It indicates how much more debt you can take on",
+          "It shows your credit history length",
+          "It helps predict your ability to repay new debt"
+        ],
+        correct_answer: "It helps predict your ability to repay new debt",
+        explanation: `Lenders use ${conceptName} to assess your ability to take on and repay additional debt. A lower ratio suggests you have sufficient income relative to your existing debt obligations.`,
+        concept_id: conceptId
+      },
+      {
+        question_text: `Which debt is typically NOT included when calculating ${conceptName}?`,
+        options: [
+          "Mortgage payments",
+          "Car loans",
+          "Utility bills",
+          "Credit card minimum payments"
+        ],
+        correct_answer: "Utility bills",
+        explanation: `${conceptName} typically includes debt payments like mortgages, car loans, student loans, and credit card minimums, but not regular expenses like utility bills, groceries, or insurance premiums.`,
+        concept_id: conceptId
+      }
+    ]
+  }
+  
+  // Default questions for any category
+  const defaultQuestions = [
+    {
+      question_text: `What is ${conceptName}?`,
+      options: [
+        "A type of investment account",
+        "A financial planning concept",
+        "A tax deduction strategy",
+        "A banking regulation"
+      ],
+      correct_answer: "A financial planning concept",
+      explanation: `${conceptName} is a financial planning concept that helps individuals make better decisions about their money and achieve their financial goals.`,
+      concept_id: conceptId
+    },
+    {
+      question_text: `Which of these best describes the purpose of ${conceptName}?`,
+      options: [
+        "To maximize short-term gains",
+        "To improve financial decision-making",
+        "To eliminate all financial risk",
+        "To avoid paying taxes"
+      ],
+      correct_answer: "To improve financial decision-making",
+      explanation: `The primary purpose of ${conceptName} is to help individuals make more informed and effective financial decisions aligned with their goals.`,
+      concept_id: conceptId
+    },
+    {
+      question_text: `How often should you review your approach to ${conceptName}?`,
+      options: [
+        "Never - set it and forget it",
+        "Only when facing financial difficulties",
+        "Regularly, at least annually",
+        "Only when advised by a professional"
+      ],
+      correct_answer: "Regularly, at least annually",
+      explanation: `Regular reviews of your approach to ${conceptName} are important as your financial situation, goals, and market conditions change over time.`,
+      concept_id: conceptId
+    },
+    {
+      question_text: `Which of these is NOT typically associated with ${conceptName}?`,
+      options: [
+        "Financial goal setting",
+        "Risk management",
+        "Day trading stocks",
+        "Long-term planning"
+      ],
+      correct_answer: "Day trading stocks",
+      explanation: `${conceptName} is generally associated with thoughtful financial planning rather than speculative activities like day trading stocks.`,
+      concept_id: conceptId
+    },
+    {
+      question_text: `Who can benefit from understanding ${conceptName}?`,
+      options: [
+        "Only high-income individuals",
+        "Only people with investment experience",
+        "Only those with financial difficulties",
+        "Everyone, regardless of financial situation"
+      ],
+      correct_answer: "Everyone, regardless of financial situation",
+      explanation: `${conceptName} is a universal financial concept that can benefit everyone, regardless of their income level, experience, or current financial situation.`,
+      concept_id: conceptId
+    }
+  ]
+  
+  // Return appropriate questions based on category
+  return questionsByCategory[category] || defaultQuestions
+}
+
+// Calculate priority for a module based on user context
+function calculatePriority(module: any, userContext: any) {
+  let priority = 5 // Default priority
+  
+  // Increase priority for struggling concepts
+  if (module.target_concepts && userContext.strugglingConcepts) {
+    const hasStrugglingConcept = module.target_concepts.some(conceptId => 
+      userContext.strugglingConcepts.includes(conceptId)
+    )
+    if (hasStrugglingConcept) {
+      priority += 3
+    }
+  }
+  
+  // Increase priority for appropriate difficulty level
+  const userDifficultyLevel = userContext.difficultyLevel || 1
+  const moduleDifficultyMap = {
+    'Beginner': 1,
+    'Intermediate': 5,
+    'Advanced': 9
+  }
+  const moduleDifficultyLevel = moduleDifficultyMap[module.difficulty] || 1
+  
+  // Prioritize content that matches user's level
+  const diffDelta = Math.abs(moduleDifficultyLevel - userDifficultyLevel)
+  if (diffDelta <= 1) {
+    priority += 2
+  } else if (diffDelta <= 3) {
+    priority += 1
+  } else {
+    priority -= 1
+  }
+  
+  // Increase priority for quiz content (for knowledge assessment)
+  if (module.content_type === 'quiz') {
+    priority += 1
+  }
+  
+  // Adjust based on user interests if available
+  if (userContext.interests && userContext.interests.length > 0) {
+    const matchesInterest = userContext.interests.some(interest =>
+      module.category.toLowerCase().includes(interest.toLowerCase()) ||
+      module.title.toLowerCase().includes(interest.toLowerCase())
+    )
+    if (matchesInterest) {
+      priority += 2
+    }
+  }
+  
+  // Adjust based on user goals if available
+  if (userContext.goals && userContext.goals.length > 0) {
+    const matchesGoal = userContext.goals.some(goal =>
+      module.category.toLowerCase().includes(goal.category?.toLowerCase() || '') ||
+      module.title.toLowerCase().includes(goal.name?.toLowerCase() || '')
+    )
+    if (matchesGoal) {
+      priority += 2
+    }
+  }
+  
+  return Math.max(1, Math.min(10, priority)) // Ensure priority is between 1-10
+}
+
+// Simple hash function for content deduplication
+function hashString(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return hash.toString(16) // Convert to hex string
 }

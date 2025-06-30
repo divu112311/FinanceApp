@@ -26,7 +26,8 @@ import {
   Bookmark,
   Flame,
   TrendingDown,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLearning } from '../hooks/useLearning';
@@ -35,6 +36,7 @@ import { useFeaturedLearning } from '../hooks/useFeaturedLearning';
 import QuizInterface from './QuizInterface';
 import ArticleView from './ArticleView';
 import FeaturedLearningModule from './FeaturedLearningModule';
+import KnowledgeProgressView from './KnowledgeProgressView';
 
 interface LearningCenterProps {
   user: User;
@@ -59,10 +61,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     generateAILearningContent,
     startModule: startAIModule,
     completeModule: completeAIModule,
+    submitQuizResults,
     getTodaysPractice,
     getRecommendedModules,
     getOverallProgress: getAIProgress,
-    generateQuizQuestions
+    generateQuizQuestions,
+    getUserKnowledgeLevel,
+    checkContentRefresh
   } = useAILearning(user);
 
   const {
@@ -76,11 +81,13 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
   const [showArticle, setShowArticle] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const [selectedModule, setSelectedModule] = useState<any>(null);
-  const [currentView, setCurrentView] = useState<'quiz' | 'article' | null>(null);
+  const [currentView, setCurrentView] = useState<'quiz' | 'article' | 'knowledge' | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [refreshingContent, setRefreshingContent] = useState(false);
 
   const level = Math.floor((xp?.points || 0) / 100) + 1;
+  const knowledgeLevel = getUserKnowledgeLevel();
 
   const getBeltRank = (level: number) => {
     if (level >= 50) return { name: "Grand Master", color: "from-yellow-400 to-yellow-600", emoji: "🏆" };
@@ -299,19 +306,27 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     }
   };
 
-  const handleQuizComplete = async (score: number, xpEarned: number) => {
+  const handleQuizComplete = async (score: number, xpEarned: number, results: any[]) => {
     if (!selectedModule) return;
 
     console.log('=== QUIZ COMPLETION ===');
     console.log('Module:', selectedModule.title);
     console.log('Score:', score);
     console.log('XP Earned:', xpEarned);
+    console.log('Results:', results);
 
     try {
-      // Update progress to completed
       if (selectedModule.isAIModule) {
-        await completeAIModule(selectedModule.id, selectedModule.duration_minutes);
+        // Submit quiz results for knowledge assessment
+        const quizResults = results.map(result => ({
+          questionId: result.questionId,
+          isCorrect: result.isCorrect,
+          conceptId: result.question.concept_id
+        }));
+        
+        await submitQuizResults(selectedModule.id, quizResults);
       } else {
+        // Update progress to completed
         await updateProgress(selectedModule.id, 100, selectedModule.duration_minutes);
       }
       
@@ -377,6 +392,23 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     if (featuredModule) {
       handleStartModule(featuredModule.id, false);
     }
+  };
+
+  const handleRefreshContent = async () => {
+    setRefreshingContent(true);
+    try {
+      await checkContentRefresh();
+    } finally {
+      setRefreshingContent(false);
+    }
+  };
+
+  const handleViewKnowledge = () => {
+    setCurrentView('knowledge');
+  };
+
+  const handleBackFromKnowledge = () => {
+    setCurrentView(null);
   };
 
   // Get button label based on content type
@@ -465,6 +497,34 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
     );
   }
 
+  if (currentView === 'knowledge') {
+    return (
+      <div className="space-y-6">
+        {/* Finance Kata Header */}
+        <div className="bg-[#2A6F68] rounded-xl p-6 text-white relative overflow-hidden flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Brain className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Knowledge Progress</h1>
+              <p className="text-white/90 text-sm">Track your financial knowledge journey</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleBackFromKnowledge}
+            className="bg-white/20 rounded-lg px-3 py-1 text-sm hover:bg-white/30 transition-colors"
+          >
+            Back to Learning
+          </button>
+        </div>
+        
+        <KnowledgeProgressView user={user} />
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -480,10 +540,22 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
             </div>
           </div>
           
-          <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
-            <span className="text-white font-medium">{beltRank.name}</span>
-            <span className="mx-2 text-white/60">•</span>
-            <span className="text-white/90">{overallProgress.completed}/{overallProgress.total} Complete</span>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleViewKnowledge}
+              className="bg-white/20 rounded-lg px-3 py-1 text-sm hover:bg-white/30 transition-colors"
+            >
+              <div className="flex items-center space-x-1">
+                <Brain className="h-4 w-4" />
+                <span>Knowledge Level {knowledgeLevel}</span>
+              </div>
+            </button>
+            
+            <div className="bg-white/20 rounded-lg px-3 py-1 text-sm">
+              <span className="text-white font-medium">{beltRank.name}</span>
+              <span className="mx-2 text-white/60">•</span>
+              <span className="text-white/90">{overallProgress.completed}/{overallProgress.total} Complete</span>
+            </div>
           </div>
         </div>
 
@@ -493,9 +565,22 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
           <div className="col-span-2 space-y-6">
             {/* Today's Practice */}
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-[#333333]">Today's Practice</h2>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Star className="h-5 w-5 text-yellow-500" />
+                  <h2 className="text-lg font-bold text-[#333333]">Today's Practice</h2>
+                </div>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleRefreshContent}
+                  disabled={refreshingContent}
+                  className="flex items-center space-x-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors text-sm"
+                >
+                  <RefreshCw className={`h-3 w-3 ${refreshingContent ? 'animate-spin' : ''}`} />
+                  <span>Refresh Content</span>
+                </motion.button>
               </div>
               
               {generating ? (
@@ -770,6 +855,44 @@ const LearningCenter: React.FC<LearningCenterProps> = ({ user, xp, onXPUpdate })
 
           {/* Right Column - Explore More (1/3 width) */}
           <div className="space-y-6">
+            {/* Knowledge Level Section */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-[#333333]">Knowledge Level</h2>
+              
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Brain className="h-5 w-5 text-[#2A6F68]" />
+                    <h3 className="font-semibold text-[#333333]">Financial Knowledge</h3>
+                  </div>
+                  <div className="px-2 py-1 bg-[#2A6F68]/10 text-[#2A6F68] rounded-lg text-sm font-medium">
+                    Level {knowledgeLevel}
+                  </div>
+                </div>
+                
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(knowledgeLevel / 10) * 100}%` }}
+                    className="h-2 rounded-full bg-[#2A6F68]"
+                  />
+                </div>
+                
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Beginner</span>
+                  <span>Intermediate</span>
+                  <span>Advanced</span>
+                </div>
+                
+                <button
+                  onClick={handleViewKnowledge}
+                  className="w-full mt-3 text-center text-[#2A6F68] text-sm font-medium hover:underline"
+                >
+                  View Knowledge Progress
+                </button>
+              </div>
+            </div>
+            
             {/* Recent Achievements Section */}
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-[#333333]">Recent Achievements</h2>

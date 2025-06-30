@@ -17,6 +17,9 @@ interface AIGeneratedModule {
   xp_reward: number;
   content_data: any;
   created_at: string;
+  target_concepts?: string[];
+  knowledge_requirements?: Record<string, number>;
+  knowledge_gain?: Record<string, number>;
   progress?: UserProgress;
 }
 
@@ -38,6 +41,27 @@ interface LearningPath {
   created_at: string;
 }
 
+interface UserKnowledge {
+  knowledge_id: string;
+  concept_id: string;
+  proficiency_level: number;
+  confidence_score: number;
+  times_encountered: number;
+  times_answered_correctly: number;
+  last_assessed: string;
+  concept: {
+    concept_name: string;
+    concept_category: string;
+    difficulty_level: number;
+  };
+}
+
+interface QuizResult {
+  questionId: string;
+  isCorrect: boolean;
+  conceptId?: string;
+}
+
 export const useAILearning = (user: User | null) => {
   const [aiModules, setAIModules] = useState<AIGeneratedModule[]>([]);
   const [learningPath, setLearningPath] = useState<LearningPath | null>(null);
@@ -45,6 +69,8 @@ export const useAILearning = (user: User | null) => {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [userKnowledge, setUserKnowledge] = useState<UserKnowledge[]>([]);
+  const [difficultyLevel, setDifficultyLevel] = useState<number>(1);
   
   const { bankAccounts, totalBalance } = useBankAccounts(user);
   const { goals } = useGoals(user);
@@ -68,11 +94,35 @@ export const useAILearning = (user: User | null) => {
     try {
       console.log('Fetching AI learning content for user:', user.id);
       
+      // Fetch user knowledge areas
+      const { data: knowledgeData, error: knowledgeError } = await supabase
+        .from('user_knowledge_areas')
+        .select('*, concept:concept_id(*)')
+        .eq('user_id', user.id);
+      
+      if (!knowledgeError) {
+        setUserKnowledge(knowledgeData || []);
+        
+        // Calculate average proficiency level
+        if (knowledgeData && knowledgeData.length > 0) {
+          const avgProficiency = knowledgeData.reduce((sum, k) => sum + k.proficiency_level, 0) / knowledgeData.length;
+          setDifficultyLevel(Math.max(1, Math.min(10, Math.round(avgProficiency))));
+        }
+      }
+      
+      // Get user's learning progression from profile
+      if (extendedProfile?.learning_progression) {
+        const currentDifficulty = parseInt(extendedProfile.learning_progression.current_difficulty || '1');
+        if (!isNaN(currentDifficulty)) {
+          setDifficultyLevel(currentDifficulty);
+        }
+      }
+      
       // First check if we have AI-generated modules in the database
       const { data: modulesData, error: modulesError } = await supabase
         .from('learning_modules')
         .select('*, user_learning_progress(*)')
-        .eq('content_data->generated_by', '"ai"')
+        .eq('content_data->generated_by', 'ai')
         .order('created_at', { ascending: false });
       
       if (modulesError) {
@@ -104,7 +154,7 @@ export const useAILearning = (user: User | null) => {
         const { data: newModulesData } = await supabase
           .from('learning_modules')
           .select('*, user_learning_progress(*)')
-          .eq('content_data->generated_by', '"ai"')
+          .eq('content_data->generated_by', 'ai')
           .order('created_at', { ascending: false });
         
         const newFormattedModules = newModulesData?.map(module => {
@@ -175,7 +225,8 @@ export const useAILearning = (user: User | null) => {
       // Call the Edge Function to generate content
       const { data, error } = await supabase.functions.invoke('generate-learning-content', {
         body: {
-          userId: user.id
+          userId: user.id,
+          forceGenerate: true
         },
       });
 
@@ -185,6 +236,15 @@ export const useAILearning = (user: User | null) => {
       }
 
       console.log('AI learning content generated:', data);
+      
+      // Trigger content refresh
+      await supabase.functions.invoke('content-refresh-trigger', {
+        body: {
+          userId: user.id,
+          forceRefresh: true
+        },
+      });
+      
       return data;
     } catch (err: any) {
       console.error('Error in generateAILearningContent:', err);
@@ -476,6 +536,41 @@ export const useAILearning = (user: User | null) => {
       });
     }
     
+    // 6. Add a module on debt-to-income ratio
+    modules.push({
+      id: crypto.randomUUID(),
+      title: "Understanding Debt-to-Income Ratio",
+      description: "Learn what debt-to-income ratio is, why it matters, and how to improve yours.",
+      content_type: "article",
+      difficulty: "Beginner",
+      category: "Debt Management",
+      duration_minutes: 15,
+      xp_reward: 25,
+      content_data: {
+        generated_by: "ai",
+        generated_at: now,
+        sections: [
+          {
+            title: "What Is Debt-to-Income Ratio?",
+            content: "Debt-to-income (DTI) ratio is a financial measurement that compares your total monthly debt payments to your gross monthly income, expressed as a percentage. For example, if you pay $1,000 in monthly debt payments and earn $4,000 per month, your DTI ratio is 25%."
+          },
+          {
+            title: "Why DTI Matters",
+            content: "Lenders use DTI to evaluate your ability to manage monthly payments and repay debts. A lower DTI ratio suggests you have a good balance between debt and income and can comfortably take on additional debt. Most lenders prefer a DTI ratio of 36% or less, with housing costs not exceeding 28% of your gross monthly income."
+          },
+          {
+            title: "Calculating Your DTI",
+            content: "To calculate your DTI ratio: 1) Add up all your monthly debt payments (mortgage/rent, car loans, student loans, credit cards, etc.), 2) Divide this total by your gross monthly income (before taxes), 3) Multiply by 100 to get a percentage. For example: $1,500 (debt) ÷ $5,000 (income) = 0.3 × 100 = 30% DTI."
+          },
+          {
+            title: "Improving Your DTI Ratio",
+            content: "There are two ways to improve your DTI ratio: reduce your debt or increase your income. Strategies include paying down high-interest debt first, avoiding taking on new debt, refinancing existing debt to lower payments, increasing income through side hustles or career advancement, and selling assets to pay off debt."
+          }
+        ]
+      },
+      created_at: now
+    });
+    
     return modules;
   };
 
@@ -583,6 +678,21 @@ export const useAILearning = (user: User | null) => {
           : module
       ));
       
+      // Add to learning content history for deduplication
+      if (module?.content_hash) {
+        await supabase
+          .from('learning_content_history')
+          .insert({
+            user_id: user.id,
+            module_id: moduleId,
+            content_hash: module.content_hash,
+            completed_at: new Date().toISOString()
+          });
+      }
+      
+      // Check if we need to trigger content refresh
+      await checkContentRefresh();
+      
       return {
         progress: data,
         xpEarned: module?.xp_reward || 0
@@ -590,6 +700,63 @@ export const useAILearning = (user: User | null) => {
     } catch (error) {
       console.error('Error completing AI module:', error);
       return null;
+    }
+  };
+
+  const submitQuizResults = async (moduleId: string, results: QuizResult[]) => {
+    if (!user || !isSupabaseConfigured) return null;
+
+    try {
+      console.log('Submitting quiz results for module:', moduleId);
+      
+      // Call the knowledge assessment function
+      const { data, error } = await supabase.functions.invoke('knowledge-assessment', {
+        body: {
+          userId: user.id,
+          moduleId,
+          quizResults: results
+        },
+      });
+
+      if (error) throw error;
+      
+      // Update local state
+      setAIModules(prev => prev.map(module => 
+        module.id === moduleId 
+          ? { ...module, progress: data.progress }
+          : module
+      ));
+      
+      // Refresh knowledge data
+      fetchUserKnowledge();
+      
+      return data;
+    } catch (error) {
+      console.error('Error submitting quiz results:', error);
+      return null;
+    }
+  };
+
+  const fetchUserKnowledge = async () => {
+    if (!user || !isSupabaseConfigured) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_knowledge_areas')
+        .select('*, concept:concept_id(*)')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setUserKnowledge(data || []);
+      
+      // Update difficulty level
+      if (data && data.length > 0) {
+        const avgProficiency = data.reduce((sum, k) => sum + k.proficiency_level, 0) / data.length;
+        setDifficultyLevel(Math.max(1, Math.min(10, Math.round(avgProficiency))));
+      }
+    } catch (error) {
+      console.error('Error fetching user knowledge:', error);
     }
   };
 
@@ -975,6 +1142,33 @@ export const useAILearning = (user: User | null) => {
     return content;
   };
 
+  const checkContentRefresh = async () => {
+    if (!user || !isSupabaseConfigured) return;
+
+    try {
+      // Call the content refresh trigger function
+      const { data, error } = await supabase.functions.invoke('content-refresh-trigger', {
+        body: {
+          userId: user.id
+        },
+      });
+
+      if (error) throw error;
+      
+      console.log('Content refresh check result:', data);
+      
+      // If content was refreshed, update our local state
+      if (data.refreshed) {
+        await fetchAILearningContent();
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error checking content refresh:', error);
+      return null;
+    }
+  };
+
   const getTodaysPractice = () => {
     // Return the most recent AI-generated module that's not completed
     const incompleteModules = aiModules.filter(module => 
@@ -1030,6 +1224,41 @@ export const useAILearning = (user: User | null) => {
     };
   };
 
+  const getUserKnowledgeLevel = () => {
+    return difficultyLevel;
+  };
+
+  const getKnowledgeByCategory = () => {
+    const categories = {};
+    
+    userKnowledge.forEach(k => {
+      const category = k.concept.concept_category;
+      if (!categories[category]) {
+        categories[category] = {
+          totalProficiency: 0,
+          count: 0,
+          concepts: []
+        };
+      }
+      
+      categories[category].totalProficiency += k.proficiency_level;
+      categories[category].count++;
+      categories[category].concepts.push({
+        name: k.concept.concept_name,
+        proficiency: k.proficiency_level,
+        confidence: k.confidence_score
+      });
+    });
+    
+    // Calculate average proficiency for each category
+    Object.keys(categories).forEach(category => {
+      categories[category].averageProficiency = 
+        categories[category].totalProficiency / categories[category].count;
+    });
+    
+    return categories;
+  };
+
   return {
     aiModules,
     learningPath,
@@ -1037,16 +1266,22 @@ export const useAILearning = (user: User | null) => {
     generating,
     error,
     lastUpdated,
+    userKnowledge,
+    difficultyLevel,
     fetchAILearningContent,
     generateAILearningContent,
     startModule,
     completeModule,
+    submitQuizResults,
     generateQuizQuestions,
     generateArticleContent,
     getTodaysPractice,
     getRecommendedModules,
     getCompletedModules,
     getInProgressModules,
-    getOverallProgress
+    getOverallProgress,
+    getUserKnowledgeLevel,
+    getKnowledgeByCategory,
+    checkContentRefresh
   };
 };
