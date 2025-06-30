@@ -13,7 +13,6 @@ import {
   Filter,
   X,
   Play,
-  Brain,
   Sparkles
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
