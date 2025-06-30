@@ -28,70 +28,76 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client with service role key for full data access
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for admin access
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables')
+      throw new Error('Supabase configuration not found')
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     console.log('🔍 FETCHING USER CONTEXT...')
 
     // Get comprehensive user context from database
-    const [userResult, goalsResult, xpResult, chatsResult, profileResult, accountsResult] = await Promise.all([
-      supabaseClient.from('users').select('*').eq('id', userId).single(),
-      supabaseClient.from('goals').select('*').eq('user_id', userId),
-      supabaseClient.from('xp').select('*').eq('user_id', userId).single(),
-      supabaseClient.from('chat_logs').select('*').eq('user_id', userId).order('timestamp', { ascending: false }).limit(10),
-      supabaseClient.from('user_profiles').select('*').eq('user_id', userId).single(),
-      supabaseClient.from('bank_accounts').select('*').eq('user_id', userId)
-    ])
+    try {
+      const [userResult, goalsResult, xpResult, chatsResult, profileResult, accountsResult] = await Promise.all([
+        supabaseClient.from('users').select('*').eq('id', userId).single(),
+        supabaseClient.from('goals').select('*').eq('user_id', userId),
+        supabaseClient.from('xp').select('*').eq('user_id', userId).single(),
+        supabaseClient.from('chat_logs').select('*').eq('user_id', userId).order('timestamp', { ascending: false }).limit(10),
+        supabaseClient.from('user_profiles').select('*').eq('user_id', userId).single(),
+        supabaseClient.from('bank_accounts').select('*').eq('user_id', userId)
+      ])
 
-    const userData = userResult.data
-    const goalsData = goalsResult.data || []
-    const xpData = xpResult.data
-    const recentChats = chatsResult.data || []
-    const profileData = profileResult.data
-    const accountsData = accountsResult.data || []
+      const userData = userResult.data
+      const goalsData = goalsResult.data || []
+      const xpData = xpResult.data
+      const recentChats = chatsResult.data || []
+      const profileData = profileResult.data
+      const accountsData = accountsResult.data || []
 
-    console.log('📊 USER CONTEXT FETCHED:', {
-      user: userData?.first_name || userData?.full_name || 'Unknown',
-      goals: goalsData.length,
-      xp: xpData?.points || 0,
-      chats: recentChats.length,
-      accounts: accountsData.length,
-      accountsData: accountsData.map(acc => ({
-        name: acc.name,
-        balance: acc.balance,
-        type: acc.type,
-        subtype: acc.account_subtype || acc.subtype
-      })),
-      experience: profileData?.financial_experience || 'Unknown'
-    })
+      console.log('📊 USER CONTEXT FETCHED:', {
+        user: userData?.first_name || userData?.full_name || 'Unknown',
+        goals: goalsData.length,
+        xp: xpData?.points || 0,
+        chats: recentChats.length,
+        accounts: accountsData.length,
+        accountsData: accountsData.map(acc => ({
+          name: acc.name,
+          balance: acc.balance,
+          type: acc.type,
+          subtype: acc.account_subtype || acc.subtype
+        })),
+        experience: profileData?.financial_experience || 'Unknown'
+      })
 
-    // Calculate financial metrics
-    const totalBalance = accountsData.reduce((sum, acc) => sum + (acc.balance || 0), 0)
-    const totalGoalAmount = goalsData.reduce((sum, goal) => sum + (goal.target_amount || 0), 0)
-    const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0)
-    const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0
+      // Calculate financial metrics
+      const totalBalance = accountsData.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+      const totalGoalAmount = goalsData.reduce((sum, goal) => sum + (goal.target_amount || 0), 0)
+      const totalSavedAmount = goalsData.reduce((sum, goal) => sum + (goal.saved_amount || goal.current_amount || 0), 0)
+      const goalProgress = totalGoalAmount > 0 ? (totalSavedAmount / totalGoalAmount) * 100 : 0
 
-    // Build comprehensive context for AI
-    const userContext = {
-      name: userData?.first_name || userData?.full_name || 'User',
-      email: userData?.email,
-      level: Math.floor((xpData?.points || 0) / 100) + 1,
-      xp: xpData?.points || 0,
-      badges: xpData?.badges || [],
-      experience: profileData?.financial_experience || 'Beginner',
-      goals: goalsData,
-      accounts: accountsData,
-      totalBalance,
-      totalGoalAmount,
-      totalSavedAmount,
-      goalProgress,
-      recentConversation: recentChats.reverse()
-    }
+      // Build comprehensive context for AI
+      const userContext = {
+        name: userData?.first_name || userData?.full_name || 'User',
+        email: userData?.email,
+        level: Math.floor((xpData?.points || 0) / 100) + 1,
+        xp: xpData?.points || 0,
+        badges: xpData?.badges || [],
+        experience: profileData?.financial_experience || 'Beginner',
+        goals: goalsData,
+        accounts: accountsData,
+        totalBalance,
+        totalGoalAmount,
+        totalSavedAmount,
+        goalProgress,
+        recentConversation: recentChats.reverse()
+      }
 
-    // Create enhanced system prompt with comprehensive user context
-    const systemPrompt = `You are Sensei DoughJo, an AI-powered financial advisor for DoughJo, a premium personal finance app. You're helping ${userContext.name}, who is currently at Level ${userContext.level} with ${userContext.xp} XP.
+      // Create enhanced system prompt with comprehensive user context
+      const systemPrompt = `You are Sensei DoughJo, an AI-powered financial advisor for DoughJo, a premium personal finance app. You're helping ${userContext.name}, who is currently at Level ${userContext.level} with ${userContext.xp} XP.
 
 COMPREHENSIVE USER PROFILE:
 - Name: ${userContext.name}
@@ -137,157 +143,173 @@ RESPONSE GUIDELINES:
 
 CURRENT CONTEXT: The user just said: "${message}"`
 
-    // Check for OpenRouter API key
-    const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
-    console.log('🔑 API KEY STATUS:', {
-      hasOpenRouterKey: !!openRouterKey,
-      keyLength: openRouterKey?.length || 0
-    })
-    
-    if (!openRouterKey) {
-      console.log('⚠️ OpenRouter API key not found, using enhanced fallback')
-      throw new Error('OpenRouter API key not configured')
-    }
-
-    console.log('🤖 CALLING OPENROUTER API...')
-
-    // Call OpenRouter API with free model
-    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://doughjo.app',
-        'X-Title': 'DoughJo AI Financial Sensei',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.1-8b-instruct:free', // Free model with good performance
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: message
-          }
-        ],
-        max_tokens: 400,
-        temperature: 0.7,
-        top_p: 0.9,
-      }),
-    })
-
-    console.log('📡 OPENROUTER RESPONSE:', {
-      status: openRouterResponse.status,
-      statusText: openRouterResponse.statusText,
-      ok: openRouterResponse.ok
-    })
-
-    if (!openRouterResponse.ok) {
-      const errorText = await openRouterResponse.text()
-      console.error(`❌ OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
+      // Check for OpenRouter API key
+      const openRouterKey = Deno.env.get('OPENROUTER_API_KEY')
+      console.log('🔑 API KEY STATUS:', {
+        hasOpenRouterKey: !!openRouterKey,
+        keyLength: openRouterKey?.length || 0
+      })
       
-      // If rate limited on free model, try backup model
-      if (openRouterResponse.status === 429) {
-        console.log('🔄 TRYING BACKUP MODEL...')
-        
-        const backupResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openRouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://doughjo.app',
-            'X-Title': 'DoughJo AI Financial Sensei',
-          },
-          body: JSON.stringify({
-            model: 'google/gemma-2-9b-it:free', // Alternative free model
-            messages: [
-              {
-                role: 'user',
-                content: `${systemPrompt}\n\nUser message: ${message}`
-              }
-            ],
-            max_tokens: 400,
-            temperature: 0.7,
-          }),
-        })
-        
-        if (backupResponse.ok) {
-          const backupData = await backupResponse.json()
-          const aiResponse = backupData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
-          
-          console.log('✅ BACKUP MODEL SUCCESS')
-          return new Response(
-            JSON.stringify({ response: aiResponse }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200,
-            },
-          )
-        }
+      if (!openRouterKey) {
+        console.log('⚠️ OpenRouter API key not found, using enhanced fallback')
+        throw new Error('OpenRouter API key not configured')
       }
+
+      console.log('🤖 CALLING OPENROUTER API...')
+
+      // Call OpenRouter API with free model
+      const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://doughjo.app',
+          'X-Title': 'DoughJo AI Financial Sensei',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.1-8b-instruct:free', // Free model with good performance
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ],
+          max_tokens: 400,
+          temperature: 0.7,
+          top_p: 0.9,
+        }),
+      })
+
+      console.log('📡 OPENROUTER RESPONSE:', {
+        status: openRouterResponse.status,
+        statusText: openRouterResponse.statusText,
+        ok: openRouterResponse.ok
+      })
+
+      if (!openRouterResponse.ok) {
+        const errorText = await openRouterResponse.text()
+        console.error(`❌ OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
+        
+        // If rate limited on free model, try backup model
+        if (openRouterResponse.status === 429) {
+          console.log('🔄 TRYING BACKUP MODEL...')
+          
+          const backupResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openRouterKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://doughjo.app',
+              'X-Title': 'DoughJo AI Financial Sensei',
+            },
+            body: JSON.stringify({
+              model: 'google/gemma-2-9b-it:free', // Alternative free model
+              messages: [
+                {
+                  role: 'user',
+                  content: `${systemPrompt}\n\nUser message: ${message}`
+                }
+              ],
+              max_tokens: 400,
+              temperature: 0.7,
+            }),
+          })
+          
+          if (backupResponse.ok) {
+            const backupData = await backupResponse.json()
+            const aiResponse = backupData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
+            
+            console.log('✅ BACKUP MODEL SUCCESS')
+            return new Response(
+              JSON.stringify({ response: aiResponse }),
+              {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200,
+              },
+            )
+          }
+        }
+        
+        throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
+      }
+
+      const openRouterData = await openRouterResponse.json()
+      console.log('✅ OPENROUTER SUCCESS')
       
-      throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`)
+      const aiResponse = openRouterData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
+
+      console.log('📤 SENDING RESPONSE:', {
+        responseLength: aiResponse.length,
+        responsePreview: aiResponse.substring(0, 100) + '...'
+      })
+
+      return new Response(
+        JSON.stringify({ response: aiResponse }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
+    } catch (contextError) {
+      console.error('Error fetching user context:', contextError)
+      // Fall back to basic response if we can't get user context
+      return new Response(
+        JSON.stringify({ 
+          response: generateBasicFallback(message),
+          error: 'Error fetching user context',
+          debug: 'Could not retrieve user data'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
     }
-
-    const openRouterData = await openRouterResponse.json()
-    console.log('✅ OPENROUTER SUCCESS')
-    
-    const aiResponse = openRouterData.choices[0]?.message?.content || generateEnhancedFallback(message, userContext)
-
-    console.log('📤 SENDING RESPONSE:', {
-      responseLength: aiResponse.length,
-      responsePreview: aiResponse.substring(0, 100) + '...'
-    })
-
-    return new Response(
-      JSON.stringify({ response: aiResponse }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
-
   } catch (error) {
     console.error('❌ ERROR IN CHAT-AI FUNCTION:', error)
     
-    // Enhanced fallback with user context if available
+    // Basic fallback response when we can't get user context
     let fallbackResponse = "I'm here to help with your financial goals! What would you like to know about budgeting, saving, or investing?"
     
     try {
       // Try to get basic user context for better fallback
       const { userId } = await req.json()
       if (userId) {
-        const supabaseClient = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for admin access
-        )
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
         
-        const [userResult, goalsResult, accountsResult] = await Promise.all([
-          supabaseClient.from('users').select('first_name, full_name').eq('id', userId).single(),
-          supabaseClient.from('goals').select('name, target_amount, saved_amount, current_amount').eq('user_id', userId).limit(3),
-          supabaseClient.from('bank_accounts').select('name, balance, type, account_subtype, subtype').eq('user_id', userId)
-        ])
-        
-        const userName = userResult.data?.first_name || userResult.data?.full_name?.split(' ')[0] || 'there'
-        const goals = goalsResult.data || []
-        const accounts = accountsResult.data || []
-        const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
-        
-        console.log('Fallback context:', {
-          userName,
-          goalCount: goals.length,
-          accountCount: accounts.length,
-          totalBalance
-        })
-        
-        if (accounts.length > 0) {
-          fallbackResponse = `Hi ${userName}! I can see you have ${accounts.length} connected account${accounts.length > 1 ? 's' : ''} with a total balance of $${totalBalance.toLocaleString()}. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
-        } else if (goals.length > 0) {
-          fallbackResponse = `Hi ${userName}! I can see you have ${goals.length} financial goal${goals.length > 1 ? 's' : ''} in progress. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
-        } else {
-          fallbackResponse = `Hi ${userName}! I'm experiencing some technical difficulties with my AI processing, but I'm still here to help you build a strong financial foundation. What financial topic interests you most?`
+        if (supabaseUrl && supabaseServiceKey) {
+          const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
+          
+          const [userResult, goalsResult, accountsResult] = await Promise.all([
+            supabaseClient.from('users').select('first_name, full_name').eq('id', userId).single(),
+            supabaseClient.from('goals').select('name, target_amount, saved_amount, current_amount').eq('user_id', userId).limit(3),
+            supabaseClient.from('bank_accounts').select('name, balance, type, account_subtype, subtype').eq('user_id', userId)
+          ])
+          
+          const userName = userResult.data?.first_name || userResult.data?.full_name?.split(' ')[0] || 'there'
+          const goals = goalsResult.data || []
+          const accounts = accountsResult.data || []
+          const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+          
+          console.log('Fallback context:', {
+            userName,
+            goalCount: goals.length,
+            accountCount: accounts.length,
+            totalBalance
+          })
+          
+          if (accounts.length > 0) {
+            fallbackResponse = `Hi ${userName}! I can see you have ${accounts.length} connected account${accounts.length > 1 ? 's' : ''} with a total balance of $${totalBalance.toLocaleString()}. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
+          } else if (goals.length > 0) {
+            fallbackResponse = `Hi ${userName}! I can see you have ${goals.length} financial goal${goals.length > 1 ? 's' : ''} in progress. I'm experiencing some technical difficulties with my AI processing, but I'm still here to help with your financial planning! What would you like to discuss?`
+          } else {
+            fallbackResponse = `Hi ${userName}! I'm experiencing some technical difficulties with my AI processing, but I'm still here to help you build a strong financial foundation. What financial topic interests you most?`
+          }
         }
       }
     } catch (fallbackError) {
@@ -352,4 +374,45 @@ function generateEnhancedFallback(message: string, userContext: any): string {
   }
   
   return `I'm here to help you build a stronger financial future, ${name}! Whether it's budgeting, saving, investing, or debt management, we can work together to create a plan that works for you. What's your biggest financial priority right now?`
+}
+
+// Basic fallback for when we have no user context
+function generateBasicFallback(message: string): string {
+  const lowerMessage = message.toLowerCase()
+  
+  // Budget-related responses
+  if (lowerMessage.includes('budget') || lowerMessage.includes('spending')) {
+    return "Creating a budget is a great first step! I recommend the 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings and debt repayment. Would you like help setting up specific budget categories?"
+  }
+  
+  // Investment-related responses
+  if (lowerMessage.includes('invest') || lowerMessage.includes('stock') || lowerMessage.includes('portfolio')) {
+    return "Investing is key to building long-term wealth! For beginners, I often recommend starting with low-cost index funds or ETFs. They provide instant diversification and typically have lower fees. What's your investment timeline and risk tolerance?"
+  }
+  
+  // Savings-related responses
+  if (lowerMessage.includes('save') || lowerMessage.includes('emergency fund')) {
+    return "Building an emergency fund is crucial for financial security! Aim for 3-6 months of expenses in a high-yield savings account. Start small - even $25 per week adds up to $1,300 in a year. What's your current savings goal?"
+  }
+  
+  // Debt-related responses
+  if (lowerMessage.includes('debt') || lowerMessage.includes('loan') || lowerMessage.includes('credit card')) {
+    return "Tackling debt is a smart financial move! Consider the debt avalanche method (pay minimums on all debts, then extra on highest interest rate) or debt snowball (smallest balance first). Which approach feels more motivating to you?"
+  }
+  
+  // Goal-related responses
+  if (lowerMessage.includes('goal') || lowerMessage.includes('plan')) {
+    return "Setting clear financial goals is essential for success! I recommend making them SMART: Specific, Measurable, Achievable, Relevant, and Time-bound. What financial milestone would you like to work toward first?"
+  }
+  
+  // General responses
+  const generalResponses = [
+    "That's a great question! Financial planning is all about making informed decisions that align with your goals. What specific area of your finances would you like to focus on?",
+    "I'm here to help you build a stronger financial future! Whether it's budgeting, saving, investing, or debt management, we can work together to create a plan that works for you.",
+    "Your financial journey is unique, and I'm here to provide personalized guidance. What's your biggest financial priority right now?",
+    "Building wealth takes time and consistency. I'm here to help you make smart decisions along the way. What would you like to explore today?",
+    "Financial wellness is about more than just numbers - it's about creating the life you want. How can I help you move closer to your financial goals?"
+  ]
+  
+  return generalResponses[Math.floor(Math.random() * generalResponses.length)]
 }
