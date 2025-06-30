@@ -16,14 +16,20 @@ interface SmartWinsWidgetProps {
 }
 
 const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
-  const { smartWins, loading, fetchSmartWins } = useSmartWins(user);
+  const { smartWins, loading, error, fetchSmartWins } = useSmartWins(user);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Fetch smart wins when component mounts
   useEffect(() => {
     const loadData = async () => {
-      await fetchSmartWins();
-      setIsInitialLoad(false);
+      try {
+        await fetchSmartWins();
+      } catch (err) {
+        console.error("Error loading smart wins:", err);
+        // Continue even if there's an error
+      } finally {
+        setIsInitialLoad(false);
+      }
     };
     
     loadData();
@@ -83,6 +89,40 @@ const SmartWinsWidget: React.FC<SmartWinsWidgetProps> = ({ user }) => {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gradient-to-br from-[#2A6F68]/5 to-[#2A6F68]/10 rounded-2xl p-6 border border-[#2A6F68]/20">
+        <div className="flex items-center mb-4">
+          <div className="w-8 h-8 bg-[#2A6F68] rounded-lg flex items-center justify-center">
+            <Lightbulb className="h-4 w-4 text-white" />
+          </div>
+          <h3 className="text-lg font-bold text-[#2A6F68] ml-3">Smart Wins This Week</h3>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
+            <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
+            <p className="text-sm text-[#2A6F68] font-medium">
+              Move excess checking funds to high-yield savings for better returns
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
+            <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
+            <p className="text-sm text-[#2A6F68] font-medium">
+              Automate monthly savings to reach goals faster
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-lg">
+            <div className="w-2 h-2 bg-[#2A6F68] rounded-full flex-shrink-0"></div>
+            <p className="text-sm text-[#2A6F68] font-medium">Review subscriptions - most people save $40-80/month</p>
+          </div>
+        </div>
       </div>
     );
   }

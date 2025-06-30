@@ -136,6 +136,7 @@ export const useSmartWins = (user: User | null) => {
       setLastUpdated(new Date());
     } catch (err: any) {
       console.log('Error in fetchSmartWins, using algorithmic fallback:', err.message);
+      setError(err.message);
       // Always fall back to algorithmic generation on any error
       const generatedWins = generateSmartWins();
       setSmartWins(generatedWins);
