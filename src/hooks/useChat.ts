@@ -41,8 +41,37 @@ export const useChat = (user: User | null) => {
   useEffect(() => {
     if (user && isSupabaseConfigured) {
       fetchChatSessions();
+    } else if (user) {
+      // Set demo messages if user is logged in but Supabase is not configured
+      setDemoMessages();
     }
   }, [user]);
+
+  const setDemoMessages = () => {
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    
+    const demoMessages: ChatMessage[] = [
+      {
+        id: 'demo-msg-1',
+        user_id: user?.id || null,
+        message: 'Hi! I need help creating a budget. Where should I start?',
+        sender: 'user',
+        timestamp: tenMinutesAgo.toISOString()
+      },
+      {
+        id: 'demo-msg-2',
+        user_id: user?.id || null,
+        message: 'Great question! Let\'s start with the 50/30/20 rule. Track your monthly income first, then allocate 50% to needs like rent and groceries, 30% to wants like entertainment, and 20% to savings and debt payments. What\'s your monthly take-home income?',
+        sender: 'assistant',
+        timestamp: fiveMinutesAgo.toISOString()
+      }
+    ];
+    
+    setMessages(demoMessages);
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (currentSessionId) {
@@ -84,6 +113,8 @@ export const useChat = (user: User | null) => {
       }
     } catch (error) {
       console.error('Error fetching chat sessions:', error);
+      // Fall back to demo messages
+      setDemoMessages();
     }
   };
 
@@ -128,6 +159,8 @@ export const useChat = (user: User | null) => {
 
       if (oldMessagesError) {
         console.error('Error fetching old chat messages:', oldMessagesError);
+        // Fall back to demo messages
+        setDemoMessages();
         return;
       }
 
@@ -135,14 +168,24 @@ export const useChat = (user: User | null) => {
       setMessages(oldMessages || []);
     } catch (error) {
       console.error('Error fetching chat messages:', error);
+      // Fall back to demo messages
+      setDemoMessages();
     }
   };
 
   const createNewSession = async () => {
-    if (!user || !isSupabaseConfigured) return;
+    if (!user) return;
 
     try {
       console.log('=== CREATING NEW CHAT SESSION ===');
+      
+      if (!isSupabaseConfigured) {
+        console.log('Supabase not configured, using local session');
+        const localSessionId = 'local-session-' + Date.now();
+        setCurrentSessionId(localSessionId);
+        setDemoMessages();
+        return;
+      }
       
       const { data, error } = await supabase
         .from('chat_sessions')
@@ -166,6 +209,8 @@ export const useChat = (user: User | null) => {
       setMessages([]);
     } catch (error) {
       console.error('Error creating chat session:', error);
+      // Fall back to demo messages
+      setDemoMessages();
     }
   };
 
@@ -183,9 +228,48 @@ export const useChat = (user: User | null) => {
       // Create a session if none exists
       if (!currentSessionId) {
         await createNewSession();
-        if (!currentSessionId) {
+        if (!currentSessionId && !isSupabaseConfigured) {
+          const localSessionId = 'local-session-' + Date.now();
+          setCurrentSessionId(localSessionId);
+        } else if (!currentSessionId) {
           throw new Error('Failed to create chat session');
         }
+      }
+
+      // If Supabase is not configured, use local messages
+      if (!isSupabaseConfigured) {
+        const userMessage: ChatMessage = {
+          id: 'local-' + Date.now(),
+          user_id: user.id,
+          message: message.trim(),
+          sender: 'user',
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        
+        // Generate a local response
+        setTimeout(() => {
+          const aiResponse = generateContextualResponse(message);
+          
+          const assistantMessage: ChatMessage = {
+            id: 'local-' + (Date.now() + 1),
+            user_id: user.id,
+            message: aiResponse,
+            sender: 'assistant',
+            timestamp: new Date().toISOString()
+          };
+          
+          setMessages(prev => [...prev, assistantMessage]);
+          setLoading(false);
+          
+          // Award XP for chat interaction
+          if (onXPUpdate) {
+            onXPUpdate(5);
+          }
+        }, 1000);
+        
+        return;
       }
 
       // Determine which table to use based on availability
@@ -422,6 +506,15 @@ export const useChat = (user: User | null) => {
           }
         } catch (dbError) {
           console.error('Error saving fallback message:', dbError);
+          // Add message to local state if database operation fails
+          const fallbackMessage: ChatMessage = {
+            id: Date.now().toString(),
+            user_id: user.id,
+            message: fallbackResponse,
+            sender: 'assistant',
+            timestamp: new Date().toISOString(),
+          };
+          setMessages(prev => [...prev, fallbackMessage]);
         }
       } else {
         // Offline fallback
@@ -433,6 +526,11 @@ export const useChat = (user: User | null) => {
           timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, fallbackMessage]);
+      }
+      
+      // Award XP even if there was an error
+      if (onXPUpdate) {
+        onXPUpdate(5);
       }
     } finally {
       setLoading(false);

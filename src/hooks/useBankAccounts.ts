@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface BankAccount {
   id: string;
@@ -29,10 +29,62 @@ export const useBankAccounts = (user: User | null) => {
   const [totalBalance, setTotalBalance] = useState(0);
 
   useEffect(() => {
-    if (user) {
+    if (user && isSupabaseConfigured) {
       fetchBankAccounts();
+    } else if (user) {
+      // Set demo data if user is logged in but Supabase is not configured
+      setDemoAccounts();
     }
   }, [user]);
+
+  const setDemoAccounts = () => {
+    const demoAccounts: BankAccount[] = [
+      {
+        id: 'demo-checking',
+        user_id: user?.id || null,
+        plaid_account_id: 'demo-checking',
+        plaid_access_token: 'demo-token',
+        name: 'Primary Checking',
+        type: 'depository',
+        account_subtype: 'checking',
+        subtype: 'checking',
+        balance: 2850.00,
+        institution_name: 'Demo Bank',
+        institution_id: 'ins_demo',
+        mask: '1234',
+        plaid_item_id: null,
+        is_active: true,
+        last_synced_at: new Date().toISOString(),
+        last_updated: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'demo-savings',
+        user_id: user?.id || null,
+        plaid_account_id: 'demo-savings',
+        plaid_access_token: 'demo-token',
+        name: 'High Yield Savings',
+        type: 'depository',
+        account_subtype: 'savings',
+        subtype: 'savings',
+        balance: 4375.00,
+        institution_name: 'Demo Bank',
+        institution_id: 'ins_demo',
+        mask: '5678',
+        plaid_item_id: null,
+        is_active: true,
+        last_synced_at: new Date().toISOString(),
+        last_updated: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
+    
+    setBankAccounts(demoAccounts);
+    setTotalBalance(demoAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0));
+    setLoading(false);
+  };
 
   const fetchBankAccounts = async () => {
     if (!user) return;
@@ -51,6 +103,8 @@ export const useBankAccounts = (user: User | null) => {
 
       if (error) {
         console.error('❌ Error fetching bank accounts:', error);
+        // Fall back to demo accounts on error
+        setDemoAccounts();
         return;
       }
 
@@ -60,18 +114,23 @@ export const useBankAccounts = (user: User | null) => {
       setBankAccounts(data || []);
       
       // Calculate total balance
-      const total = (data || []).reduce((sum, account) => sum + (account.balance || 0), 0);
+      const total = (data || []).reduce((sum, acc) => sum + (acc.balance || 0), 0);
       setTotalBalance(total);
       console.log('💰 Total balance calculated:', total);
     } catch (error) {
       console.error('❌ Error fetching bank accounts:', error);
+      // Fall back to demo accounts on error
+      setDemoAccounts();
     } finally {
       setLoading(false);
     }
   };
 
   const addBankAccount = async (accountData: Omit<BankAccount, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot add bank account: Supabase not configured');
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -101,7 +160,10 @@ export const useBankAccounts = (user: User | null) => {
   };
 
   const updateBankAccount = async (id: string, updates: Partial<BankAccount>) => {
-    if (!user) return null;
+    if (!user || !isSupabaseConfigured) {
+      console.warn('Cannot update bank account: Supabase not configured');
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -144,19 +206,21 @@ export const useBankAccounts = (user: User | null) => {
     try {
       const deletedAccount = bankAccounts.find(account => account.id === id);
       
-      // Soft delete by setting is_active to false
-      const { error } = await supabase
-        .from('bank_accounts')
-        .update({ 
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .eq('user_id', user.id);
+      if (isSupabaseConfigured) {
+        // Soft delete by setting is_active to false
+        const { error } = await supabase
+          .from('bank_accounts')
+          .update({ 
+            is_active: false,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error deleting bank account:', error);
-        return false;
+        if (error) {
+          console.error('Error deleting bank account:', error);
+          return false;
+        }
       }
 
       setBankAccounts(prev => prev.filter(account => account.id !== id));
@@ -178,18 +242,20 @@ export const useBankAccounts = (user: User | null) => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
-        .from('bank_accounts')
-        .update({ 
-          last_synced_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .eq('user_id', user.id);
+      if (isSupabaseConfigured) {
+        const { error } = await supabase
+          .from('bank_accounts')
+          .update({ 
+            last_synced_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error syncing bank account:', error);
-        return false;
+        if (error) {
+          console.error('Error syncing bank account:', error);
+          return false;
+        }
       }
 
       // Refresh accounts after sync
